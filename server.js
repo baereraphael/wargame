@@ -9,7 +9,10 @@ const io = socketIo(server);
 const jogadores = [
   { nome: 'Azul', ativo: true, socketId: null },
   { nome: 'Vermelho', ativo: true, socketId: null },
-  { nome: 'Verde', ativo: true, socketId: null }
+  { nome: 'Verde', ativo: true, socketId: null },
+  { nome: 'Amarelo', ativo: true, socketId: null },
+  { nome: 'Preto', ativo: true, socketId: null },
+  { nome: 'Roxo', ativo: true, socketId: null }
 ];
 
 let indiceTurno = 0;
@@ -19,10 +22,18 @@ let vitoria = false;
 let derrota = false;
 
 let paises = [
-  { nome: 'Brasil', x: 200, y: 200, dono: 'Amarelo', tropas: 7, vizinhos: ['País B'] },
-  { nome: 'Argentina', x: 700, y: 250, dono: 'Roxo', tropas: 7, vizinhos: ['País A', 'País C'] },
-  { nome: 'Estados Unidos', x: 350, y: 500, dono: 'Vermelho', tropas: 7, vizinhos: ['País B'] },
-  { nome: 'Canadá', x: 970, y: 200, dono: 'Azul', tropas: 7, vizinhos: ['País B'] }
+  { nome: 'Emberlyn', x: 190, y: 170, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
+  { nome: 'Ravenspire', x: 260, y: 160, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall'] },
+  { nome: 'Stonevale', x: 100, y: 170, dono: 'Amarelo', tropas: 5, vizinhos: ['Valdoria', 'Cindervale'] },
+  { nome: 'Duskwatch', x: 125, y: 295, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
+  { nome: 'Stormhall', x: 180, y: 305, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne'] },
+  { nome: 'Redwyn', x: 190, y: 170, dono: 'Preto', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
+  { nome: 'Stormfen', x: 260, y: 160, dono: 'Roxo', tropas: 5, vizinhos: ['Valdoria', 'Ashbourne'] },
+  { nome: 'Highmoor', x: 100, y: 170, dono: 'Amarelo', tropas: 5, vizinhos: ['Valdoria', 'Cindervale'] },
+  { nome: 'Cragstone', x: 125, y: 295, dono: 'Verde', tropas: 5, vizinhos: ['Northgard', 'Ironcliff'] },
+  { nome: 'Hollowspire', x: 180, y: 305, dono: 'Preto', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne'] },
+  { nome: 'Westreach', x: 125, y: 295, dono: 'Roxo', tropas: 5, vizinhos: ['Northgard', 'Ironcliff'] },
+  { nome: 'Barrowfell', x: 180, y: 305, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne'] }
 ];
 
 let tropasReforco = calcularReforco(turno);
