@@ -116,38 +116,85 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   // CSS HUD handles positioning automatically
   // No need for manual positioning anymore
 
-  overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
+  // Tela de vitória - Overlay com gradiente escuro - Centralizado na tela
+  overlay = this.add.rectangle(largura / 2, altura / 2, largura, altura, 0x000000, 0.85);
   overlay.setVisible(false);
   overlay.setDepth(10);
 
-  textoVitoriaGrande = this.add.text(400, 300, '', {
-    fontSize: '48px',
-    fill: '#ffff00',
-    fontStyle: 'bold',
-    stroke: '#000',
-    strokeThickness: 6,
-    align: 'center',
-    wordWrap: { width: 700 }
-  }).setOrigin(0.5);
-  textoVitoriaGrande.setVisible(false);
-  textoVitoriaGrande.setDepth(11);
+  // Container principal da tela de vitória - Centralizado na tela
+  containerVitoria = this.add.container(largura / 2, altura / 2);
+  containerVitoria.setDepth(15);
+  containerVitoria.setVisible(false);
 
-    botaoReiniciar = this.add.text(400, 450, 'Reiniciar Jogo', {
-    fontSize: '28px',
-    fill: '#fff',
-    backgroundColor: '#1a1a1a',
-    padding: { x: 20, y: 10 },
-    fontFamily: 'Arial',
-    align: 'center',
-    stroke: '#000',
+  // Background do container com bordas arredondadas
+  const bgContainer = this.add.rectangle(0, 0, 600, 400, 0x1a1a2e, 0.95);
+  bgContainer.setStrokeStyle(3, 0x4a90e2);
+  containerVitoria.add(bgContainer);
+
+  // Título "VITÓRIA!" com ícone integrado
+  const tituloVitoria = this.add.text(0, -120, '🏆 VITÓRIA! 🏆', {
+    fontSize: '42px',
+    fill: '#ffd700',
+    fontStyle: 'bold',
+    stroke: '#8b4513',
     strokeThickness: 4,
-    borderRadius: 5
+    align: 'center',
+    fontFamily: 'Arial Black'
+  }).setOrigin(0.5);
+  containerVitoria.add(tituloVitoria);
+
+  // Texto do jogador vencedor
+  textoVitoriaGrande = this.add.text(0, -50, '', {
+    fontSize: '32px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#2c3e50',
+    strokeThickness: 3,
+    align: 'center',
+    wordWrap: { width: 500 },
+    fontFamily: 'Arial'
+  }).setOrigin(0.5);
+  containerVitoria.add(textoVitoriaGrande);
+
+  // Linha decorativa
+  const linhaDecorativa = this.add.rectangle(0, 0, 400, 2, 0x4a90e2, 1);
+  containerVitoria.add(linhaDecorativa);
+
+  // Botão reiniciar com design moderno
+  botaoReiniciar = this.add.text(0, 80, '🔄 REINICIAR JOGO', {
+    fontSize: '24px',
+    fill: '#ffffff',
+    backgroundColor: '#4a90e2',
+    padding: { x: 30, y: 15 },
+    fontFamily: 'Arial Black',
+    align: 'center',
+    stroke: '#2c3e50',
+    strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-  botaoReiniciar.setVisible(false);
-  botaoReiniciar.setDepth(12);
-  botaoReiniciar.on('pointerover', () => botaoReiniciar.setStyle({ backgroundColor: '#005fa3' }));
-  botaoReiniciar.on('pointerout', () => botaoReiniciar.setStyle({ backgroundColor: '#0077cc' }));
-     botaoReiniciar.on('pointerdown', () => {
+  containerVitoria.add(botaoReiniciar);
+
+  // Efeitos hover do botão
+  botaoReiniciar.on('pointerover', () => {
+    botaoReiniciar.setStyle({ 
+      backgroundColor: '#5ba0f2',
+      fill: '#ffffff',
+      stroke: '#2c3e50',
+      strokeThickness: 2
+    });
+    botaoReiniciar.setScale(1.05);
+  });
+  
+  botaoReiniciar.on('pointerout', () => {
+    botaoReiniciar.setStyle({ 
+      backgroundColor: '#4a90e2',
+      fill: '#ffffff',
+      stroke: '#2c3e50',
+      strokeThickness: 2
+    });
+    botaoReiniciar.setScale(1);
+  });
+
+  botaoReiniciar.on('pointerdown', () => {
     if (vitoria || derrota) return;
     tocarSomClick();
     socket.emit('reiniciarJogo');
@@ -217,14 +264,14 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     const jogadorLocal = jogadores.find(j => j.nome === meuNome);
 
     if (!jogadorLocal.ativo) {
-      perdeuJogo(`😞 Você perdeu!`);
+      perdeuJogo(`Você perdeu!`, this);
       return;
     } else {
       desbloquearJogo();
     }
 
     if (vitoria) {
-      bloquearJogo(`🏆 Jogador ${turno} venceu!`);
+      bloquearJogo(`Jogador ${turno} venceu!`);
       return;
     } else {
       desbloquearJogo();
@@ -236,13 +283,14 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   });
 
   socket.on('vitoria', (nomeJogador) => {
-    mostrarMensagem(`🏆 Jogador ${nomeJogador} venceu!`);
-    bloquearJogo(`🏆 Jogador ${nomeJogador} venceu!`);
+    console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
+    mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
+    bloquearJogo(`Jogador ${nomeJogador} venceu!`, this);
   });
 
   socket.on('derrota', () => {
-    mostrarMensagem(`😞 Você perdeu!`);
-    perdeuJogo(`😞 Você perdeu!`);
+    mostrarMensagem(`Você perdeu!`);
+    perdeuJogo(`Você perdeu!`, this);
   });
 
   socket.on('tocarSomTiro', () => {
@@ -829,33 +877,90 @@ function mostrarMensagem(texto) {
   }
 }
 
-function bloquearJogo(mensagem) {
-  botaoTurno.disableInteractive();
-  botaoTurno.setStyle({ backgroundColor: '#555' });
-  paises.forEach(pais => pais.polygon.disableInteractive());
-  overlay.setVisible(true);
-  textoVitoriaGrande.setText(mensagem);
-  textoVitoriaGrande.setVisible(true);
-  botaoReiniciar.setVisible(true);
+function bloquearJogo(mensagem, scene) {
+  console.log('🎯 bloquearJogo chamado com mensagem:', mensagem);
+  
+  try {
+    // botaoTurno é um elemento HTML, não Phaser
+    botaoTurno.disabled = true;
+    botaoTurno.style.backgroundColor = '#555';
+    botaoTurno.style.cursor = 'not-allowed';
+    console.log('✅ Botão turno desabilitado');
+    
+    paises.forEach(pais => pais.polygon.disableInteractive());
+    console.log('✅ Territórios desabilitados');
+    
+    // Mostrar overlay e container de vitória
+    overlay.setVisible(true);
+    containerVitoria.setVisible(true);
+    console.log('✅ Overlay e container visíveis');
+    
+    // Atualizar texto do jogador vencedor
+    textoVitoriaGrande.setText(mensagem);
+    console.log('✅ Texto de vitória atualizado:', mensagem);
+    
+    // Animação de entrada
+    containerVitoria.setScale(0);
+    scene.tweens.add({
+      targets: containerVitoria,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 500,
+      ease: 'Back.easeOut'
+    });
+    
+    console.log('🎯 Tela de vitória exibida com sucesso!');
+  } catch (error) {
+    console.error('❌ Erro ao exibir tela de vitória:', error);
+  }
 }
 
-function perdeuJogo(mensagem) {
-  botaoTurno.disableInteractive();
-  botaoTurno.setStyle({ backgroundColor: '#555' });
+function perdeuJogo(mensagem, scene) {
+  // botaoTurno é um elemento HTML, não Phaser
+  botaoTurno.disabled = true;
+  botaoTurno.style.backgroundColor = '#555';
+  botaoTurno.style.cursor = 'not-allowed';
+  
   paises.forEach(pais => pais.polygon.disableInteractive());
+  
+  // Mostrar overlay e container de derrota
   overlay.setVisible(true);
+  containerVitoria.setVisible(true);
+  
+  // Atualizar título e texto para derrota
+  const tituloVitoria = containerVitoria.getAt(1); // Título "🏆 VITÓRIA! 🏆"
+  tituloVitoria.setText('💀 DERROTA! 💀');
+  tituloVitoria.setStyle({ 
+    fill: '#ff6b6b',
+    stroke: '#8b0000',
+    strokeThickness: 4
+  });
+  
   textoVitoriaGrande.setText(mensagem);
-  textoVitoriaGrande.setVisible(true);
+  
+  // Esconder botão reiniciar na derrota
   botaoReiniciar.setVisible(false);
+  
+  // Animação de entrada
+  containerVitoria.setScale(0);
+  scene.tweens.add({
+    targets: containerVitoria,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 500,
+    ease: 'Back.easeOut'
+  });
 }
 
 function desbloquearJogo() {
-  botaoTurno.setInteractive({ useHandCursor: true });
-  botaoTurno.setStyle({ backgroundColor: '#0077cc' });
+  // botaoTurno é um elemento HTML, não Phaser
+  botaoTurno.disabled = false;
+  botaoTurno.style.backgroundColor = '#0077cc';
+  botaoTurno.style.cursor = 'pointer';
+  
   paises.forEach(pais => pais.polygon.setInteractive({ useHandCursor: true }));
   overlay.setVisible(false);
-  textoVitoriaGrande.setVisible(false);
-  botaoReiniciar.setVisible(false);
+  containerVitoria.setVisible(false);
 }
 
 // Funções para tocar sons
