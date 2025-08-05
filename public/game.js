@@ -82,6 +82,8 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   somClick = this.sound.add('clicksound');
   somHuh = this.sound.add('huh');
 
+  // Adicionar indicadores de continentes (será chamado após os territórios serem carregados)
+
   hudTexto = this.add.text(10, 10, '', {
     fontSize: '18px',
     fill: '#fff',
@@ -403,13 +405,13 @@ const coresDosDonos = {
 const dadosGeograficos = {
   "Emberlyn": {
     pontos: [402,396,370,405,359,437,368,460,396,459,440,426,434,413,419,406],
-    textoX: 190,
-    textoY: 170
+    textoX: 680,
+    textoY: 350
   },
   "Ravenspire": {
     pontos: [463,450,494,454,521,466,526,474,509,482,497,487,490,509,486,528,466,538,451,546,444,562,430,573,420,593,402,579,408,502,397,458,436,427,453,430,461,439],
-    textoX: 260,
-    textoY: 160
+    textoX: 463,
+    textoY: 450
   },
   "Stonevale": {
     pontos: [356,404,348,411,341,414,330,414,320,414,304,427,293,442,292,456,367,459,359,437,370,407,361,406],
@@ -433,8 +435,8 @@ const dadosGeograficos = {
   },
     "Stormfen": {
     pontos: [111,194,194,141,206,132,207,122,207,114,219,115,233,116,248,119,265,125,273,132,274,142,283,151,302,151,307,162],
-    textoX: 180,
-    textoY: 305
+    textoX: 463,
+    textoY: 450
   },
     "Highmoor": {
     pontos: [305,165,252,223,345,279,358,279,373,279,384,279,378,268,373,257,364,253,366,236,370,223,386,215,380,203,370,198,360,189,349,182,336,168,322,163],
@@ -810,10 +812,13 @@ const coresDosDonos = {
     }
   }
   selecionado = null;
+  
+  // Adicionar indicadores de continentes após os territórios serem carregados
+  adicionarIndicadoresContinentes(scene);
 }
 
 function getTextoPais(pais) {
-  return `${pais.nome}\n${pais.tropas} tropas\n(${pais.dono})`;
+  return `${pais.nome}\n${pais.tropas}`;
 }
 
 function atualizarHUD() {
@@ -1541,4 +1546,98 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     });
     container.add(botaoFechar);
   }
+}
+
+// Variável global para controlar se os indicadores já foram criados
+let indicadoresContinentesCriados = false;
+
+function adicionarIndicadoresContinentes(scene) {
+  // Evitar criar indicadores duplicados
+  if (indicadoresContinentesCriados) return;
+  
+  // Definir posições para os indicadores de continentes (reposicionados para evitar sobreposição)
+  const indicadoresContinentes = [
+    {
+      nome: 'Thaloria',
+      bonus: 5,
+      x: 120,
+      y: 60,
+      texto: 'Thaloria +5',
+      territorioRepresentativo: 'Redwyn'
+    },
+    {
+      nome: 'Zarandis',
+      bonus: 3,
+      x: 100,
+      y: 500,
+      texto: 'Zarandis +3',
+      territorioRepresentativo: 'Emberlyn'
+    },
+    {
+      nome: 'Elyndra',
+      bonus: 5,
+      x: 400,
+      y: 50,
+      texto: 'Elyndra +5',
+      territorioRepresentativo: 'Frosthelm'
+    },
+    {
+      nome: 'Kharune',
+      bonus: 4,
+      x: 480,
+      y: 380,
+      texto: 'Kharune +4',
+      territorioRepresentativo: 'Zul\'Marak'
+    },
+    {
+      nome: 'Xanthera',
+      bonus: 7,
+      x: 850,
+      y: 70,
+      texto: 'Xanthera +7',
+      territorioRepresentativo: 'Nihadara'
+    },
+    {
+      nome: 'Mythara',
+      bonus: 2,
+      x: 950,
+      y: 530,
+      texto: 'Mythara +2',
+      territorioRepresentativo: 'Mistveil'
+    }
+  ];
+
+  // Criar indicadores para cada continente
+  indicadoresContinentes.forEach(indicador => {
+    const textoIndicador = scene.add.text(indicador.x, indicador.y, indicador.texto, {
+      fontSize: '14px',
+      fill: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3,
+      fontStyle: 'bold',
+      backgroundColor: '#333333',
+      padding: { x: 8, y: 4 }
+    }).setOrigin(0.5);
+    
+    textoIndicador.setDepth(3); // Colocar acima dos territórios mas abaixo da UI
+
+    // Adicionar linha conectando o território representativo ao indicador
+    // Primeiro, precisamos encontrar as coordenadas do território representativo
+    const territorio = paises.find(p => p.nome === indicador.territorioRepresentativo);
+    if (territorio && territorio.x && territorio.y) {
+      // Criar uma linha do território ao indicador
+      const linha = scene.add.graphics();
+      linha.lineStyle(2, 0xffffff, 0.7); // Linha branca semi-transparente
+      linha.beginPath();
+      linha.moveTo(territorio.x, territorio.y);
+      linha.lineTo(indicador.x, indicador.y);
+      linha.strokePath();
+      linha.setDepth(2); // Colocar abaixo dos indicadores mas acima dos territórios
+    } else {
+      console.warn(`Território representativo não encontrado para ${indicador.nome}: ${indicador.territorioRepresentativo}`);
+    }
+  });
+  
+  // Marcar que os indicadores foram criados
+  indicadoresContinentesCriados = true;
 }

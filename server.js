@@ -1000,7 +1000,7 @@ function inicializarJogo() {
 
   // Colocar tropas extras
   paises.forEach(pais => {
-    pais.tropas += 2;
+    pais.tropas += 0; // Changed from 2 to 0 to start with 1 troop
   });
 
   // Gerar objetivos para cada jogador
