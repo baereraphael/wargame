@@ -25,6 +25,8 @@ let tropasBonusContinente = {}; // Track bonus troops by continent
 let selecionado = null;
 let meuNome = null;
 let continentes = {};
+let continentePrioritario = null; // Continente com prioridade para reforço
+let faseRemanejamento = false; // Controla se está na fase de remanejamento
 let hudVisivel = true; // Track HUD visibility
 
 let hudTexto;
@@ -254,9 +256,12 @@ function posicionarBotao(scene) {
     derrota = estado.derrota
     meuNome = estado.meuNome;
     continentes = estado.continentes || {};
+    continentePrioritario = estado.continentePrioritario || null;
+    faseRemanejamento = estado.faseRemanejamento || false;
 
     atualizarPaises(estado.paises, this);
     atualizarHUD();
+    atualizarTextoBotaoTurno();
 
     const jogadorLocal = jogadores.find(j => j.nome === meuNome);
 
@@ -309,6 +314,10 @@ function posicionarBotao(scene) {
 
   socket.on('mostrarObjetivo', (objetivo) => {
     mostrarObjetivo(objetivo, this);
+  });
+
+  socket.on('iniciarFaseRemanejamento', () => {
+    mostrarMensagem('🔄 Fase de remanejamento iniciada. Clique em um território para mover tropas.');
   });
 }
 
@@ -601,26 +610,55 @@ const dadosGeograficos = {
          if (temTropasParaColocar && obj.dono === turno && turno === meuNome) {
            // Verificar se há tropas de bônus que precisam ser colocadas
            if (totalBonus > 0) {
-             // Verificar se este país pode receber tropas de bônus
+             // Verificar se este país pertence ao continente prioritário
              let podeReceberBonus = false;
-             for (const [nomeContinente, quantidade] of Object.entries(tropasBonusContinente)) {
-               if (quantidade > 0) {
-                 const continente = continentes[nomeContinente];
-                 if (continente && continente.territorios.includes(obj.nome)) {
-                   podeReceberBonus = true;
-                   break;
-                 }
+             if (continentePrioritario) {
+               const continente = continentes[continentePrioritario.nome];
+               if (continente && continente.territorios.includes(obj.nome)) {
+                 podeReceberBonus = true;
                }
              }
              
              if (!podeReceberBonus) {
-               mostrarMensagem("❌ Tropas de bônus de continente só podem ser colocadas em países do continente conquistado!");
+               // Não pode colocar tropas de bônus neste país
+               if (continentePrioritario) {
+                 mostrarMensagem(`❌ Primeiro coloque todas as ${totalBonus} tropas de bônus restantes! (${continentePrioritario.nome}: ${continentePrioritario.quantidade})`);
+               } else {
+                 mostrarMensagem("❌ Este país não pertence a nenhum continente com tropas de bônus pendentes!");
+               }
                return;
              }
+             
+             // Pode colocar tropa de bônus neste país
+             mostrarInterfaceReforco(obj, pointer, scene);
+             return;
+           } else {
+             // Não há tropas de bônus, pode colocar tropas base
+             mostrarInterfaceReforco(obj, pointer, scene);
+             return;
            }
-           
-           // Mostrar interface de reforço
-           mostrarInterfaceReforco(obj, pointer, scene);
+         }
+
+         // Verificar se está na fase de remanejamento
+         if (faseRemanejamento && obj.dono === turno && turno === meuNome) {
+           if (!selecionado) {
+             // Selecionar território de origem
+             selecionado = obj;
+             obj.polygon.setFillStyle(0xffff00, 0.3);
+             mostrarMensagem(`Território de origem selecionado: ${obj.nome}. Clique em um território vizinho para mover tropas.`);
+             tocarSomHuh();
+           } else if (selecionado === obj) {
+             // Deselecionar
+             obj.polygon.setFillStyle(coresDosDonos[obj.dono], 0.7);
+             selecionado = null;
+             mostrarMensagem('Seleção cancelada');
+           } else if (selecionado.vizinhos.includes(obj.nome) && obj.dono === turno) {
+             // Mover tropas para território vizinho
+             mostrarInterfaceRemanejamento(selecionado, obj, scene);
+             limparSelecao();
+           } else {
+             mostrarMensagem('❌ Só pode mover tropas para territórios vizinhos que você controla!');
+           }
            return;
          }
 
@@ -676,29 +714,25 @@ const coresDosDonos = {
     paises[i].vizinhos = novosPaises[i].vizinhos;
     paises[i].text.setText(getTextoPais(paises[i]));
     
-    // Verificar se este país pode receber tropas de bônus
-    let podeReceberBonus = false;
+    // Verificar se este país pertence ao continente prioritário
+    let pertenceAoContinentePrioritario = false;
     const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-    if (totalBonus > 0 && paises[i].dono === turno) {
-      for (const [nomeContinente, quantidade] of Object.entries(tropasBonusContinente)) {
-        if (quantidade > 0) {
-          const continente = continentes[nomeContinente];
-          if (continente && continente.territorios.includes(paises[i].nome)) {
-            podeReceberBonus = true;
-            break;
-          }
-        }
+    
+    if (totalBonus > 0 && paises[i].dono === turno && continentePrioritario) {
+      const continente = continentes[continentePrioritario.nome];
+      if (continente && continente.territorios.includes(paises[i].nome)) {
+        pertenceAoContinentePrioritario = true;
       }
     }
     
-    // Aplicar cor baseada na capacidade de receber bônus
-    if (podeReceberBonus) {
-      paises[i].polygon.setFillStyle(0x00ff00, 0.8); // Verde brilhante para países que podem receber bônus
+    // Aplicar cor e borda baseada na prioridade
+    if (pertenceAoContinentePrioritario) {
+      paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono], 0.7);
+      paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
     } else {
       paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono], 0.7);
+      paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
     }
-    
-    paises[i].polygon.setStrokeStyle(4, 0x000000, 1);
   }
   selecionado = null;
 }
@@ -715,6 +749,7 @@ function atualizarHUD() {
   let jogadorHUD = `🧍 Você: ${meuNome || '?'}\n`;
   let continentesHUD = '';
   let bonusHUD = '';
+  let prioridadeHUD = '';
   
   // Adicionar informação dos continentes
   if (Object.keys(continentes).length > 0) {
@@ -739,8 +774,28 @@ function atualizarHUD() {
     });
   }
   
+  // Adicionar informação de prioridade para reforço
+  if (continentePrioritario && meuNome === turno) {
+    prioridadeHUD = `\n⚠️ Prioridade: Coloque ${continentePrioritario.quantidade} tropas de ${continentePrioritario.nome} primeiro!`;
+  }
+  
+  // Adicionar informação da fase de remanejamento
+  if (faseRemanejamento && meuNome === turno) {
+    prioridadeHUD = `\n🔄 Fase de remanejamento: Clique em um território para mover tropas!`;
+  }
+  
   const totalReforcos = tropasReforco + totalBonus;
-  hudTexto.setText(`${jogadorHUD}🎮 Turno: ${turno}   🛡️ Tropas totais: ${tropas}   🆘 Reforço restante: ${totalReforcos} (${tropasReforco} base + ${totalBonus} bônus)${continentesHUD}${bonusHUD}`);
+  hudTexto.setText(`${jogadorHUD}🎮 Turno: ${turno}   🛡️ Tropas totais: ${tropas}   🆘 Reforço restante: ${totalReforcos} (${tropasReforco} base + ${totalBonus} bônus)${continentesHUD}${bonusHUD}${prioridadeHUD}`);
+}
+
+function atualizarTextoBotaoTurno() {
+  if (faseRemanejamento && meuNome === turno) {
+    botaoTurno.setText('Encerrar Turno');
+  } else if (meuNome === turno) {
+    botaoTurno.setText('Encerrar Ataque');
+  } else {
+    botaoTurno.setText('Encerrar Turno');
+  }
 }
 
 function limparSelecao() {
@@ -817,7 +872,16 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Calcular tropas disponíveis
   const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-  const tropasDisponiveis = tropasReforco + totalBonus;
+  
+  // Se há tropas de bônus pendentes, mostrar apenas as do continente prioritário
+  let tropasDisponiveis;
+  if (totalBonus > 0 && continentePrioritario) {
+    // Mostrar apenas as tropas de bônus do continente prioritário
+    tropasDisponiveis = continentePrioritario.quantidade;
+  } else {
+    // Não há tropas de bônus, mostrar tropas base
+    tropasDisponiveis = tropasReforco;
+  }
   
   // Inicializar com 1 tropa
   tropasParaColocar = 1;
@@ -833,7 +897,12 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   interfaceReforco.add(background);
   
   // Título
-  const titulo = scene.add.text(0, -40, `Reforçar ${territorio.nome}`, {
+  let tituloTexto = `Reforçar ${territorio.nome}`;
+  if (totalBonus > 0 && continentePrioritario) {
+    tituloTexto = `Colocar tropas de bônus (${continentePrioritario.nome}) em ${territorio.nome}`;
+  }
+  
+  const titulo = scene.add.text(0, -40, tituloTexto, {
     fontSize: '14px',
     fill: '#fff',
     align: 'center'
@@ -944,8 +1013,8 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   // Esconder interface anterior se existir
   esconderInterfaceTransferenciaConquista(true);
   
-  // Inicializar com 0 tropas (opcional)
-  tropasParaTransferir = 0;
+  // Inicializar com 1 tropa (automática)
+  tropasParaTransferir = 1;
   
   // Criar container para a interface
   interfaceTransferenciaConquista = scene.add.container(400, 300);
@@ -981,7 +1050,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   }).setOrigin(0.5).setInteractive({ useHandCursor: true });
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
-    if (tropasParaTransferir > 0) {
+    if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
       tropasParaTransferir--;
       atualizarTextoQuantidadeTransferencia();
     }
@@ -1027,8 +1096,8 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   });
   interfaceTransferenciaConquista.add(botaoConfirmar);
   
-  // Botão pular (transferir 0 tropas adicionais)
-  const botaoPular = scene.add.text(0, 70, '⏭️ Pular', {
+  // Botão pular (manter apenas a tropa automática)
+  const botaoPular = scene.add.text(0, 70, '⏭️ Manter automática', {
     fontSize: '12px',
     fill: '#fff',
     backgroundColor: '#666',
@@ -1036,7 +1105,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   }).setOrigin(0.5).setInteractive({ useHandCursor: true });
   botaoPular.on('pointerdown', (pointer) => {
     tocarSomClick();
-    tropasParaTransferir = 0;
+    tropasParaTransferir = 1; // Manter apenas a tropa automática
     setTimeout(() => {
       confirmarTransferenciaConquista();
     }, 10);
@@ -1080,6 +1149,113 @@ function confirmarTransferenciaConquista() {
     esconderInterfaceTransferenciaConquista(false);
   } else {
     console.log('DEBUG: Condição não atendida - dadosConquista:', dadosConquista, 'tropasParaTransferir:', tropasParaTransferir);
+  }
+}
+
+function mostrarInterfaceRemanejamento(origem, destino, scene) {
+  // Inicializar com 1 tropa
+  let tropasParaMover = 1;
+  const maxTropas = origem.tropas - 1; // Deixar pelo menos 1 tropa
+  
+  // Criar container para a interface
+  const interfaceRemanejamento = scene.add.container(400, 300);
+  interfaceRemanejamento.setDepth(20);
+  
+  // Background da interface
+  const background = scene.add.rectangle(0, 0, 300, 180, 0x000000, 0.9);
+  background.setStrokeStyle(2, 0xffffff);
+  interfaceRemanejamento.add(background);
+  
+  // Título
+  const titulo = scene.add.text(0, -60, `Mover tropas`, {
+    fontSize: '16px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceRemanejamento.add(titulo);
+  
+  // Descrição
+  const descricao = scene.add.text(0, -35, `De ${origem.nome} para ${destino.nome}`, {
+    fontSize: '14px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceRemanejamento.add(descricao);
+  
+  // Botão menos
+  const botaoMenos = scene.add.text(-80, 0, '-', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#ff3333',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMenos.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    if (tropasParaMover > 1) {
+      tropasParaMover--;
+      atualizarTextoQuantidadeRemanejamento();
+    }
+  });
+  interfaceRemanejamento.add(botaoMenos);
+  
+  // Texto da quantidade
+  const textoQuantidade = scene.add.text(0, 0, `${tropasParaMover}/${maxTropas}`, {
+    fontSize: '18px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceRemanejamento.add(textoQuantidade);
+  
+  // Botão mais
+  const botaoMais = scene.add.text(80, 0, '+', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#33ff33',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMais.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    if (tropasParaMover < maxTropas) {
+      tropasParaMover++;
+      atualizarTextoQuantidadeRemanejamento();
+    }
+  });
+  interfaceRemanejamento.add(botaoMais);
+  
+  // Botão confirmar
+  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
+    fontSize: '14px',
+    fill: '#fff',
+    backgroundColor: '#0077cc',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoConfirmar.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    socket.emit('moverTropas', {
+      origem: origem.nome,
+      destino: destino.nome,
+      quantidade: tropasParaMover
+    });
+    interfaceRemanejamento.destroy();
+  });
+  interfaceRemanejamento.add(botaoConfirmar);
+  
+  // Botão cancelar
+  const botaoCancelar = scene.add.text(0, 70, '❌ Cancelar', {
+    fontSize: '12px',
+    fill: '#fff',
+    backgroundColor: '#666',
+    padding: { x: 8, y: 3 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoCancelar.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    interfaceRemanejamento.destroy();
+  });
+  interfaceRemanejamento.add(botaoCancelar);
+  
+  // Função para atualizar o texto da quantidade
+  function atualizarTextoQuantidadeRemanejamento() {
+    textoQuantidade.setText(`${tropasParaMover}/${maxTropas}`);
   }
 }
 

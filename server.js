@@ -102,6 +102,7 @@ let paises = [
 
 let tropasReforco = 0;
 let tropasBonusContinente = {}; // Track bonus troops by continent
+let faseRemanejamento = false; // Controla se está na fase de remanejamento
 
 // Sistema de objetivos
 let objetivos = {}; // { jogador: objetivo }
@@ -140,20 +141,26 @@ io.on('connection', (socket) => {
     
     if (!territorioAtacante || !territorioConquistado) return;
     if (territorioAtacante.dono !== turno || territorioConquistado.dono !== turno) return;
-            if (dados.quantidade < 0 || dados.quantidade > 3) return; // Máximo 3 tropas adicionais (1 já foi automaticamente transferida)
-    if (territorioAtacante.tropas - dados.quantidade < 1) return; // Garantir pelo menos 1 tropa no atacante
+            if (dados.quantidade < 1 || dados.quantidade > 3) return; // Mínimo 1 (automática), máximo 3 (1 automática + 2 adicionais)
+    if (territorioAtacante.tropas - (dados.quantidade - 1) < 1) return; // Garantir pelo menos 1 tropa no atacante (descontando a automática)
 
-    // Transferir tropas
-    territorioAtacante.tropas -= dados.quantidade;
-    territorioConquistado.tropas += dados.quantidade;
+    // Transferir tropas (1 já foi automaticamente transferida)
+    const tropasAdicionais = dados.quantidade - 1; // Descontar a tropa automática
+    territorioAtacante.tropas -= tropasAdicionais;
+    territorioConquistado.tropas += tropasAdicionais;
 
-    const mensagem = `${turno} transferiu ${dados.quantidade} tropas adicionais de ${dados.territorioAtacante} para ${dados.territorioConquistado}`;
+    const mensagem = tropasAdicionais > 0 
+      ? `${turno} transferiu ${tropasAdicionais} tropas adicionais de ${dados.territorioAtacante} para ${dados.territorioConquistado} (1 automática + ${tropasAdicionais} opcionais)`
+      : `${turno} manteve apenas a tropa automática em ${dados.territorioConquistado}`;
     io.emit('mostrarMensagem', mensagem);
     io.emit('tocarSomMovimento');
 
     io.sockets.sockets.forEach((s) => {
       s.emit('estadoAtualizado', getEstado(s.id));
     });
+    
+    // Verificar vitória após transferir tropas
+    checarVitoria();
   });
 
   socket.on('colocarReforco', (nomePais) => {
@@ -166,31 +173,64 @@ io.on('connection', (socket) => {
     // Verificar se há tropas de bônus de continente para colocar
     let podeColocar = false;
     let continenteBonus = null;
+    let mensagemErro = null;
     
-    // Primeiro, tentar colocar tropas de bônus de continente
-    for (const [nomeContinente, quantidade] of Object.entries(tropasBonusContinente)) {
-      if (quantidade > 0) {
-        const continente = continentes[nomeContinente];
-        if (continente.territorios.includes(nomePais)) {
-          // Pode colocar tropa de bônus neste país
-          tropasBonusContinente[nomeContinente] -= 1;
-          continenteBonus = nomeContinente;
-          podeColocar = true;
-          break;
+    // Ordenar continentes por bônus (maior para menor)
+    const continentesOrdenados = Object.entries(tropasBonusContinente)
+      .filter(([nome, quantidade]) => quantidade > 0)
+      .sort((a, b) => {
+        const bonusA = continentes[a[0]].bonus;
+        const bonusB = continentes[b[0]].bonus;
+        return bonusB - bonusA; // Ordem decrescente
+      });
+    
+    // Verificar se o país pertence ao continente com maior prioridade
+    if (continentesOrdenados.length > 0) {
+      const [nomeContinente, quantidade] = continentesOrdenados[0];
+      const continente = continentes[nomeContinente];
+      
+      if (continente.territorios.includes(nomePais)) {
+        // Pode colocar tropa de bônus neste país
+        tropasBonusContinente[nomeContinente] -= 1;
+        continenteBonus = nomeContinente;
+        podeColocar = true;
+      } else {
+        // País não pertence ao continente prioritário
+        const outrosContinentes = continentesOrdenados.slice(1);
+        const podeColocarEmOutro = outrosContinentes.some(([nome, qty]) => {
+          const cont = continentes[nome];
+          return cont.territorios.includes(nomePais);
+        });
+        
+        if (podeColocarEmOutro) {
+          mensagemErro = `❌ Primeiro coloque todas as tropas de bônus do continente ${nomeContinente} (${quantidade} restantes)!`;
+        } else {
+          mensagemErro = `❌ Este país não pertence a nenhum continente com tropas de bônus pendentes!`;
         }
       }
     }
     
     // Se não conseguiu colocar tropa de bônus, verificar se pode colocar tropa base
-    if (!podeColocar) {
-      if (tropasReforco > 0) {
-        // Ainda há tropas base para colocar
+    if (!podeColocar && !mensagemErro) {
+      // Verificar se ainda há tropas de bônus pendentes
+      const totalTropasBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+      
+      if (totalTropasBonus > 0) {
+        // Ainda há tropas de bônus para colocar, não pode colocar tropas base
+        const [nomeContinente, quantidade] = continentesOrdenados[0];
+        mensagemErro = `❌ Primeiro coloque todas as ${totalTropasBonus} tropas de bônus restantes! (${nomeContinente}: ${quantidade})`;
+      } else if (tropasReforco > 0) {
+        // Não há mais tropas de bônus, pode colocar tropas base
         podeColocar = true;
       } else {
-        // Só há tropas de bônus restantes, mas não pode colocar neste país
-        io.emit('mostrarMensagem', `❌ Tropas de bônus de continente só podem ser colocadas em países do continente conquistado!`);
-        return;
+        // Não há mais tropas para colocar
+        mensagemErro = `❌ Não há mais tropas para colocar!`;
       }
+    }
+
+    if (mensagemErro) {
+      io.emit('mostrarMensagem', mensagemErro);
+      return;
     }
 
     if (podeColocar) {
@@ -211,6 +251,9 @@ io.on('connection', (socket) => {
       io.sockets.sockets.forEach((s) => {
         s.emit('estadoAtualizado', getEstado(s.id));
       });
+      
+      // Verificar vitória após colocar reforço
+      checarVitoria();
     }
   });
 
@@ -252,16 +295,24 @@ io.on('connection', (socket) => {
         atacantePais.tropas -= 1; // Remover 1 tropa do território atacante
         resultadoMensagem += `${para} foi conquistado por ${turno}!\n`;
         
-        // Calcular tropas disponíveis para transferência (máximo 3, pois 1 já foi automaticamente transferida)
-        const tropasDisponiveis = Math.min(atacantePais.tropas - 1, 3); // Máximo 3 tropas adicionais, mínimo 1 no atacante
+        // Calcular tropas disponíveis para transferência (incluindo a tropa automática)
+        const tropasAdicionais = Math.min(atacantePais.tropas - 1, 2); // Máximo 2 tropas adicionais, mínimo 1 no atacante
+        const tropasDisponiveis = tropasAdicionais + 1; // Incluir a tropa automática no total
         
-        // Emitir evento para mostrar interface de transferência de tropas
-        io.emit('territorioConquistado', {
-          territorioConquistado: para,
-          territorioAtacante: de,
-          tropasDisponiveis: tropasDisponiveis, // Já deduzida a tropa automática
-          jogadorAtacante: turno
-        });
+        // Se há tropas adicionais disponíveis, mostrar interface de escolha
+        if (tropasAdicionais > 0) {
+          // Emitir evento para mostrar interface de transferência de tropas
+          io.emit('territorioConquistado', {
+            territorioConquistado: para,
+            territorioAtacante: de,
+            tropasDisponiveis: tropasDisponiveis, // Total incluindo tropa automática
+            tropasAdicionais: tropasAdicionais, // Apenas tropas adicionais (sem a automática)
+            jogadorAtacante: turno
+          });
+        } else {
+          // Apenas a tropa automática foi transferida, não há escolha a fazer
+          resultadoMensagem += `Apenas a tropa automática foi transferida para ${para}.\n`;
+        }
         
         // Verificar se conquistou algum continente
         Object.values(continentes).forEach(continente => {
@@ -302,6 +353,19 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Se não está na fase de remanejamento, iniciar a fase de remanejamento
+    if (!faseRemanejamento) {
+      faseRemanejamento = true;
+      io.emit('mostrarMensagem', `🔄 ${turno} está na fase de remanejamento. Clique em um território para mover tropas.`);
+      io.emit('iniciarFaseRemanejamento');
+      io.sockets.sockets.forEach((s) => {
+        s.emit('estadoAtualizado', getEstado(s.id));
+      });
+      return;
+    }
+
+    // Se está na fase de remanejamento, passar para o próximo jogador
+    faseRemanejamento = false;
     let encontrouJogadorAtivo = false;
     let tentativas = 0;
     do {
@@ -343,12 +407,38 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('moverTropas', (dados) => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador.nome !== turno || vitoria || derrota || !faseRemanejamento) return;
+
+    const territorioOrigem = paises.find(p => p.nome === dados.origem);
+    const territorioDestino = paises.find(p => p.nome === dados.destino);
+    
+    if (!territorioOrigem || !territorioDestino) return;
+    if (territorioOrigem.dono !== turno || territorioDestino.dono !== turno) return;
+    if (dados.quantidade < 1 || dados.quantidade > territorioOrigem.tropas - 1) return; // Deixar pelo menos 1 tropa
+    if (!territorioOrigem.vizinhos.includes(territorioDestino.nome)) return; // Deve ser vizinho
+
+    // Mover tropas
+    territorioOrigem.tropas -= dados.quantidade;
+    territorioDestino.tropas += dados.quantidade;
+
+    const mensagem = `${turno} moveu ${dados.quantidade} tropas de ${dados.origem} para ${dados.destino}`;
+    io.emit('mostrarMensagem', mensagem);
+    io.emit('tocarSomMovimento');
+
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+  });
+
   socket.on('reiniciarJogo', () => {
     jogadores.forEach(j => j.ativo = true);
-    indiceTurno = 0;
-    turno = jogadores[indiceTurno].nome;
-    vitoria = false;
-    derrota = false;
+      indiceTurno = 0;
+  turno = jogadores[indiceTurno].nome;
+  vitoria = false;
+  derrota = false;
+  faseRemanejamento = false;
     tropasReforco = 0;
     tropasBonusContinente = {}; // Resetar tropas de bônus
     objetivos = {}; // Resetar objetivos
@@ -455,6 +545,9 @@ function getEstado(socketId = null) {
     };
   });
 
+  // Calcular continente com prioridade para reforço
+  const continentePrioritario = calcularContinentePrioritario();
+
   return {
     jogadores,
     turno,
@@ -465,12 +558,36 @@ function getEstado(socketId = null) {
     derrota,
     meuNome,
     continentes: controleContinentes,
-    objetivos
+    objetivos,
+    continentePrioritario,
+    faseRemanejamento
   };
 }
 
 function rolarDado() {
   return Math.floor(Math.random() * 6) + 1;
+}
+
+function calcularContinentePrioritario() {
+  // Ordenar continentes por bônus (maior para menor)
+  const continentesOrdenados = Object.entries(tropasBonusContinente)
+    .filter(([nome, quantidade]) => quantidade > 0)
+    .sort((a, b) => {
+      const bonusA = continentes[a[0]].bonus;
+      const bonusB = continentes[b[0]].bonus;
+      return bonusB - bonusA; // Ordem decrescente
+    });
+  
+  if (continentesOrdenados.length > 0) {
+    const [nomeContinente, quantidade] = continentesOrdenados[0];
+    return {
+      nome: nomeContinente,
+      quantidade: quantidade,
+      bonus: continentes[nomeContinente].bonus
+    };
+  }
+  
+  return null; // Não há tropas de bônus pendentes
 }
 
 function calcularReforco(turnoAtual) {
@@ -629,13 +746,13 @@ function checarVitoria() {
   }
   
   // Verificar vitória por objetivo
-  jogadores.forEach(jogador => {
+  for (const jogador of jogadores) {
     if (jogador.ativo && verificarObjetivo(jogador.nome)) {
       vitoria = true;
       io.emit('vitoria', jogador.nome);
       return;
     }
-  });
+  }
 }
 
 // Inicializar o jogo
