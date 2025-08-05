@@ -405,8 +405,8 @@ const coresDosDonos = {
 const dadosGeograficos = {
   "Emberlyn": {
     pontos: [402,396,370,405,359,437,368,460,396,459,440,426,434,413,419,406],
-    textoX: 680,
-    textoY: 350
+    textoX: 402,
+    textoY: 396
   },
   "Ravenspire": {
     pontos: [463,450,494,454,521,466,526,474,509,482,497,487,490,509,486,528,466,538,451,546,444,562,430,573,420,593,402,579,408,502,397,458,436,427,453,430,461,439],
@@ -435,8 +435,8 @@ const dadosGeograficos = {
   },
     "Stormfen": {
     pontos: [111,194,194,141,206,132,207,122,207,114,219,115,233,116,248,119,265,125,273,132,274,142,283,151,302,151,307,162],
-    textoX: 463,
-    textoY: 450
+    textoX: 180,
+    textoY: 305
   },
     "Highmoor": {
     pontos: [305,165,252,223,345,279,358,279,373,279,384,279,378,268,373,257,364,253,366,236,370,223,386,215,380,203,370,198,360,189,349,182,336,168,322,163],
@@ -1568,10 +1568,10 @@ function adicionarIndicadoresContinentes(scene) {
     {
       nome: 'Zarandis',
       bonus: 3,
-      x: 100,
-      y: 500,
+      x: 550,
+      y: 550,
       texto: 'Zarandis +3',
-      territorioRepresentativo: 'Emberlyn'
+      territorioRepresentativo: 'Ravenspire'
     },
     {
       nome: 'Elyndra',
@@ -1624,6 +1624,16 @@ function adicionarIndicadoresContinentes(scene) {
     // Adicionar linha conectando o território representativo ao indicador
     // Primeiro, precisamos encontrar as coordenadas do território representativo
     const territorio = paises.find(p => p.nome === indicador.territorioRepresentativo);
+    
+    // DEBUG: Log para Zarandis
+    if (indicador.nome === 'Zarandis') {
+      console.log(`DEBUG: Zarandis - Procurando território: ${indicador.territorioRepresentativo}`);
+      console.log(`DEBUG: Zarandis - Território encontrado:`, territorio);
+      if (territorio) {
+        console.log(`DEBUG: Zarandis - Coordenadas: X=${territorio.x}, Y=${territorio.y}`);
+      }
+    }
+    
     if (territorio && territorio.x && territorio.y) {
       // Criar uma linha do território ao indicador
       const linha = scene.add.graphics();
