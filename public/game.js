@@ -28,6 +28,7 @@ let continentes = {};
 let continentePrioritario = null; // Continente com prioridade para reforço
 let faseRemanejamento = false; // Controla se está na fase de remanejamento
 let hudVisivel = true; // Track HUD visibility
+let cartasTerritorio = {}; // Cartas território do jogador
 
 let hudTexto;
 let mensagemTexto;
@@ -58,6 +59,8 @@ let tropasParaTransferir = 0;
 let dadosConquista = null;
 let botaoObjetivo = null;
 let modalObjetivoAberto = false;
+let botaoCartasTerritorio = null;
+let modalCartasTerritorioAberto = false;
 
 function preload() {
   this.load.image('mapa', 'assets/mapa.png');
@@ -145,6 +148,23 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
       socket.emit('consultarObjetivo');
     });
 
+  // Botão de cartas território
+  botaoCartasTerritorio = this.add.text(0, 0, '🎴 Cartas Território', {
+    fontSize: '16px',
+    fill: '#fff',
+    backgroundColor: '#cc6633',
+    padding: { x: 10, y: 5 },
+    fontFamily: 'Arial',
+  })
+    .setInteractive({ useHandCursor: true })
+    .on('pointerover', () => botaoCartasTerritorio.setStyle({ backgroundColor: '#a55229' }))
+    .on('pointerout', () => botaoCartasTerritorio.setStyle({ backgroundColor: '#cc6633' }))
+    .on('pointerdown', () => {
+      if (modalCartasTerritorioAberto) return; // Previne múltiplos modais
+      tocarSomClick();
+      socket.emit('consultarCartasTerritorio');
+    });
+
   posicionarBotao(this);
 
   // Atualiza posição quando o tamanho da tela muda
@@ -163,6 +183,10 @@ function posicionarBotao(scene) {
   botaoObjetivo.setPosition(
     largura - botaoObjetivo.width - 20,
     altura - botaoTurno.height - botaoObjetivo.height - 30
+  );
+  botaoCartasTerritorio.setPosition(
+    largura - botaoCartasTerritorio.width - 20,
+    altura - botaoTurno.height - botaoObjetivo.height - botaoCartasTerritorio.height - 40
   );
 }
 
@@ -258,6 +282,7 @@ function posicionarBotao(scene) {
     continentes = estado.continentes || {};
     continentePrioritario = estado.continentePrioritario || null;
     faseRemanejamento = estado.faseRemanejamento || false;
+    cartasTerritorio = estado.cartasTerritorio || {};
 
     atualizarPaises(estado.paises, this);
     atualizarHUD();
@@ -316,8 +341,53 @@ function posicionarBotao(scene) {
     mostrarObjetivo(objetivo, this);
   });
 
+  socket.on('mostrarCartasTerritorio', (cartas) => {
+    // Não abrir se já estiver aberto
+    if (modalCartasTerritorioAberto) return;
+    mostrarCartasTerritorio(cartas, this);
+  });
+
+  socket.on('forcarTrocaCartas', (dados) => {
+    // Só mostrar para o jogador específico
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador && jogador.nome === dados.jogador) {
+      mostrarCartasTerritorio(dados.cartas, this, true);
+    }
+  });
+
+  socket.on('resultadoTrocaCartas', (resultado) => {
+    if (resultado.sucesso) {
+      mostrarMensagem(resultado.mensagem);
+      // Fechar modal e continuar o turno
+      modalCartasTerritorioAberto = false;
+      // Destruir elementos do modal se existirem
+      const overlay = this.children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
+      const container = this.children.list.find(child => child.type === 'Container' && child.depth === 21);
+      if (overlay) overlay.destroy();
+      if (container) container.destroy();
+    } else {
+      mostrarMensagem(`❌ ${resultado.mensagem}`);
+    }
+  });
+
   socket.on('iniciarFaseRemanejamento', () => {
     mostrarMensagem('🔄 Fase de remanejamento iniciada. Clique em um território para mover tropas.');
+  });
+
+  socket.on('resultadoVerificacaoMovimento', (resultado) => {
+    if (resultado.podeMover) {
+      // Encontrar os territórios selecionados
+      const territorioOrigem = paises.find(p => p.nome === selecionado.nome);
+      // Encontrar o território de destino que foi clicado
+      const territorioDestino = paises.find(p => p.nome === resultado.destino);
+      
+      if (territorioOrigem && territorioDestino) {
+        mostrarInterfaceRemanejamento(territorioOrigem, territorioDestino, this, resultado.quantidadeMaxima);
+      }
+    } else {
+      mostrarMensagem(`❌ ${resultado.motivo}`);
+      limparSelecao();
+    }
   });
 }
 
@@ -644,18 +714,23 @@ const dadosGeograficos = {
            if (!selecionado) {
              // Selecionar território de origem
              selecionado = obj;
-             obj.polygon.setFillStyle(0xffff00, 0.3);
+             // Aplicar borda branca grossa apenas no território de origem
+             obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              mostrarMensagem(`Território de origem selecionado: ${obj.nome}. Clique em um território vizinho para mover tropas.`);
              tocarSomHuh();
            } else if (selecionado === obj) {
              // Deselecionar
-             obj.polygon.setFillStyle(coresDosDonos[obj.dono], 0.7);
+             obj.polygon.setStrokeStyle(4, 0x000000, 1);
              selecionado = null;
              mostrarMensagem('Seleção cancelada');
            } else if (selecionado.vizinhos.includes(obj.nome) && obj.dono === turno) {
-             // Mover tropas para território vizinho
-             mostrarInterfaceRemanejamento(selecionado, obj, scene);
-             limparSelecao();
+             // Destacar território de destino com borda branca grossa
+             obj.polygon.setStrokeStyle(8, 0xffffff, 1);
+             // Verificar se é possível mover tropas antes de mostrar a interface
+             socket.emit('verificarMovimentoRemanejamento', {
+               origem: selecionado.nome,
+               destino: obj.nome
+             });
            } else {
              mostrarMensagem('❌ Só pode mover tropas para territórios vizinhos que você controla!');
            }
@@ -799,7 +874,26 @@ function atualizarTextoBotaoTurno() {
 }
 
 function limparSelecao() {
-  paises.forEach(p => p.polygon.setFillStyle(0xffffff, 0.1));
+  // Limpar todas as bordas especiais e restaurar as bordas normais
+  paises.forEach(p => {
+    // Verificar se este país pertence ao continente prioritário
+    let pertenceAoContinentePrioritario = false;
+    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    
+    if (totalBonus > 0 && p.dono === turno && continentePrioritario) {
+      const continente = continentes[continentePrioritario.nome];
+      if (continente && continente.territorios.includes(p.nome)) {
+        pertenceAoContinentePrioritario = true;
+      }
+    }
+    
+    // Aplicar borda apropriada baseada na prioridade
+    if (pertenceAoContinentePrioritario) {
+      p.polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
+    } else {
+      p.polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
+    }
+  });
   selecionado = null;
 }
 
@@ -1152,10 +1246,10 @@ function confirmarTransferenciaConquista() {
   }
 }
 
-function mostrarInterfaceRemanejamento(origem, destino, scene) {
+function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima = null) {
   // Inicializar com 1 tropa
   let tropasParaMover = 1;
-  const maxTropas = origem.tropas - 1; // Deixar pelo menos 1 tropa
+  const maxTropas = quantidadeMaxima || (origem.tropas - 1); // Usar quantidade máxima fornecida ou calcular
   
   // Criar container para a interface
   const interfaceRemanejamento = scene.add.container(400, 300);
@@ -1236,6 +1330,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene) {
       destino: destino.nome,
       quantidade: tropasParaMover
     });
+    limparSelecao();
     interfaceRemanejamento.destroy();
   });
   interfaceRemanejamento.add(botaoConfirmar);
@@ -1249,6 +1344,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene) {
   }).setOrigin(0.5).setInteractive({ useHandCursor: true });
   botaoCancelar.on('pointerdown', (pointer) => {
     tocarSomClick();
+    limparSelecao();
     interfaceRemanejamento.destroy();
   });
   interfaceRemanejamento.add(botaoCancelar);
@@ -1305,4 +1401,144 @@ function mostrarObjetivo(objetivo, scene) {
     container.destroy();
   });
   container.add(botaoFechar);
+}
+
+function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
+  modalCartasTerritorioAberto = true; // Marca que o modal está aberto
+  
+  // Criar overlay para mostrar as cartas
+  const overlay = scene.add.rectangle(400, 300, 800, 500, 0x000000, 0.8);
+  overlay.setDepth(20);
+  
+  // Container para o conteúdo
+  const container = scene.add.container(400, 300);
+  container.setDepth(21);
+  
+  // Título
+  const titulo = scene.add.text(0, -180, forcarTroca ? '⚠️ TROCA OBRIGATÓRIA DE CARTAS' : '🎴 SUAS CARTAS TERRITÓRIO', {
+    fontSize: '24px',
+    fill: forcarTroca ? '#ff4444' : '#ffaa00',
+    fontStyle: 'bold',
+    stroke: '#000',
+    strokeThickness: 4
+  }).setOrigin(0.5);
+  container.add(titulo);
+  
+  if (cartas.length === 0) {
+    // Mensagem quando não há cartas
+    const mensagem = scene.add.text(0, -50, 'Você ainda não possui cartas território.\nConquiste territórios de outros jogadores para ganhar cartas!', {
+      fontSize: '16px',
+      fill: '#fff',
+      align: 'center',
+      wordWrap: { width: 600 },
+      stroke: '#000',
+      strokeThickness: 2
+    }).setOrigin(0.5);
+    container.add(mensagem);
+  } else {
+    // Mostrar as cartas
+    const cartasTexto = scene.add.text(0, -130, `Você possui ${cartas.length} carta(s):`, {
+      fontSize: '18px',
+      fill: '#fff',
+      align: 'center',
+      stroke: '#000',
+      strokeThickness: 2
+    }).setOrigin(0.5);
+    container.add(cartasTexto);
+    
+    // Instruções
+    const instrucoesText = scene.add.text(0, -20, 'Clique nas cartas para selecionar (máximo 3)', {
+      fontSize: '14px',
+      fill: '#ccc',
+      align: 'center',
+      stroke: '#000',
+      strokeThickness: 1
+    }).setOrigin(0.5);
+    container.add(instrucoesText);
+    
+    // Criar cartas clicáveis
+    const cartasSelecionadas = [];
+    const cartasClicaveis = [];
+    
+    cartas.forEach((carta, index) => {
+      const x = (index - Math.floor(cartas.length / 2)) * 80;
+      const cartaText = scene.add.text(x, -80, carta, {
+        fontSize: '40px',
+        fill: '#ffaa00',
+        stroke: '#000',
+        strokeThickness: 3,
+        backgroundColor: '#333'
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      
+      cartaText.on('pointerdown', () => {
+        tocarSomClick();
+        if (cartasSelecionadas.includes(cartaText)) {
+          // Deselecionar
+          const index = cartasSelecionadas.indexOf(cartaText);
+          cartasSelecionadas.splice(index, 1);
+          cartaText.setStyle({ backgroundColor: '#333' });
+        } else if (cartasSelecionadas.length < 3) {
+          // Selecionar
+          cartasSelecionadas.push(cartaText);
+          cartaText.setStyle({ backgroundColor: '#ffaa00' });
+        }
+        
+        // Atualizar texto de instruções
+        if (cartasSelecionadas.length === 0) {
+          instrucoesText.setText('Clique nas cartas para selecionar (máximo 3)');
+        } else if (cartasSelecionadas.length < 3) {
+          instrucoesText.setText(`Selecionadas: ${cartasSelecionadas.length}/3 - Clique em mais cartas ou trocar`);
+        } else {
+          instrucoesText.setText(`Selecionadas: ${cartasSelecionadas.length}/3 - Clique em trocar ou deselecionar`);
+        }
+      });
+      
+      cartasClicaveis.push(cartaText);
+      container.add(cartaText);
+    });
+    
+    // Legenda dos símbolos
+    const legenda = scene.add.text(0, 20, '▲ = Triângulo  ■ = Quadrado  ● = Círculo  ★ = Coringa', {
+      fontSize: '14px',
+      fill: '#ccc',
+      align: 'center',
+      stroke: '#000',
+      strokeThickness: 1
+    }).setOrigin(0.5);
+    container.add(legenda);
+    
+    // Botão de trocar (só aparece se há cartas selecionadas)
+    const botaoTrocar = scene.add.text(0, 80, '🔄 Trocar Cartas', {
+      fontSize: '16px',
+      fill: '#fff',
+      backgroundColor: '#0077cc',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    botaoTrocar.on('pointerdown', () => {
+      tocarSomClick();
+      if (cartasSelecionadas.length === 3) {
+        // Mapear os objetos cartaText de volta para os símbolos
+        const simbolosSelecionados = cartasSelecionadas.map(cartaText => cartaText.text);
+        socket.emit('trocarCartasTerritorio', simbolosSelecionados);
+      }
+    });
+    container.add(botaoTrocar);
+  }
+  
+  // Botão de fechar (só se não for troca obrigatória)
+  if (!forcarTroca) {
+    const botaoFechar = scene.add.text(0, 120, '✅ Entendi', {
+      fontSize: '16px',
+      fill: '#fff',
+      backgroundColor: '#0077cc',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    botaoFechar.on('pointerdown', () => {
+      tocarSomClick();
+      modalCartasTerritorioAberto = false;
+      overlay.destroy();
+      container.destroy();
+    });
+    container.add(botaoFechar);
+  }
 }

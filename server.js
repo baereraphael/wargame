@@ -107,6 +107,15 @@ let faseRemanejamento = false; // Controla se está na fase de remanejamento
 // Sistema de objetivos
 let objetivos = {}; // { jogador: objetivo }
 
+// Sistema de controle de movimentação de tropas durante remanejamento
+let movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
+
+// Sistema de cartas território
+let territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
+let cartasTerritorio = {}; // { jogador: [cartas] }
+const simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
+let numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
+
 // Tipos de objetivos
 const tiposObjetivos = [
   'conquistar3Continentes',
@@ -295,6 +304,12 @@ io.on('connection', (socket) => {
         atacantePais.tropas -= 1; // Remover 1 tropa do território atacante
         resultadoMensagem += `${para} foi conquistado por ${turno}!\n`;
         
+        // Registrar território conquistado no turno atual
+        if (!territoriosConquistadosNoTurno[turno]) {
+          territoriosConquistadosNoTurno[turno] = [];
+        }
+        territoriosConquistadosNoTurno[turno].push(para);
+        
         // Calcular tropas disponíveis para transferência (incluindo a tropa automática)
         const tropasAdicionais = Math.min(atacantePais.tropas - 1, 2); // Máximo 2 tropas adicionais, mínimo 1 no atacante
         const tropasDisponiveis = tropasAdicionais + 1; // Incluir a tropa automática no total
@@ -366,6 +381,28 @@ io.on('connection', (socket) => {
 
     // Se está na fase de remanejamento, passar para o próximo jogador
     faseRemanejamento = false;
+    
+    // Verificar se o jogador conquistou territórios neste turno e conceder carta
+    if (territoriosConquistadosNoTurno[turno] && territoriosConquistadosNoTurno[turno].length > 0) {
+      // Inicializar cartas do jogador se não existir
+      if (!cartasTerritorio[turno]) {
+        cartasTerritorio[turno] = [];
+      }
+      
+      // Escolher símbolo aleatório para a carta
+      const simboloAleatorio = simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
+      cartasTerritorio[turno].push(simboloAleatorio);
+      
+      io.emit('mostrarMensagem', `🎴 ${turno} ganhou uma carta território (${simboloAleatorio}) por conquistar territórios neste turno!`);
+    }
+    
+    // Limpar territórios conquistados do turno atual
+    territoriosConquistadosNoTurno[turno] = [];
+    
+    // Limpar o controle de movimentos do jogador atual
+    if (movimentosRemanejamento[turno]) {
+      delete movimentosRemanejamento[turno];
+    }
     let encontrouJogadorAtivo = false;
     let tentativas = 0;
     do {
@@ -386,6 +423,15 @@ io.on('connection', (socket) => {
     }
 
     turno = jogadores[indiceTurno].nome;
+    
+    // Verificar se o jogador tem 5 cartas território e forçar troca
+    const cartasJogador = cartasTerritorio[turno] || [];
+    if (cartasJogador.length >= 5) {
+      io.emit('mostrarMensagem', `⚠️ ${turno} tem ${cartasJogador.length} cartas território! É obrigatório trocar cartas antes de continuar.`);
+      io.emit('forcarTrocaCartas', { jogador: turno, cartas: cartasJogador });
+      return; // Não avança o turno até trocar as cartas
+    }
+    
     const resultadoReforco = calcularReforco(turno);
     tropasReforco = resultadoReforco.base;
     tropasBonusContinente = resultadoReforco.bonus;
@@ -407,6 +453,166 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('consultarCartasTerritorio', () => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (!jogador) return;
+    
+    const cartas = cartasTerritorio[jogador.nome] || [];
+    socket.emit('mostrarCartasTerritorio', cartas);
+  });
+
+  socket.on('trocarCartasTerritorio', (cartasSelecionadas) => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (!jogador || jogador.nome !== turno) {
+      socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Não é sua vez!' });
+      return;
+    }
+
+    const cartas = cartasTerritorio[jogador.nome] || [];
+    
+    // Verificar se tem exatamente 3 cartas selecionadas
+    if (cartasSelecionadas.length !== 3) {
+      socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Você deve selecionar exatamente 3 cartas para trocar!' });
+      return;
+    }
+
+    // Verificar se todas as cartas selecionadas existem no deck do jogador
+    const cartasValidas = cartasSelecionadas.every(carta => cartas.includes(carta));
+    if (!cartasValidas) {
+      socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Cartas inválidas selecionadas!' });
+      return;
+    }
+
+    // Verificar regras de troca: 3 iguais ou 3 diferentes (incluindo coringa)
+    const simbolosUnicos = [...new Set(cartasSelecionadas)];
+    const temCoringa = cartasSelecionadas.includes('★');
+    
+    let podeTrocar = false;
+    
+    if (temCoringa) {
+      // Se tem coringa, verificar se as outras cartas são válidas
+      const cartasSemCoringa = cartasSelecionadas.filter(carta => carta !== '★');
+      const simbolosSemCoringa = [...new Set(cartasSemCoringa)];
+      
+      if (cartasSemCoringa.length === 2) {
+        // 2 cartas + 1 coringa: pode ser 2 iguais ou 2 diferentes
+        podeTrocar = simbolosSemCoringa.length === 1 || simbolosSemCoringa.length === 2;
+      } else if (cartasSemCoringa.length === 1) {
+        // 1 carta + 2 coringas: sempre válido
+        podeTrocar = true;
+      } else if (cartasSemCoringa.length === 0) {
+        // 3 coringas: sempre válido
+        podeTrocar = true;
+      }
+    } else {
+      // Sem coringa: regra original
+      podeTrocar = simbolosUnicos.length === 1 || simbolosUnicos.length === 3;
+    }
+
+    if (!podeTrocar) {
+      socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Você deve trocar 3 cartas do mesmo símbolo ou 3 símbolos diferentes! O coringa (★) pode substituir qualquer símbolo.' });
+      return;
+    }
+
+    // Remover as cartas trocadas
+    cartasSelecionadas.forEach(carta => {
+      const index = cartas.indexOf(carta);
+      if (index > -1) {
+        cartas.splice(index, 1);
+      }
+    });
+
+    // Atualizar o deck do jogador
+    cartasTerritorio[jogador.nome] = cartas;
+
+    // Calcular bônus progressivo para troca de cartas
+    numeroTrocasRealizadas++;
+    const bonusTroca = 2 + (numeroTrocasRealizadas * 2); // 4, 6, 8, 10, ...
+
+    // Determinar tipo de troca considerando coringas
+    let tipoTroca;
+    if (temCoringa) {
+      const cartasSemCoringa = cartasSelecionadas.filter(carta => carta !== '★');
+      const simbolosSemCoringa = [...new Set(cartasSemCoringa)];
+      tipoTroca = simbolosSemCoringa.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
+    } else {
+      tipoTroca = simbolosUnicos.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
+    }
+    
+    io.emit('mostrarMensagem', `🎴 ${jogador.nome} trocou 3 cartas de ${tipoTroca} (${cartasSelecionadas.join(', ')}) e recebeu ${bonusTroca} exércitos bônus!`);
+    
+    socket.emit('resultadoTrocaCartas', { sucesso: true, mensagem: `Cartas trocadas com sucesso! Você recebeu ${bonusTroca} exércitos bônus!` });
+    
+    // Se era uma troca obrigatória, continuar o turno
+    const cartasRestantes = cartasTerritorio[jogador.nome] || [];
+    if (cartasRestantes.length < 5) {
+      // Continuar o turno normalmente com bônus adicional
+      const resultadoReforco = calcularReforco(turno);
+      tropasReforco = resultadoReforco.base + bonusTroca; // Adicionar bônus da troca
+      tropasBonusContinente = resultadoReforco.bonus;
+
+      io.emit('mostrarMensagem', `🎮 Turno de ${turno}. Reforços: ${resultadoReforco.base} base + ${bonusTroca} bônus da troca + ${Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus de continentes`);
+    }
+    
+    // Atualizar estado para todos os clientes
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+  });
+
+  socket.on('verificarMovimentoRemanejamento', (dados) => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador.nome !== turno || vitoria || derrota || !faseRemanejamento) {
+      socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Não é sua vez ou não está na fase de remanejamento' });
+      return;
+    }
+
+    const territorioOrigem = paises.find(p => p.nome === dados.origem);
+    const territorioDestino = paises.find(p => p.nome === dados.destino);
+    
+    if (!territorioOrigem || !territorioDestino) {
+      socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não encontrados' });
+      return;
+    }
+    
+    if (territorioOrigem.dono !== turno || territorioDestino.dono !== turno) {
+      socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não são seus' });
+      return;
+    }
+    
+    if (!territorioOrigem.vizinhos.includes(territorioDestino.nome)) {
+      socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não são vizinhos' });
+      return;
+    }
+
+    // Controle refinado de movimentos
+    if (!movimentosRemanejamento[turno]) movimentosRemanejamento[turno] = {};
+    if (!movimentosRemanejamento[turno][dados.origem]) movimentosRemanejamento[turno][dados.origem] = {};
+    if (!movimentosRemanejamento[turno][dados.destino]) movimentosRemanejamento[turno][dados.destino] = {};
+
+    // Quantas tropas já vieram de destino para origem neste turno?
+    const tropasQueVieram = movimentosRemanejamento[turno][dados.destino][dados.origem] || 0;
+    // Quantas tropas "originais" existem no origem?
+    const tropasOriginais = territorioOrigem.tropas - tropasQueVieram;
+    const quantidadeMaxima = Math.min(tropasOriginais, territorioOrigem.tropas - 1); // Deixar pelo menos 1 tropa
+
+    if (quantidadeMaxima <= 0) {
+      socket.emit('resultadoVerificacaoMovimento', { 
+        podeMover: false, 
+        quantidadeMaxima: 0, 
+        motivo: `Não é possível mover tropas de ${dados.origem} para ${dados.destino} pois ${tropasQueVieram} tropas vieram de ${dados.destino} para ${dados.origem} neste turno.` 
+      });
+      return;
+    }
+
+    socket.emit('resultadoVerificacaoMovimento', { 
+      podeMover: true, 
+      quantidadeMaxima: quantidadeMaxima,
+      destino: dados.destino,
+      motivo: null
+    });
+  });
+
   socket.on('moverTropas', (dados) => {
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota || !faseRemanejamento) return;
@@ -418,6 +624,24 @@ io.on('connection', (socket) => {
     if (territorioOrigem.dono !== turno || territorioDestino.dono !== turno) return;
     if (dados.quantidade < 1 || dados.quantidade > territorioOrigem.tropas - 1) return; // Deixar pelo menos 1 tropa
     if (!territorioOrigem.vizinhos.includes(territorioDestino.nome)) return; // Deve ser vizinho
+
+    // Controle refinado de movimentos
+    if (!movimentosRemanejamento[turno]) movimentosRemanejamento[turno] = {};
+    if (!movimentosRemanejamento[turno][dados.origem]) movimentosRemanejamento[turno][dados.origem] = {};
+    if (!movimentosRemanejamento[turno][dados.destino]) movimentosRemanejamento[turno][dados.destino] = {};
+
+    // Quantas tropas já vieram de destino para origem neste turno?
+    const tropasQueVieram = movimentosRemanejamento[turno][dados.destino][dados.origem] || 0;
+    // Quantas tropas "originais" existem no origem?
+    const tropasOriginais = territorioOrigem.tropas - tropasQueVieram;
+    if (dados.quantidade > tropasOriginais) {
+      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} para ${dados.destino} pois ${tropasQueVieram} tropas vieram de ${dados.destino} para ${dados.origem} neste turno.`;
+      socket.emit('mostrarMensagem', mensagemErro);
+      return;
+    }
+
+    // Registrar o movimento
+    movimentosRemanejamento[turno][dados.origem][dados.destino] = (movimentosRemanejamento[turno][dados.origem][dados.destino] || 0) + dados.quantidade;
 
     // Mover tropas
     territorioOrigem.tropas -= dados.quantidade;
@@ -442,6 +666,10 @@ io.on('connection', (socket) => {
     tropasReforco = 0;
     tropasBonusContinente = {}; // Resetar tropas de bônus
     objetivos = {}; // Resetar objetivos
+    movimentosRemanejamento = {}; // Resetar controle de movimentos
+    numeroTrocasRealizadas = 0; // Resetar contador de trocas
+    cartasTerritorio = {}; // Resetar cartas território
+    territoriosConquistadosNoTurno = {}; // Resetar territórios conquistados
 
     paises = [
       { nome: 'Emberlyn', x: 190, y: 170, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
@@ -560,7 +788,8 @@ function getEstado(socketId = null) {
     continentes: controleContinentes,
     objetivos,
     continentePrioritario,
-    faseRemanejamento
+    faseRemanejamento,
+    cartasTerritorio
   };
 }
 
@@ -783,6 +1012,11 @@ function inicializarJogo() {
   turno = jogadores[indiceTurno].nome;
   vitoria = false;
   derrota = false;
+  
+  // Limpar cartas território e territórios conquistados
+  cartasTerritorio = {};
+  territoriosConquistadosNoTurno = {};
+  numeroTrocasRealizadas = 0; // Resetar contador de trocas
   
   const resultadoReforco = calcularReforco(turno);
   tropasReforco = resultadoReforco.base;
