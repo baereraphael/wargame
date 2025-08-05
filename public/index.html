@@ -77,48 +77,101 @@
     color: #ccc;
   }
 
-  /* Game Phase Section */
-  .game-phase {
+  /* Turn Indicator Section - Bottom Left */
+  .turn-indicator {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    width: 140px;
+    height: 140px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    justify-content: center;
+    z-index: 1001;
   }
 
-  .phase-indicator {
+  .turn-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.8);
+    border: 3px solid rgba(255, 255, 255, 0.4);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.2);
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  }
+
+  .turn-marks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  .turn-mark {
+    position: absolute;
+    width: 5px;
+    height: 25px;
+    background: currentColor;
+    border-radius: 3px;
+    transform-origin: 50% 60px;
+    top: 0;
+    left: 50%;
+    margin-left: -2.5px;
+  }
+
+  .turn-mark.vermelho { color: #ff4444; }
+  .turn-mark.azul { color: #4444ff; }
+  .turn-mark.verde { color: #44ff44; }
+  .turn-mark.amarelo { color: #ffff44; }
+  .turn-mark.roxo { color: #ff44ff; }
+  .turn-mark.laranja { color: #ff8844; }
+
+  .turn-text {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
     color: white;
     font-size: 14px;
     font-weight: bold;
-    animation: pulse 2s infinite;
+    text-align: center;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.8; }
-    100% { opacity: 1; }
+  .turn-pointer {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 25px solid currentColor;
+    transform-origin: 50% 60px;
+    top: -8px;
+    left: 50%;
+    margin-left: -12px;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   }
 
-  .phase-indicator.active {
-    background: linear-gradient(45deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.1));
-    border-color: rgba(76, 175, 80, 0.5);
-    animation: activePulse 1.5s infinite;
-  }
-
-  @keyframes activePulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-  }
-
-  .phase-icon {
-    font-size: 18px;
-  }
+  .turn-pointer.vermelho { color: #ff4444; }
+  .turn-pointer.azul { color: #4444ff; }
+  .turn-pointer.verde { color: #44ff44; }
+  .turn-pointer.amarelo { color: #ffff44; }
+  .turn-pointer.roxo { color: #ff44ff; }
+  .turn-pointer.laranja { color: #ff8844; }
 
   /* Action Buttons */
   .action-buttons {
@@ -169,6 +222,14 @@
 
   .btn-turn:hover {
     background: linear-gradient(45deg, #005fa3, #004a82);
+  }
+
+  .btn-history {
+    background: linear-gradient(45deg, #666666, #444444);
+  }
+
+  .btn-history:hover {
+    background: linear-gradient(45deg, #444444, #333333);
   }
 
   .hud-button:disabled {
@@ -235,28 +296,7 @@
     color: white;
   }
 
-  /* HUD Toggle Button */
-  .hud-toggle {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 8px 12px;
-    background: rgba(0,0,0,0.6);
-    border: 1px solid #444;
-    border-radius: 20px;
-    color: white;
-    cursor: pointer;
-    font-size: 12px;
-    pointer-events: auto;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-  }
 
-  .hud-toggle:hover {
-    background: rgba(0,0,0,0.8);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
 
   /* Additional styling for better visual appeal */
   .hud-top, .hud-bottom {
@@ -318,6 +358,147 @@
       display: none;
     }
   }
+
+  /* History Popup Styles */
+  .history-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    max-width: 90vw;
+    height: 400px;
+    max-height: 80vh;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #444;
+    border-radius: 15px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+  }
+
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #444;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 13px 13px 0 0;
+  }
+
+  .history-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .history-close {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+  }
+
+  .history-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .history-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    max-height: calc(100% - 70px);
+    box-sizing: border-box;
+    width: 100%;
+    padding-bottom: 20px;
+  }
+
+  .history-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #0077cc;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .history-entry:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .history-timestamp {
+    color: #888;
+    font-size: 12px;
+    font-family: monospace;
+    white-space: nowrap;
+    min-width: 60px;
+    flex-shrink: 0;
+  }
+
+  .history-message {
+    color: white;
+    font-size: 14px;
+    line-height: 1.4;
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .history-empty {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+  }
+
+  /* Scrollbar styling for history content */
+  .history-content::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .history-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+  }
+
+  .history-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .history-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Firefox scrollbar styling */
+  .history-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
 </style>
 </head>
 <body>
@@ -333,10 +514,7 @@
       </div>
       
       <div class="game-phase">
-        <div class="phase-indicator">
-          <span class="phase-icon" id="phase-icon">🎮</span>
-          <span id="phase-text">Aguardando...</span>
-        </div>
+        <!-- Turn indicator moved to bottom left corner -->
       </div>
       
       <div class="action-buttons">
@@ -358,18 +536,7 @@
     <!-- Bottom HUD Bar -->
     <div class="hud-bottom">
       <div class="game-info">
-        <div class="info-item">
-          <span class="info-icon">🎮</span>
-          <span id="turn-info">Turno: Aguardando...</span>
-        </div>
-        <div class="info-item">
-          <span class="info-icon">🛡️</span>
-          <span id="total-troops">Total: 0</span>
-        </div>
-        <div class="info-item">
-          <span class="info-icon">🎁</span>
-          <span id="bonus-troops">Bônus: 0</span>
-        </div>
+        <!-- Turn info moved to turn indicator -->
       </div>
       
       <div class="continent-status" id="continent-status">
@@ -377,8 +544,18 @@
       </div>
     </div>
     
-    <!-- HUD Toggle Button -->
-    <button class="hud-toggle" id="hud-toggle">👁️ Ocultar HUD</button>
+  </div>
+
+  <!-- Turn Indicator - Bottom Left -->
+  <div class="turn-indicator">
+    <div class="turn-circle">
+      <div class="turn-marks" id="turn-marks">
+        <!-- Turn marks will be added dynamically -->
+      </div>
+      <div class="turn-pointer" id="turn-pointer"></div>
+      <div id="turn-text">Aguardando...</div>
+    </div>
+    <div class="turn-text" id="turn-player">-</div>
   </div>
 </body>
 </html>

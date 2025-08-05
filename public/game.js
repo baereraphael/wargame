@@ -27,11 +27,13 @@ let meuNome = null;
 let continentes = {};
 let continentePrioritario = null; // Continente com prioridade para reforço
 let faseRemanejamento = false; // Controla se está na fase de remanejamento
-let hudVisivel = true; // Track HUD visibility
 let cartasTerritorio = {}; // Cartas território do jogador
+let actionHistory = []; // Array to store action history
+let actionHistoryMaxSize = 50; // Maximum number of history entries to keep
+let historyPopupVisible = false; // Track if history popup is visible
 
-let mensagemTexto;
-let mensagemTimeout;
+
+
 let botaoTurno;
 
 let vitoria = false;
@@ -85,23 +87,9 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
 
     // Initialize CSS HUD elements
   initializeCSSHUD();
-  
-  // HUD toggle button (now using CSS)
-  const hudToggleButton = document.getElementById('hud-toggle');
-  hudToggleButton.addEventListener('click', () => {
-    tocarSomClick();
-    toggleHUD();
-  });
 
-  // Message text (keep for compatibility)
-  mensagemTexto = this.add.text(10, 50, '', {
-    fontSize: '16px',
-    fill: '#fffa',
-    backgroundColor: '#222',
-    padding: { x: 10, y: 5 },
-    wordWrap: { width: 780 }
-  });
-  mensagemTexto.setDepth(6);
+  // Initialize action history system
+  initializeActionHistory();
 
   // Initialize CSS-based buttons
   botaoTurno = document.getElementById('btn-turn');
@@ -799,11 +787,48 @@ function limparSelecao() {
 }
 
 function mostrarMensagem(texto) {
-  if (mensagemTimeout) clearTimeout(mensagemTimeout);
-  mensagemTexto.setText(texto);
-  mensagemTimeout = setTimeout(() => {
-    mensagemTexto.setText('');
-  }, 4000);
+  // Filter messages to only include reinforcements, attacks, and action phases
+  const shouldInclude = 
+    // Reinforcements
+    texto.includes('Reforços') || 
+    texto.includes('tropas de bônus') || 
+    texto.includes('trocou 3 cartas') ||
+    texto.includes('exércitos bônus') ||
+    // Attacks
+    texto.includes('ataca') ||
+    texto.includes('Ataque:') ||
+    texto.includes('Defesa:') ||
+    texto.includes('perdeu 1 tropa') ||
+    texto.includes('foi conquistado') ||
+    // Action phases
+    texto.includes('fase de remanejamento') ||
+    texto.includes('Turno de') ||
+    texto.includes('Jogo iniciado') ||
+    texto.includes('Jogo reiniciado') ||
+    texto.includes('conquistou o continente');
+
+  if (!shouldInclude) {
+    return; // Skip this message
+  }
+
+  // Add message to history
+  const timestamp = new Date().toLocaleTimeString();
+  const historyEntry = {
+    timestamp: timestamp,
+    message: texto
+  };
+  
+  actionHistory.push(historyEntry);
+  
+  // Keep only the last N entries
+  if (actionHistory.length > actionHistoryMaxSize) {
+    actionHistory.shift();
+  }
+  
+  // Update history display if popup is visible
+  if (historyPopupVisible) {
+    updateHistoryDisplay();
+  }
 }
 
 function bloquearJogo(mensagem) {
@@ -1447,6 +1472,19 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
 // Variável global para controlar se os indicadores já foram criados
 let indicadoresContinentesCriados = false;
 
+// Helper function to get player color class
+function getPlayerColorClass(playerName) {
+  const colorMap = {
+    'Vermelho': 'vermelho',
+    'Azul': 'azul', 
+    'Verde': 'verde',
+    'Amarelo': 'amarelo',
+    'Roxo': 'roxo',
+    'Laranja': 'laranja'
+  };
+  return colorMap[playerName] || 'vermelho';
+}
+
 // CSS HUD Functions
 function initializeCSSHUD() {
   // Initialize HUD elements
@@ -1456,11 +1494,10 @@ function initializeCSSHUD() {
 function updateCSSHUD() {
   const playerNameEl = document.getElementById('player-name');
   const playerStatsEl = document.getElementById('player-stats');
-  const phaseIconEl = document.getElementById('phase-icon');
-  const phaseTextEl = document.getElementById('phase-text');
-  const turnInfoEl = document.getElementById('turn-info');
-  const totalTroopsEl = document.getElementById('total-troops');
-  const bonusTroopsEl = document.getElementById('bonus-troops');
+  const turnMarksEl = document.getElementById('turn-marks');
+  const turnTextEl = document.getElementById('turn-text');
+  const turnPlayerEl = document.getElementById('turn-player');
+  const turnPointerEl = document.getElementById('turn-pointer');
   const continentStatusEl = document.getElementById('continent-status');
 
   // Update player info
@@ -1478,49 +1515,88 @@ function updateCSSHUD() {
     playerStatsEl.textContent = `Tropas: ${tropas} | Reforço: ${totalReforcos}`;
   }
 
-  // Update phase indicator
-  if (phaseIconEl && phaseTextEl) {
-    const phaseIndicator = document.querySelector('.phase-indicator');
+  // Update turn indicator
+  if (turnMarksEl && turnTextEl && turnPlayerEl && turnPointerEl) {
+    // Clear existing marks
+    turnMarksEl.innerHTML = '';
     
-    if (faseRemanejamento && meuNome === turno) {
-      phaseIconEl.textContent = '🔄';
-      phaseTextEl.textContent = 'Remanejamento';
-      if (phaseIndicator) phaseIndicator.classList.add('active');
-    } else if (meuNome === turno) {
-      phaseIconEl.textContent = '⚔️';
-      phaseTextEl.textContent = 'Seu Turno';
-      if (phaseIndicator) phaseIndicator.classList.add('active');
+    // Count territories per player
+    const playerTerritories = {};
+    paises.forEach(pais => {
+      if (pais.dono && pais.dono !== 'Neutro') {
+        playerTerritories[pais.dono] = (playerTerritories[pais.dono] || 0) + 1;
+      }
+    });
+
+    // Create marks for each player
+    const players = Object.keys(playerTerritories);
+    const totalMarks = players.reduce((sum, player) => sum + playerTerritories[player], 0);
+    
+    if (totalMarks > 0) {
+      let currentAngle = 0;
+      let playerAngles = {}; // Store the angle for each player's first mark
+      
+      players.forEach(player => {
+        const territoryCount = playerTerritories[player];
+        const colorClass = getPlayerColorClass(player);
+        
+        // Store the angle of the center of this player's section
+        playerAngles[player] = currentAngle + (360 / totalMarks * territoryCount / 2);
+        
+        for (let i = 0; i < territoryCount; i++) {
+          const mark = document.createElement('div');
+          mark.className = `turn-mark ${colorClass}`;
+          mark.style.transform = `rotate(${currentAngle}deg)`;
+          turnMarksEl.appendChild(mark);
+          currentAngle += (360 / totalMarks);
+        }
+      });
+
+      // Update pointer to point to current player's section
+      if (turno && playerAngles[turno] !== undefined) {
+        turnPointerEl.style.display = 'block';
+        turnPointerEl.className = `turn-pointer ${getPlayerColorClass(turno)}`;
+        turnPointerEl.style.transform = `rotate(${playerAngles[turno]}deg)`;
+      } else {
+        turnPointerEl.style.display = 'none';
+      }
     } else {
-      phaseIconEl.textContent = '⏳';
-      phaseTextEl.textContent = 'Aguardando';
-      if (phaseIndicator) phaseIndicator.classList.remove('active');
+      turnPointerEl.style.display = 'none';
     }
-  }
 
-  // Update turn info
-  if (turnInfoEl) {
-    turnInfoEl.textContent = `Turno: ${turno || 'Aguardando...'}`;
-  }
+    // Update turn text
+    if (faseRemanejamento && meuNome === turno) {
+      turnTextEl.textContent = '🔄';
+      turnPlayerEl.textContent = 'Remanejamento';
+    } else if (meuNome === turno) {
+      turnTextEl.textContent = '⚔️';
+      turnPlayerEl.textContent = 'Seu Turno';
+    } else {
+      turnTextEl.textContent = '⏳';
+      turnPlayerEl.textContent = turno || 'Aguardando';
+    }
 
-  // Update total troops
-  if (totalTroopsEl) {
-    const tropas = paises
-      .filter(p => p.dono === meuNome)
-      .reduce((soma, p) => soma + p.tropas, 0);
-    totalTroopsEl.textContent = `Total: ${tropas}`;
-  }
-
-  // Update bonus troops
-  if (bonusTroopsEl) {
-    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-    bonusTroopsEl.textContent = `Bônus: ${totalBonus}`;
+    // Add additional info to turn player text
+    if (turnPlayerEl.textContent !== 'Remanejamento' && turnPlayerEl.textContent !== 'Seu Turno') {
+      const tropas = paises
+        .filter(p => p.dono === meuNome)
+        .reduce((soma, p) => soma + p.tropas, 0);
+      const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+      turnPlayerEl.textContent = `${turnPlayerEl.textContent} | T:${tropas} | B:${totalBonus}`;
+    }
   }
 
 
 
   // Update button states
   if (botaoTurno) {
-    botaoTurno.disabled = meuNome !== turno || vitoria || derrota;
+    // Hide the turn button completely if it's not the player's turn
+    if (meuNome !== turno || vitoria || derrota) {
+      botaoTurno.style.display = 'none';
+    } else {
+      botaoTurno.style.display = 'flex';
+      botaoTurno.disabled = false;
+    }
   }
   if (botaoObjetivo) {
     botaoObjetivo.disabled = vitoria || derrota;
@@ -1530,16 +1606,7 @@ function updateCSSHUD() {
   }
 }
 
-function toggleHUD() {
-  const hudElement = document.querySelector('.game-hud');
-  const toggleButton = document.getElementById('hud-toggle');
-  
-  if (hudElement) {
-    const isVisible = hudElement.style.display !== 'none';
-    hudElement.style.display = isVisible ? 'none' : 'block';
-    toggleButton.textContent = isVisible ? '👁️ Mostrar HUD' : '👁️ Ocultar HUD';
-  }
-}
+
 
 function adicionarIndicadoresContinentes(scene) {
   // Evitar criar indicadores duplicados
@@ -1640,4 +1707,94 @@ function adicionarIndicadoresContinentes(scene) {
   
   // Marcar que os indicadores foram criados
   indicadoresContinentesCriados = true;
+}
+
+// Action History Functions
+function initializeActionHistory() {
+  // Create history button in the HUD
+  const historyButton = document.createElement('button');
+  historyButton.className = 'hud-button btn-history';
+  historyButton.id = 'btn-history';
+  historyButton.innerHTML = '<span>📜</span><span>Histórico</span>';
+  
+  // Add to action buttons container
+  const actionButtons = document.querySelector('.action-buttons');
+  if (actionButtons) {
+    actionButtons.appendChild(historyButton);
+  }
+  
+  // Add event listener
+  historyButton.addEventListener('click', () => {
+    tocarSomClick();
+    toggleHistoryPopup();
+  });
+  
+  // Create history popup
+  createHistoryPopup();
+}
+
+function createHistoryPopup() {
+  // Create popup container
+  const popup = document.createElement('div');
+  popup.id = 'history-popup';
+  popup.className = 'history-popup';
+  popup.style.display = 'none';
+  
+  // Create popup content
+  popup.innerHTML = `
+    <div class="history-header">
+      <h3>📜 Histórico de Ações</h3>
+      <button class="history-close" id="history-close">✕</button>
+    </div>
+    <div class="history-content" id="history-content">
+      <div class="history-empty">Nenhuma ação registrada ainda.</div>
+    </div>
+  `;
+  
+  // Add to body
+  document.body.appendChild(popup);
+  
+  // Add close button event listener
+  document.getElementById('history-close').addEventListener('click', () => {
+    tocarSomClick();
+    toggleHistoryPopup();
+  });
+}
+
+function toggleHistoryPopup() {
+  const popup = document.getElementById('history-popup');
+  if (!popup) return;
+  
+  historyPopupVisible = !historyPopupVisible;
+  
+  if (historyPopupVisible) {
+    popup.style.display = 'block';
+    updateHistoryDisplay();
+  } else {
+    popup.style.display = 'none';
+  }
+}
+
+function updateHistoryDisplay() {
+  const content = document.getElementById('history-content');
+  if (!content) return;
+  
+  if (actionHistory.length === 0) {
+    content.innerHTML = '<div class="history-empty">Nenhuma ação registrada ainda.</div>';
+    return;
+  }
+  
+  // Create history entries
+  const historyHTML = actionHistory
+    .slice()
+    .reverse() // Show newest first
+    .map(entry => `
+      <div class="history-entry">
+        <span class="history-timestamp">${entry.timestamp}</span>
+        <span class="history-message">${entry.message}</span>
+      </div>
+    `)
+    .join('');
+  
+  content.innerHTML = historyHTML;
 }
