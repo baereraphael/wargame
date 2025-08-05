@@ -30,7 +30,6 @@ let faseRemanejamento = false; // Controla se está na fase de remanejamento
 let hudVisivel = true; // Track HUD visibility
 let cartasTerritorio = {}; // Cartas território do jogador
 
-let hudTexto;
 let mensagemTexto;
 let mensagemTimeout;
 let botaoTurno;
@@ -84,30 +83,17 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
 
   // Adicionar indicadores de continentes (será chamado após os territórios serem carregados)
 
-  hudTexto = this.add.text(10, 10, '', {
-    fontSize: '18px',
-    fill: '#fff',
-    backgroundColor: '#333',
-    padding: { x: 10, y: 5 }
-  });
-  hudTexto.setDepth(5);
-
-  // HUD toggle button
-  const hudToggleButton = this.add.text(10, 200, '👁️ Ocultar HUD', {
-    fontSize: '16px',
-    fill: '#fff',
-    backgroundColor: '#555',
-    padding: { x: 8, y: 4 }
-  })
-  .setInteractive({ useHandCursor: true })
-  .on('pointerdown', () => {
+    // Initialize CSS HUD elements
+  initializeCSSHUD();
+  
+  // HUD toggle button (now using CSS)
+  const hudToggleButton = document.getElementById('hud-toggle');
+  hudToggleButton.addEventListener('click', () => {
     tocarSomClick();
-    hudVisivel = !hudVisivel;
-    hudTexto.setVisible(hudVisivel);
-    hudToggleButton.setText(hudVisivel ? '👁️ Ocultar HUD' : '👁️ Mostrar HUD');
+    toggleHUD();
   });
-  hudToggleButton.setDepth(5);
 
+  // Message text (keep for compatibility)
   mensagemTexto = this.add.text(10, 50, '', {
     fontSize: '16px',
     fill: '#fffa',
@@ -117,80 +103,32 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   });
   mensagemTexto.setDepth(6);
 
-  botaoTurno = this.add.text(0, 0, 'Encerrar Turno', {
-    fontSize: '18px',
-    fill: '#fff',
-    backgroundColor: '#0077cc',
-    padding: { x: 15, y: 10 },
-    fontFamily: 'Arial',
-  })
-    .setInteractive({ useHandCursor: true })
-    .on('pointerover', () => botaoTurno.setStyle({ backgroundColor: '#005fa3' }))
-    .on('pointerout', () => botaoTurno.setStyle({ backgroundColor: '#0077cc' }))
-    .on('pointerdown', () => {
-      if (vitoria || derrota) return;
-      tocarSomClick();
-      socket.emit('passarTurno');
-    });
+  // Initialize CSS-based buttons
+  botaoTurno = document.getElementById('btn-turn');
+  botaoObjetivo = document.getElementById('btn-objective');
+  botaoCartasTerritorio = document.getElementById('btn-cards');
 
-  // Botão de objetivo
-  botaoObjetivo = this.add.text(0, 0, '🎯 Objetivo', {
-    fontSize: '16px',
-    fill: '#fff',
-    backgroundColor: '#9933cc',
-    padding: { x: 10, y: 5 },
-    fontFamily: 'Arial',
-  })
-    .setInteractive({ useHandCursor: true })
-    .on('pointerover', () => botaoObjetivo.setStyle({ backgroundColor: '#7a2a9e' }))
-    .on('pointerout', () => botaoObjetivo.setStyle({ backgroundColor: '#9933cc' }))
-    .on('pointerdown', () => {
-      if (modalObjetivoAberto) return; // Previne múltiplos modais
-      tocarSomClick();
-      socket.emit('consultarObjetivo');
-    });
-
-  // Botão de cartas território
-  botaoCartasTerritorio = this.add.text(0, 0, '🎴 Cartas Território', {
-    fontSize: '16px',
-    fill: '#fff',
-    backgroundColor: '#cc6633',
-    padding: { x: 10, y: 5 },
-    fontFamily: 'Arial',
-  })
-    .setInteractive({ useHandCursor: true })
-    .on('pointerover', () => botaoCartasTerritorio.setStyle({ backgroundColor: '#a55229' }))
-    .on('pointerout', () => botaoCartasTerritorio.setStyle({ backgroundColor: '#cc6633' }))
-    .on('pointerdown', () => {
-      if (modalCartasTerritorioAberto) return; // Previne múltiplos modais
-      tocarSomClick();
-      socket.emit('consultarCartasTerritorio');
-    });
-
-  posicionarBotao(this);
-
-  // Atualiza posição quando o tamanho da tela muda
-  this.scale.on('resize', () => {
-    posicionarBotao(this);
+  // Add event listeners for CSS buttons
+  botaoTurno.addEventListener('click', () => {
+    if (vitoria || derrota) return;
+    tocarSomClick();
+    socket.emit('passarTurno');
   });
 
+  botaoObjetivo.addEventListener('click', () => {
+    if (modalObjetivoAberto) return; // Previne múltiplos modais
+    tocarSomClick();
+    socket.emit('consultarObjetivo');
+  });
 
-function posicionarBotao(scene) {
-  const largura = scene.scale.width;
-  const altura = scene.scale.height;
-  botaoTurno.setPosition(
-    largura - botaoTurno.width - 20,
-    altura - botaoTurno.height - 20
-  );
-  botaoObjetivo.setPosition(
-    largura - botaoObjetivo.width - 20,
-    altura - botaoTurno.height - botaoObjetivo.height - 30
-  );
-  botaoCartasTerritorio.setPosition(
-    largura - botaoCartasTerritorio.width - 20,
-    altura - botaoTurno.height - botaoObjetivo.height - botaoCartasTerritorio.height - 40
-  );
-}
+  botaoCartasTerritorio.addEventListener('click', () => {
+    if (modalCartasTerritorioAberto) return; // Previne múltiplos modais
+    tocarSomClick();
+    socket.emit('consultarCartasTerritorio');
+  });
+
+  // CSS HUD handles positioning automatically
+  // No need for manual positioning anymore
 
   overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
   overlay.setVisible(false);
@@ -822,59 +760,17 @@ function getTextoPais(pais) {
 }
 
 function atualizarHUD() {
-  const tropas = paises
-    .filter(p => p.dono === turno)
-    .reduce((soma, p) => soma + p.tropas, 0);
-
-  let jogadorHUD = `🧍 Você: ${meuNome || '?'}\n`;
-  let continentesHUD = '';
-  let bonusHUD = '';
-  let prioridadeHUD = '';
-  
-  // Adicionar informação dos continentes
-  if (Object.keys(continentes).length > 0) {
-    continentesHUD = '\n🌍 Continentes:\n';
-    Object.values(continentes).forEach(continente => {
-      const controle = continente.controle[meuNome];
-      if (controle) {
-        const status = controle.controla ? '✅' : `${controle.conquistados}/${controle.total}`;
-        continentesHUD += `${continente.nome} (${continente.bonus}): ${status}\n`;
-      }
-    });
-  }
-
-  // Adicionar informação das tropas de bônus
-  const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-  if (totalBonus > 0) {
-    bonusHUD = '\n🎁 Tropas de Bônus:\n';
-    Object.entries(tropasBonusContinente).forEach(([continente, quantidade]) => {
-      if (quantidade > 0) {
-        bonusHUD += `${continente}: ${quantidade}\n`;
-      }
-    });
-  }
-  
-  // Adicionar informação de prioridade para reforço
-  if (continentePrioritario && meuNome === turno) {
-    prioridadeHUD = `\n⚠️ Prioridade: Coloque ${continentePrioritario.quantidade} tropas de ${continentePrioritario.nome} primeiro!`;
-  }
-  
-  // Adicionar informação da fase de remanejamento
-  if (faseRemanejamento && meuNome === turno) {
-    prioridadeHUD = `\n🔄 Fase de remanejamento: Clique em um território para mover tropas!`;
-  }
-  
-  const totalReforcos = tropasReforco + totalBonus;
-  hudTexto.setText(`${jogadorHUD}🎮 Turno: ${turno}   🛡️ Tropas totais: ${tropas}   🆘 Reforço restante: ${totalReforcos} (${tropasReforco} base + ${totalBonus} bônus)${continentesHUD}${bonusHUD}${prioridadeHUD}`);
+  // Update CSS HUD instead of Phaser text
+  updateCSSHUD();
 }
 
 function atualizarTextoBotaoTurno() {
   if (faseRemanejamento && meuNome === turno) {
-    botaoTurno.setText('Encerrar Turno');
+    botaoTurno.textContent = 'Encerrar Turno';
   } else if (meuNome === turno) {
-    botaoTurno.setText('Encerrar Ataque');
+    botaoTurno.textContent = 'Encerrar Ataque';
   } else {
-    botaoTurno.setText('Encerrar Turno');
+    botaoTurno.textContent = 'Encerrar Turno';
   }
 }
 
@@ -1550,6 +1446,100 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
 
 // Variável global para controlar se os indicadores já foram criados
 let indicadoresContinentesCriados = false;
+
+// CSS HUD Functions
+function initializeCSSHUD() {
+  // Initialize HUD elements
+  updateCSSHUD();
+}
+
+function updateCSSHUD() {
+  const playerNameEl = document.getElementById('player-name');
+  const playerStatsEl = document.getElementById('player-stats');
+  const phaseIconEl = document.getElementById('phase-icon');
+  const phaseTextEl = document.getElementById('phase-text');
+  const turnInfoEl = document.getElementById('turn-info');
+  const totalTroopsEl = document.getElementById('total-troops');
+  const bonusTroopsEl = document.getElementById('bonus-troops');
+  const continentStatusEl = document.getElementById('continent-status');
+
+  // Update player info
+  if (playerNameEl) {
+    playerNameEl.textContent = meuNome || 'Carregando...';
+  }
+
+  // Update player stats
+  if (playerStatsEl) {
+    const tropas = paises
+      .filter(p => p.dono === meuNome)
+      .reduce((soma, p) => soma + p.tropas, 0);
+    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    const totalReforcos = tropasReforco + totalBonus;
+    playerStatsEl.textContent = `Tropas: ${tropas} | Reforço: ${totalReforcos}`;
+  }
+
+  // Update phase indicator
+  if (phaseIconEl && phaseTextEl) {
+    const phaseIndicator = document.querySelector('.phase-indicator');
+    
+    if (faseRemanejamento && meuNome === turno) {
+      phaseIconEl.textContent = '🔄';
+      phaseTextEl.textContent = 'Remanejamento';
+      if (phaseIndicator) phaseIndicator.classList.add('active');
+    } else if (meuNome === turno) {
+      phaseIconEl.textContent = '⚔️';
+      phaseTextEl.textContent = 'Seu Turno';
+      if (phaseIndicator) phaseIndicator.classList.add('active');
+    } else {
+      phaseIconEl.textContent = '⏳';
+      phaseTextEl.textContent = 'Aguardando';
+      if (phaseIndicator) phaseIndicator.classList.remove('active');
+    }
+  }
+
+  // Update turn info
+  if (turnInfoEl) {
+    turnInfoEl.textContent = `Turno: ${turno || 'Aguardando...'}`;
+  }
+
+  // Update total troops
+  if (totalTroopsEl) {
+    const tropas = paises
+      .filter(p => p.dono === meuNome)
+      .reduce((soma, p) => soma + p.tropas, 0);
+    totalTroopsEl.textContent = `Total: ${tropas}`;
+  }
+
+  // Update bonus troops
+  if (bonusTroopsEl) {
+    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    bonusTroopsEl.textContent = `Bônus: ${totalBonus}`;
+  }
+
+
+
+  // Update button states
+  if (botaoTurno) {
+    botaoTurno.disabled = meuNome !== turno || vitoria || derrota;
+  }
+  if (botaoObjetivo) {
+    botaoObjetivo.disabled = vitoria || derrota;
+  }
+  if (botaoCartasTerritorio) {
+    botaoCartasTerritorio.disabled = vitoria || derrota;
+  }
+}
+
+function toggleHUD() {
+  const hudElement = document.querySelector('.game-hud');
+  const toggleButton = document.getElementById('hud-toggle');
+  
+  if (hudElement) {
+    const isVisible = hudElement.style.display !== 'none';
+    hudElement.style.display = isVisible ? 'none' : 'block';
+    toggleButton.textContent = isVisible ? '👁️ Mostrar HUD' : '👁️ Ocultar HUD';
+  }
+}
 
 function adicionarIndicadoresContinentes(scene) {
   // Evitar criar indicadores duplicados

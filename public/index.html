@@ -7,8 +7,378 @@
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <script src="game.js"></script>
 <style>
-  body { margin: 0; background: #1a1a1a; }
+  body { 
+    margin: 0; 
+    background: #1a1a1a; 
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* Modern HUD Container */
+  .game-hud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Top HUD Bar */
+  .hud-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
+    border-bottom: 2px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: auto;
+  }
+
+  /* Player Info Section */
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+  }
+
+  .player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #4a90e2, #357abd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border: 2px solid #fff;
+  }
+
+  .player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .player-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .player-stats {
+    font-size: 14px;
+    color: #ccc;
+  }
+
+  /* Game Phase Section */
+  .game-phase {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .phase-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+  }
+
+  .phase-indicator.active {
+    background: linear-gradient(45deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.1));
+    border-color: rgba(76, 175, 80, 0.5);
+    animation: activePulse 1.5s infinite;
+  }
+
+  @keyframes activePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .phase-icon {
+    font-size: 18px;
+  }
+
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hud-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .hud-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .btn-objective {
+    background: linear-gradient(45deg, #9933cc, #7a2a9e);
+  }
+
+  .btn-objective:hover {
+    background: linear-gradient(45deg, #7a2a9e, #5f1f7a);
+  }
+
+  .btn-cards {
+    background: linear-gradient(45deg, #cc6633, #a55229);
+  }
+
+  .btn-cards:hover {
+    background: linear-gradient(45deg, #a55229, #8a4422);
+  }
+
+  .btn-turn {
+    background: linear-gradient(45deg, #0077cc, #005fa3);
+  }
+
+  .btn-turn:hover {
+    background: linear-gradient(45deg, #005fa3, #004a82);
+  }
+
+  .hud-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .hud-button:disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Bottom HUD Bar */
+  .hud-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
+    border-top: 2px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: auto;
+  }
+
+  /* Game Info */
+  .game-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .info-icon {
+    font-size: 16px;
+  }
+
+  /* Continent Status */
+  .continent-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .continent-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    font-size: 12px;
+    color: white;
+  }
+
+  /* HUD Toggle Button */
+  .hud-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #444;
+    border-radius: 20px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .hud-toggle:hover {
+    background: rgba(0,0,0,0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  /* Additional styling for better visual appeal */
+  .hud-top, .hud-bottom {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+
+  .phase-indicator {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .continent-item {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+  }
+
+  .continent-item:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .hud-top {
+      height: 70px;
+      padding: 0 15px;
+    }
+    
+    .hud-bottom {
+      height: 50px;
+      padding: 0 15px;
+    }
+    
+    .player-name {
+      font-size: 16px;
+    }
+    
+    .phase-indicator {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    
+    .hud-button {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .game-phase {
+      gap: 10px;
+    }
+    
+    .action-buttons {
+      gap: 5px;
+    }
+    
+    .continent-status {
+      display: none;
+    }
+  }
 </style>
 </head>
-<body></body>
+<body>
+  <div class="game-hud">
+    <!-- Top HUD Bar -->
+    <div class="hud-top">
+      <div class="player-info">
+        <div class="player-avatar">👤</div>
+        <div class="player-details">
+          <div class="player-name" id="player-name">Carregando...</div>
+          <div class="player-stats" id="player-stats">Tropas: 0 | Reforço: 0</div>
+        </div>
+      </div>
+      
+      <div class="game-phase">
+        <div class="phase-indicator">
+          <span class="phase-icon" id="phase-icon">🎮</span>
+          <span id="phase-text">Aguardando...</span>
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="hud-button btn-objective" id="btn-objective">
+          <span>🎯</span>
+          <span>Objetivo</span>
+        </button>
+        <button class="hud-button btn-cards" id="btn-cards">
+          <span>🎴</span>
+          <span>Cartas</span>
+        </button>
+        <button class="hud-button btn-turn" id="btn-turn">
+          <span>⏭️</span>
+          <span>Encerrar</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Bottom HUD Bar -->
+    <div class="hud-bottom">
+      <div class="game-info">
+        <div class="info-item">
+          <span class="info-icon">🎮</span>
+          <span id="turn-info">Turno: Aguardando...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🛡️</span>
+          <span id="total-troops">Total: 0</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🎁</span>
+          <span id="bonus-troops">Bônus: 0</span>
+        </div>
+      </div>
+      
+      <div class="continent-status" id="continent-status">
+        <!-- Continent items will be added dynamically -->
+      </div>
+    </div>
+    
+    <!-- HUD Toggle Button -->
+    <button class="hud-toggle" id="hud-toggle">👁️ Ocultar HUD</button>
+  </div>
+</body>
 </html>
