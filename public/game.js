@@ -75,7 +75,7 @@ function create() {
 const largura = this.sys.game.config.width;
 const altura = this.sys.game.config.height;
 
-this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
 
   // Criar sons
   somTiro = this.sound.add('shotsfired');
@@ -104,13 +104,11 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   });
 
   botaoObjetivo.addEventListener('click', () => {
-    if (modalObjetivoAberto) return; // Previne múltiplos modais
     tocarSomClick();
     socket.emit('consultarObjetivo');
   });
 
   botaoCartasTerritorio.addEventListener('click', () => {
-    if (modalCartasTerritorioAberto) return; // Previne múltiplos modais
     tocarSomClick();
     socket.emit('consultarCartasTerritorio');
   });
@@ -576,8 +574,8 @@ const dadosGeograficos = {
       pontosRelativos.push(pontos[i + 1] - minY);
     }
     
-         // Criar o polígono na posição (minX, minY) com pontos relativos
-     obj.polygon = scene.add.polygon(minX, minY, pontosRelativos, 0xffffff, 0.1);
+         // Criar o polígono na posição (minX, minY + 40) com pontos relativos para alinhar com o mapa
+     obj.polygon = scene.add.polygon(minX, minY + 40, pontosRelativos, 0xffffff, 0.1);
      obj.polygon.setOrigin(0, 0);
      obj.polygon.setInteractive({ 
        useHandCursor: true,
@@ -586,7 +584,7 @@ const dadosGeograficos = {
      });
 
 
-    obj.text = scene.add.text(centroX, centroY, getTextoPais(pais), {
+    obj.text = scene.add.text(centroX, centroY + 40, getTextoPais(pais), {
         fontSize: '14px',
         fill: '#fff',
         align: 'center',
@@ -1282,131 +1280,314 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
 }
 
 function mostrarObjetivo(objetivo, scene) {
+  // Fechar outras modais primeiro
+  fecharTodasModais();
+  
   modalObjetivoAberto = true; // Marca que o modal está aberto
   
-  // Criar overlay para mostrar o objetivo
-  const overlay = scene.add.rectangle(400, 300, 800, 400, 0x000000, 0.8);
+  // Obter dimensões da tela
+  const largura = scene.sys.game.config.width;
+  const altura = scene.sys.game.config.height;
+  
+  // Criar overlay com blur effect
+  const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.7);
   overlay.setDepth(20);
   
-  // Container para o conteúdo
-  const container = scene.add.container(400, 300);
+  // Container principal com bordas arredondadas
+  const container = scene.add.container(largura/2, altura/2);
   container.setDepth(21);
   
-  // Título
-  const titulo = scene.add.text(0, -150, '🎯 SEU OBJETIVO', {
-    fontSize: '24px',
-    fill: '#ffff00',
+  // Background do container com gradiente
+  const background = scene.add.rectangle(0, 0, 700, 450, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0x444444);
+  background.setDepth(0);
+  container.add(background);
+  
+  // Header com gradiente
+  const headerBg = scene.add.rectangle(0, -175, 700, 60, 0x9933cc, 0.9);
+  headerBg.setDepth(1);
+  container.add(headerBg);
+  
+  // Ícone do objetivo
+  const objetivoIcon = scene.add.text(-300, -175, '🎯', {
+    fontSize: '32px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  container.add(objetivoIcon);
+  
+  // Título principal
+  const titulo = scene.add.text(-250, -175, 'SEU OBJETIVO', {
+    fontSize: '28px',
+    fill: '#ffffff',
     fontStyle: 'bold',
-    stroke: '#000',
-    strokeThickness: 4
-  }).setOrigin(0.5);
+    stroke: '#000000',
+    strokeThickness: 3
+  }).setOrigin(0, 0.5).setDepth(2);
   container.add(titulo);
   
-  // Descrição do objetivo
-  const descricao = scene.add.text(0, -100, objetivo.descricao, {
-    fontSize: '18px',
-    fill: '#fff',
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -145, 650, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  container.add(linhaDecorativa);
+  
+  // Container para o conteúdo principal
+  const contentContainer = scene.add.container(0, -50);
+  contentContainer.setDepth(2);
+  container.add(contentContainer);
+  
+  // Ícone de objetivo específico baseado no tipo
+  let objetivoIcone = '🎯';
+  if (objetivo.descricao.includes('eliminar')) {
+    objetivoIcone = '⚔️';
+  } else if (objetivo.descricao.includes('conquistar')) {
+    objetivoIcone = '🏆';
+  } else if (objetivo.descricao.includes('territórios')) {
+    objetivoIcone = '🗺️';
+  } else if (objetivo.descricao.includes('continentes')) {
+    objetivoIcone = '🌍';
+  }
+  
+  const iconeObjetivo = scene.add.text(0, -80, objetivoIcone, {
+    fontSize: '48px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(iconeObjetivo);
+  
+  // Descrição do objetivo com melhor formatação
+  const descricao = scene.add.text(0, -20, objetivo.descricao, {
+    fontSize: '20px',
+    fill: '#ffffff',
     align: 'center',
     wordWrap: { width: 600 },
-    stroke: '#000',
-    strokeThickness: 2
-  }).setOrigin(0.5);
-  container.add(descricao);
+    stroke: '#000000',
+    strokeThickness: 2,
+    lineSpacing: 8
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(descricao);
   
-  // Botão de fechar
-  const botaoFechar = scene.add.text(0, 100, '✅ Entendi', {
+  // Dica de jogo
+  const dica = scene.add.text(0, 60, '💡 Dica: Mantenha seu objetivo em mente durante toda a partida!', {
     fontSize: '16px',
-    fill: '#fff',
-    backgroundColor: '#0077cc',
-    padding: { x: 15, y: 8 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    fill: '#cccccc',
+    align: 'center',
+    wordWrap: { width: 550 },
+    fontStyle: 'italic'
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(dica);
+  
+  // Botão de fechar com estilo moderno
+  const botaoFecharBg = scene.add.rectangle(0, 150, 200, 50, 0x0077cc, 0.9);
+  botaoFecharBg.setStrokeStyle(2, 0x005fa3);
+  botaoFecharBg.setDepth(1);
+  container.add(botaoFecharBg);
+  
+  const botaoFechar = scene.add.text(0, 150, '✅ Entendi', {
+    fontSize: '18px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
+  container.add(botaoFechar);
+  
+  // Efeitos hover no botão
+  botaoFechar.on('pointerover', () => {
+    botaoFecharBg.setFillStyle(0x005fa3, 0.9);
+    botaoFecharBg.setStrokeStyle(2, 0x004a82);
+  });
+  
+  botaoFechar.on('pointerout', () => {
+    botaoFecharBg.setFillStyle(0x0077cc, 0.9);
+    botaoFecharBg.setStrokeStyle(2, 0x005fa3);
+  });
+  
   botaoFechar.on('pointerdown', () => {
     tocarSomClick();
-    modalObjetivoAberto = false; // Marca que o modal foi fechado
-    overlay.destroy();
-    container.destroy();
+    fecharTodasModais();
   });
-  container.add(botaoFechar);
+  
+  // Animação de entrada
+  container.setScale(0.8);
+  scene.tweens.add({
+    targets: container,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 300,
+    ease: 'Back.easeOut'
+  });
+  
+  // Animação do overlay
+  overlay.setAlpha(0);
+  scene.tweens.add({
+    targets: overlay,
+    alpha: 1,
+    duration: 200,
+    ease: 'Power2'
+  });
 }
 
 function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
+  // Fechar outras modais primeiro
+  fecharTodasModais();
+  
   modalCartasTerritorioAberto = true; // Marca que o modal está aberto
   
-  // Criar overlay para mostrar as cartas
-  const overlay = scene.add.rectangle(400, 300, 800, 500, 0x000000, 0.8);
+  // Obter dimensões da tela
+  const largura = scene.sys.game.config.width;
+  const altura = scene.sys.game.config.height;
+  
+  // Criar overlay com blur effect
+  const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.7);
   overlay.setDepth(20);
   
-  // Container para o conteúdo
-  const container = scene.add.container(400, 300);
+  // Container principal com bordas arredondadas
+  const container = scene.add.container(largura/2, altura/2);
   container.setDepth(21);
   
-  // Título
-  const titulo = scene.add.text(0, -180, forcarTroca ? '⚠️ TROCA OBRIGATÓRIA DE CARTAS' : '🎴 SUAS CARTAS TERRITÓRIO', {
-    fontSize: '24px',
-    fill: forcarTroca ? '#ff4444' : '#ffaa00',
+  // Background do container com gradiente
+  const background = scene.add.rectangle(0, 0, 800, 600, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0x444444);
+  background.setDepth(0);
+  container.add(background);
+  
+  // Header com gradiente
+  const headerBg = scene.add.rectangle(0, -250, 800, 60, forcarTroca ? 0xcc3333 : 0x9933cc, 0.9);
+  headerBg.setDepth(1);
+  container.add(headerBg);
+  
+  // Ícone das cartas
+  const cartasIcon = scene.add.text(-350, -250, forcarTroca ? '⚠️' : '🎴', {
+    fontSize: '32px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  container.add(cartasIcon);
+  
+  // Título principal
+  const titulo = scene.add.text(-300, -250, forcarTroca ? 'TROCA OBRIGATÓRIA' : 'SUAS CARTAS TERRITÓRIO', {
+    fontSize: '28px',
+    fill: '#ffffff',
     fontStyle: 'bold',
-    stroke: '#000',
-    strokeThickness: 4
-  }).setOrigin(0.5);
+    stroke: '#000000',
+    strokeThickness: 3
+  }).setOrigin(0, 0.5).setDepth(2);
   container.add(titulo);
+  
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -220, 750, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  container.add(linhaDecorativa);
+  
+  // Container para o conteúdo principal
+  const contentContainer = scene.add.container(0, -30);
+  contentContainer.setDepth(2);
+  container.add(contentContainer);
   
   if (cartas.length === 0) {
     // Mensagem quando não há cartas
-    const mensagem = scene.add.text(0, -50, 'Você ainda não possui cartas território.\nConquiste territórios de outros jogadores para ganhar cartas!', {
-      fontSize: '16px',
-      fill: '#fff',
+    const iconeVazio = scene.add.text(0, -80, '📭', {
+      fontSize: '48px',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(iconeVazio);
+    
+    const mensagem = scene.add.text(0, -20, 'Você ainda não possui cartas território.\nConquiste territórios de outros jogadores para ganhar cartas!', {
+      fontSize: '18px',
+      fill: '#ffffff',
       align: 'center',
       wordWrap: { width: 600 },
-      stroke: '#000',
-      strokeThickness: 2
-    }).setOrigin(0.5);
-    container.add(mensagem);
+      stroke: '#000000',
+      strokeThickness: 2,
+      lineSpacing: 8
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(mensagem);
+    
+    const dica = scene.add.text(0, 60, '💡 Dica: Conquiste territórios de outros jogadores para ganhar cartas território!', {
+      fontSize: '16px',
+      fill: '#cccccc',
+      align: 'center',
+      wordWrap: { width: 550 },
+      fontStyle: 'italic'
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(dica);
   } else {
     // Mostrar as cartas
-    const cartasTexto = scene.add.text(0, -130, `Você possui ${cartas.length} carta(s):`, {
-      fontSize: '18px',
-      fill: '#fff',
+    const cartasTexto = scene.add.text(0, -140, `Você possui ${cartas.length} carta(s):`, {
+      fontSize: '20px',
+      fill: '#ffffff',
       align: 'center',
-      stroke: '#000',
+      stroke: '#000000',
       strokeThickness: 2
-    }).setOrigin(0.5);
-    container.add(cartasTexto);
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(cartasTexto);
     
     // Instruções
-    const instrucoesText = scene.add.text(0, -20, 'Clique nas cartas para selecionar (máximo 3)', {
-      fontSize: '14px',
-      fill: '#ccc',
+    const instrucoesText = scene.add.text(0, -100, 'Clique nas cartas para selecionar (máximo 3)', {
+      fontSize: '16px',
+      fill: '#cccccc',
       align: 'center',
-      stroke: '#000',
+      stroke: '#000000',
       strokeThickness: 1
-    }).setOrigin(0.5);
-    container.add(instrucoesText);
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(instrucoesText);
     
     // Criar cartas clicáveis
     const cartasSelecionadas = [];
     const cartasClicaveis = [];
     
     cartas.forEach((carta, index) => {
-      const x = (index - Math.floor(cartas.length / 2)) * 80;
-      const cartaText = scene.add.text(x, -80, carta, {
-        fontSize: '40px',
-        fill: '#ffaa00',
-        stroke: '#000',
-        strokeThickness: 3,
-        backgroundColor: '#333'
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      const x = (index - Math.floor(cartas.length / 2)) * 130;
       
-      cartaText.on('pointerdown', () => {
+      // Criar container para a carta
+      const cartaContainer = scene.add.container(x, 0);
+      cartaContainer.setDepth(2);
+      contentContainer.add(cartaContainer);
+      
+      // Background da carta (formato de carta)
+      const cartaBg = scene.add.rectangle(0, 0, 100, 140, 0x2a2a2a, 0.95);
+      cartaBg.setStrokeStyle(2, 0x444444);
+      cartaContainer.add(cartaBg);
+      
+      // Símbolo da carta (maior e centralizado)
+      const simbolo = scene.add.text(0, -30, carta.simbolo, {
+        fontSize: '36px',
+        fill: '#ffaa00',
+        stroke: '#000000',
+        strokeThickness: 2
+      }).setOrigin(0.5);
+      cartaContainer.add(simbolo);
+      
+      // Nome do território (menor, na parte inferior)
+      const nomeTerritorio = scene.add.text(0, 20, carta.territorio, {
+        fontSize: '10px',
+        fill: '#ffffff',
+        align: 'center',
+        wordWrap: { width: 90 },
+        stroke: '#000000',
+        strokeThickness: 1
+      }).setOrigin(0.5);
+      cartaContainer.add(nomeTerritorio);
+      
+      // Linha decorativa
+      const linha = scene.add.rectangle(0, 0, 80, 1, 0x444444, 0.8);
+      cartaContainer.add(linha);
+      
+      // Tornar toda a carta interativa
+      cartaContainer.setInteractive(new Phaser.Geom.Rectangle(-50, -70, 100, 140), Phaser.Geom.Rectangle.Contains);
+      cartaContainer.setData('carta', carta);
+      
+      cartaContainer.on('pointerdown', () => {
         tocarSomClick();
-        if (cartasSelecionadas.includes(cartaText)) {
+        if (cartasSelecionadas.includes(cartaContainer)) {
           // Deselecionar
-          const index = cartasSelecionadas.indexOf(cartaText);
+          const index = cartasSelecionadas.indexOf(cartaContainer);
           cartasSelecionadas.splice(index, 1);
-          cartaText.setStyle({ backgroundColor: '#333' });
+          cartaBg.setFillStyle(0x2a2a2a, 0.95);
+          cartaBg.setStrokeStyle(2, 0x444444);
         } else if (cartasSelecionadas.length < 3) {
           // Selecionar
-          cartasSelecionadas.push(cartaText);
-          cartaText.setStyle({ backgroundColor: '#ffaa00' });
+          cartasSelecionadas.push(cartaContainer);
+          cartaBg.setFillStyle(0xffaa00, 0.3);
+          cartaBg.setStrokeStyle(3, 0xffaa00);
         }
         
         // Atualizar texto de instruções
@@ -1419,54 +1600,106 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
         }
       });
       
-      cartasClicaveis.push(cartaText);
-      container.add(cartaText);
+      cartasClicaveis.push(cartaContainer);
     });
     
     // Legenda dos símbolos
-    const legenda = scene.add.text(0, 20, '▲ = Triângulo  ■ = Quadrado  ● = Círculo  ★ = Coringa', {
-      fontSize: '14px',
-      fill: '#ccc',
+    const legenda = scene.add.text(0, 80, '▲ = Thaloria/Xanthera  ■ = Zarandis/Mythara  ● = Elyndra  ★ = Kharune', {
+      fontSize: '12px',
+      fill: '#cccccc',
       align: 'center',
-      stroke: '#000',
+      stroke: '#000000',
       strokeThickness: 1
-    }).setOrigin(0.5);
-    container.add(legenda);
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(legenda);
     
-    // Botão de trocar (só aparece se há cartas selecionadas)
-    const botaoTrocar = scene.add.text(0, 80, '🔄 Trocar Cartas', {
-      fontSize: '16px',
-      fill: '#fff',
-      backgroundColor: '#0077cc',
-      padding: { x: 15, y: 8 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    // Botão de trocar com estilo moderno
+    const botaoTrocarBg = scene.add.rectangle(0, 120, 250, 50, 0x0077cc, 0.9);
+    botaoTrocarBg.setStrokeStyle(2, 0x005fa3);
+    botaoTrocarBg.setDepth(1);
+    container.add(botaoTrocarBg);
+    
+    const botaoTrocar = scene.add.text(0, 120, '🔄 Trocar Cartas', {
+      fontSize: '18px',
+      fill: '#ffffff',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
+    container.add(botaoTrocar);
+    
+    // Efeitos hover no botão de trocar
+    botaoTrocar.on('pointerover', () => {
+      botaoTrocarBg.setFillStyle(0x005fa3, 0.9);
+      botaoTrocarBg.setStrokeStyle(2, 0x004a82);
+    });
+    
+    botaoTrocar.on('pointerout', () => {
+      botaoTrocarBg.setFillStyle(0x0077cc, 0.9);
+      botaoTrocarBg.setStrokeStyle(2, 0x005fa3);
+    });
+    
     botaoTrocar.on('pointerdown', () => {
       tocarSomClick();
       if (cartasSelecionadas.length === 3) {
-        // Mapear os objetos cartaText de volta para os símbolos
-        const simbolosSelecionados = cartasSelecionadas.map(cartaText => cartaText.text);
-        socket.emit('trocarCartasTerritorio', simbolosSelecionados);
+        // Mapear os containers de carta de volta para os nomes dos territórios
+        const territoriosSelecionados = cartasSelecionadas.map(cartaContainer => cartaContainer.getData('carta').territorio);
+        socket.emit('trocarCartasTerritorio', territoriosSelecionados);
       }
     });
-    container.add(botaoTrocar);
   }
   
-  // Botão de fechar (só se não for troca obrigatória)
+  // Botão de fechar com estilo moderno (só se não for troca obrigatória)
   if (!forcarTroca) {
-    const botaoFechar = scene.add.text(0, 120, '✅ Entendi', {
-      fontSize: '16px',
-      fill: '#fff',
-      backgroundColor: '#0077cc',
-      padding: { x: 15, y: 8 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const botaoFecharBg = scene.add.rectangle(0, 200, 200, 50, 0x0077cc, 0.9);
+    botaoFecharBg.setStrokeStyle(2, 0x005fa3);
+    botaoFecharBg.setDepth(1);
+    container.add(botaoFecharBg);
+    
+    const botaoFechar = scene.add.text(0, 200, '✅ Entendi', {
+      fontSize: '18px',
+      fill: '#ffffff',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
+    container.add(botaoFechar);
+    
+    // Efeitos hover no botão de fechar
+    botaoFechar.on('pointerover', () => {
+      botaoFecharBg.setFillStyle(0x005fa3, 0.9);
+      botaoFecharBg.setStrokeStyle(2, 0x004a82);
+    });
+    
+    botaoFechar.on('pointerout', () => {
+      botaoFecharBg.setFillStyle(0x0077cc, 0.9);
+      botaoFecharBg.setStrokeStyle(2, 0x005fa3);
+    });
+    
     botaoFechar.on('pointerdown', () => {
       tocarSomClick();
-      modalCartasTerritorioAberto = false;
-      overlay.destroy();
-      container.destroy();
+      fecharTodasModais();
     });
-    container.add(botaoFechar);
   }
+  
+  // Animação de entrada
+  container.setScale(0.8);
+  scene.tweens.add({
+    targets: container,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 300,
+    ease: 'Back.easeOut'
+  });
+  
+  // Animação do overlay
+  overlay.setAlpha(0);
+  scene.tweens.add({
+    targets: overlay,
+    alpha: 1,
+    duration: 200,
+    ease: 'Power2'
+  });
 }
 
 // Variável global para controlar se os indicadores já foram criados
@@ -1479,8 +1712,8 @@ function getPlayerColorClass(playerName) {
     'Azul': 'azul', 
     'Verde': 'verde',
     'Amarelo': 'amarelo',
-    'Roxo': 'roxo',
-    'Laranja': 'laranja'
+    'Preto': 'preto',
+    'Roxo': 'roxo'
   };
   return colorMap[playerName] || 'vermelho';
 }
@@ -1496,7 +1729,6 @@ function updateCSSHUD() {
   const playerStatsEl = document.getElementById('player-stats');
   const turnMarksEl = document.getElementById('turn-marks');
   const turnTextEl = document.getElementById('turn-text');
-  const turnPlayerEl = document.getElementById('turn-player');
   const turnPointerEl = document.getElementById('turn-pointer');
   const continentStatusEl = document.getElementById('continent-status');
 
@@ -1516,7 +1748,7 @@ function updateCSSHUD() {
   }
 
   // Update turn indicator
-  if (turnMarksEl && turnTextEl && turnPlayerEl && turnPointerEl) {
+  if (turnMarksEl && turnTextEl && turnPointerEl) {
     // Clear existing marks
     turnMarksEl.innerHTML = '';
     
@@ -1528,8 +1760,9 @@ function updateCSSHUD() {
       }
     });
 
-    // Create marks for each player
-    const players = Object.keys(playerTerritories);
+    // Create marks for each player in clockwise order (Azul, Vermelho, Verde, Amarelo, Preto, Roxo)
+    const playerOrder = ['Azul', 'Vermelho', 'Verde', 'Amarelo', 'Preto', 'Roxo'];
+    const players = playerOrder.filter(player => playerTerritories[player] > 0);
     const totalMarks = players.reduce((sum, player) => sum + playerTerritories[player], 0);
     
     if (totalMarks > 0) {
@@ -1567,23 +1800,13 @@ function updateCSSHUD() {
     // Update turn text
     if (faseRemanejamento && meuNome === turno) {
       turnTextEl.textContent = '🔄';
-      turnPlayerEl.textContent = 'Remanejamento';
     } else if (meuNome === turno) {
       turnTextEl.textContent = '⚔️';
-      turnPlayerEl.textContent = 'Seu Turno';
     } else {
       turnTextEl.textContent = '⏳';
-      turnPlayerEl.textContent = turno || 'Aguardando';
     }
 
-    // Add additional info to turn player text
-    if (turnPlayerEl.textContent !== 'Remanejamento' && turnPlayerEl.textContent !== 'Seu Turno') {
-      const tropas = paises
-        .filter(p => p.dono === meuNome)
-        .reduce((soma, p) => soma + p.tropas, 0);
-      const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-      turnPlayerEl.textContent = `${turnPlayerEl.textContent} | T:${tropas} | B:${totalBonus}`;
-    }
+
   }
 
 
@@ -1618,7 +1841,7 @@ function adicionarIndicadoresContinentes(scene) {
       nome: 'Thaloria',
       bonus: 5,
       x: 120,
-      y: 60,
+      y: 80,
       texto: 'Thaloria +5',
       territorioRepresentativo: 'Redwyn'
     },
@@ -1633,8 +1856,8 @@ function adicionarIndicadoresContinentes(scene) {
     {
       nome: 'Elyndra',
       bonus: 5,
-      x: 400,
-      y: 50,
+      x: 550,
+      y: 70,
       texto: 'Elyndra +5',
       territorioRepresentativo: 'Frosthelm'
     },
@@ -1666,7 +1889,7 @@ function adicionarIndicadoresContinentes(scene) {
 
   // Criar indicadores para cada continente
   indicadoresContinentes.forEach(indicador => {
-    const textoIndicador = scene.add.text(indicador.x, indicador.y, indicador.texto, {
+    const textoIndicador = scene.add.text(indicador.x, indicador.y + 40, indicador.texto, {
       fontSize: '14px',
       fill: '#ffffff',
       stroke: '#000000',
@@ -1696,8 +1919,8 @@ function adicionarIndicadoresContinentes(scene) {
       const linha = scene.add.graphics();
       linha.lineStyle(2, 0xffffff, 0.7); // Linha branca semi-transparente
       linha.beginPath();
-      linha.moveTo(territorio.x, territorio.y);
-      linha.lineTo(indicador.x, indicador.y);
+      linha.moveTo(territorio.x, territorio.y + 40);
+      linha.lineTo(indicador.x, indicador.y + 40);
       linha.strokePath();
       linha.setDepth(2); // Colocar abaixo dos indicadores mas acima dos territórios
     } else {
@@ -1707,6 +1930,38 @@ function adicionarIndicadoresContinentes(scene) {
   
   // Marcar que os indicadores foram criados
   indicadoresContinentesCriados = true;
+}
+
+// Função para fechar todas as modais
+function fecharTodasModais() {
+  // Fechar modal de objetivo
+  if (modalObjetivoAberto) {
+    modalObjetivoAberto = false;
+    // Destruir elementos do modal se existirem
+    const overlay = game.scene.scenes[0].children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
+    const container = game.scene.scenes[0].children.list.find(child => child.type === 'Container' && child.depth === 21);
+    if (overlay) overlay.destroy();
+    if (container) container.destroy();
+  }
+  
+  // Fechar modal de cartas território
+  if (modalCartasTerritorioAberto) {
+    modalCartasTerritorioAberto = false;
+    // Destruir elementos do modal se existirem
+    const overlay = game.scene.scenes[0].children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
+    const container = game.scene.scenes[0].children.list.find(child => child.type === 'Container' && child.depth === 21);
+    if (overlay) overlay.destroy();
+    if (container) container.destroy();
+  }
+  
+  // Fechar popup de histórico
+  if (historyPopupVisible) {
+    historyPopupVisible = false;
+    const popup = document.getElementById('history-popup');
+    if (popup) {
+      popup.style.display = 'none';
+    }
+  }
 }
 
 // Action History Functions
@@ -1757,7 +2012,7 @@ function createHistoryPopup() {
   // Add close button event listener
   document.getElementById('history-close').addEventListener('click', () => {
     tocarSomClick();
-    toggleHistoryPopup();
+    fecharTodasModais();
   });
 }
 
@@ -1765,12 +2020,17 @@ function toggleHistoryPopup() {
   const popup = document.getElementById('history-popup');
   if (!popup) return;
   
-  historyPopupVisible = !historyPopupVisible;
-  
-  if (historyPopupVisible) {
+  if (!historyPopupVisible) {
+    // Fechar outras modais primeiro
+    fecharTodasModais();
+    
+    // Abrir histórico
+    historyPopupVisible = true;
     popup.style.display = 'block';
     updateHistoryDisplay();
   } else {
+    // Fechar histórico
+    historyPopupVisible = false;
     popup.style.display = 'none';
   }
 }

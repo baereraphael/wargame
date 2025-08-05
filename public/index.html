@@ -80,10 +80,10 @@
   /* Turn Indicator Section - Bottom Left */
   .turn-indicator {
     position: fixed;
-    bottom: 80px;
-    left: 20px;
-    width: 140px;
-    height: 140px;
+    bottom: 5vh;
+    left: 2vw;
+    width: min(140px, 12vw);
+    height: min(140px, 12vw);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -92,8 +92,8 @@
 
   .turn-circle {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: min(120px, 10vw);
+    height: min(120px, 10vw);
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.8);
     border: 3px solid rgba(255, 255, 255, 0.4);
@@ -101,7 +101,7 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 18px;
+    font-size: min(18px, 1.5vw);
     font-weight: bold;
     text-align: center;
     line-height: 1.2;
@@ -119,34 +119,34 @@
 
   .turn-mark {
     position: absolute;
-    width: 5px;
-    height: 25px;
+    width: min(5px, 0.4vw);
+    height: min(25px, 2vw);
     background: currentColor;
-    border-radius: 3px;
-    transform-origin: 50% 60px;
+    border-radius: min(3px, 0.25vw);
+    transform-origin: 50% min(60px, 5vw);
     top: 0;
     left: 50%;
-    margin-left: -2.5px;
+    margin-left: min(-2.5px, -0.2vw);
   }
 
   .turn-mark.vermelho { color: #ff4444; }
   .turn-mark.azul { color: #4444ff; }
   .turn-mark.verde { color: #44ff44; }
   .turn-mark.amarelo { color: #ffff44; }
+  .turn-mark.preto { color: #444444; }
   .turn-mark.roxo { color: #ff44ff; }
-  .turn-mark.laranja { color: #ff8844; }
 
   .turn-text {
     position: absolute;
-    bottom: -35px;
+    bottom: min(-35px, -3vw);
     left: 50%;
     transform: translateX(-50%);
     color: white;
-    font-size: 14px;
+    font-size: min(14px, 1.2vw);
     font-weight: bold;
     text-align: center;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: min(200px, 15vw);
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -155,13 +155,13 @@
     position: absolute;
     width: 0;
     height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 25px solid currentColor;
-    transform-origin: 50% 60px;
-    top: -8px;
+    border-left: min(12px, 1vw) solid transparent;
+    border-right: min(12px, 1vw) solid transparent;
+    border-bottom: min(25px, 2vw) solid currentColor;
+    transform-origin: 50% min(60px, 5vw);
+    top: min(-8px, -0.7vw);
     left: 50%;
-    margin-left: -12px;
+    margin-left: min(-12px, -1vw);
     z-index: 2;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   }
@@ -170,8 +170,8 @@
   .turn-pointer.azul { color: #4444ff; }
   .turn-pointer.verde { color: #44ff44; }
   .turn-pointer.amarelo { color: #ffff44; }
+  .turn-pointer.preto { color: #444444; }
   .turn-pointer.roxo { color: #ff44ff; }
-  .turn-pointer.laranja { color: #ff8844; }
 
   /* Action Buttons */
   .action-buttons {
@@ -243,22 +243,6 @@
     box-shadow: none !important;
   }
 
-  /* Bottom HUD Bar */
-  .hud-bottom {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
-    border-top: 2px solid #444;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    pointer-events: auto;
-  }
-
   /* Game Info */
   .game-info {
     display: flex;
@@ -322,11 +306,6 @@
   @media (max-width: 1200px) {
     .hud-top {
       height: 70px;
-      padding: 0 15px;
-    }
-    
-    .hud-bottom {
-      height: 50px;
       padding: 0 15px;
     }
     
@@ -499,6 +478,81 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
   }
+
+  /* Responsive adjustments for small screens */
+  @media (max-width: 768px) {
+    .turn-indicator {
+      bottom: 3vh;
+      left: 1vw;
+      width: min(100px, 15vw);
+      height: min(100px, 15vw);
+    }
+
+    .turn-circle {
+      width: min(80px, 12vw);
+      height: min(80px, 12vw);
+      font-size: min(14px, 2vw);
+    }
+
+    .turn-mark {
+      width: min(4px, 0.5vw);
+      height: min(20px, 2.5vw);
+      transform-origin: 50% min(40px, 6vw);
+      margin-left: min(-2px, -0.25vw);
+    }
+
+    .turn-pointer {
+      border-left: min(8px, 1.2vw) solid transparent;
+      border-right: min(8px, 1.2vw) solid transparent;
+      border-bottom: min(18px, 2.5vw) solid currentColor;
+      transform-origin: 50% min(40px, 6vw);
+      top: min(-6px, -0.8vw);
+      margin-left: min(-8px, -1.2vw);
+    }
+
+    .turn-text {
+      bottom: min(-25px, -3.5vw);
+      font-size: min(12px, 1.8vw);
+      max-width: min(150px, 20vw);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .turn-indicator {
+      bottom: 2vh;
+      left: 0.5vw;
+      width: min(80px, 18vw);
+      height: min(80px, 18vw);
+    }
+
+    .turn-circle {
+      width: min(65px, 15vw);
+      height: min(65px, 15vw);
+      font-size: min(12px, 2.5vw);
+    }
+
+    .turn-mark {
+      width: min(3px, 0.6vw);
+      height: min(16px, 3vw);
+      transform-origin: 50% min(32px, 7.5vw);
+      margin-left: min(-1.5px, -0.3vw);
+    }
+
+    .turn-pointer {
+      border-left: min(6px, 1.5vw) solid transparent;
+      border-right: min(6px, 1.5vw) solid transparent;
+      border-bottom: min(14px, 3.5vw) solid currentColor;
+      transform-origin: 50% min(32px, 7.5vw);
+      top: min(-4px, -1vw);
+      margin-left: min(-6px, -1.5vw);
+    }
+
+    .turn-text {
+      bottom: min(-20px, -4.5vw);
+      font-size: min(10px, 2.2vw);
+      max-width: min(120px, 25vw);
+    }
+  }
 </style>
 </head>
 <body>
@@ -532,18 +586,6 @@
         </button>
       </div>
     </div>
-    
-    <!-- Bottom HUD Bar -->
-    <div class="hud-bottom">
-      <div class="game-info">
-        <!-- Turn info moved to turn indicator -->
-      </div>
-      
-      <div class="continent-status" id="continent-status">
-        <!-- Continent items will be added dynamically -->
-      </div>
-    </div>
-    
   </div>
 
   <!-- Turn Indicator - Bottom Left -->
@@ -555,7 +597,6 @@
       <div class="turn-pointer" id="turn-pointer"></div>
       <div id="turn-text">Aguardando...</div>
     </div>
-    <div class="turn-text" id="turn-player">-</div>
   </div>
 </body>
 </html>

@@ -116,6 +116,27 @@ let cartasTerritorio = {}; // { jogador: [cartas] }
 const simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
 let numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
 
+// Mapeamento de territórios para símbolos de cartas
+const mapeamentoTerritorioSimbolo = {
+  // Thaloria (▲ - Triângulo)
+  'Redwyn': '▲', 'Stormfen': '▲', 'Highmoor': '▲', 'Cragstone': '▲', 'Hollowspire': '▲', 'Westreach': '▲', 'Barrowfell': '▲',
+  
+  // Zarandis (■ - Quadrado)
+  'Emberlyn': '■', 'Ravenspire': '■', 'Stonevale': '■', 'Duskwatch': '■', 'Stormhall': '■',
+  
+  // Elyndra (● - Círculo)
+  'Frosthollow': '●', 'Eldoria': '●', 'Greymoor': '●', 'Thalengarde': '●', 'Duskmere': '●', 'Ironreach': '●', 'Frosthelm': '●', 'Blackmere': '●',
+  
+  // Kharune (★ - Coringa)
+  'Zul\'Marak': '★', 'Emberwaste': '★', 'Sunjara': '★', 'Tharkuun': '★', 'Bareshi': '★', 'Oru\'Kai': '★',
+  
+  // Xanthera (▲ - Triângulo)
+  'Kaer\'Tai': '▲', 'Shōrenji': '▲', 'Nihadara': '▲', 'Xin\'Qari': '▲', 'Vol\'Zareth': '▲', 'Omradan': '▲', 'Sa\'Torran': '▲', 'Qumaran': '▲', 'Tzun\'Rakai': '▲', 'Mei\'Zhara': '▲',
+  
+  // Mythara (■ - Quadrado)
+  'Darakai': '■', 'Ish\'Tanor': '■', 'Winterholde': '■', 'Aetheris': '■', 'Dawnwatch': '■', 'Mistveil': '■'
+};
+
 // Tipos de objetivos
 const tiposObjetivos = [
   'conquistar3Continentes',
@@ -389,11 +410,20 @@ io.on('connection', (socket) => {
         cartasTerritorio[turno] = [];
       }
       
-      // Escolher símbolo aleatório para a carta
-      const simboloAleatorio = simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
-      cartasTerritorio[turno].push(simboloAleatorio);
+      // Escolher um território aleatório dos conquistados para gerar a carta
+      const territoriosConquistados = territoriosConquistadosNoTurno[turno];
+      const territorioAleatorio = territoriosConquistados[Math.floor(Math.random() * territoriosConquistados.length)];
+      const simbolo = mapeamentoTerritorioSimbolo[territorioAleatorio] || simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
       
-      io.emit('mostrarMensagem', `🎴 ${turno} ganhou uma carta território (${simboloAleatorio}) por conquistar territórios neste turno!`);
+      // Criar carta com nome do território e símbolo
+      const carta = {
+        territorio: territorioAleatorio,
+        simbolo: simbolo
+      };
+      
+      cartasTerritorio[turno].push(carta);
+      
+      io.emit('mostrarMensagem', `🎴 ${turno} ganhou uma carta território de ${territorioAleatorio} (${simbolo}) por conquistar territórios neste turno!`);
     }
     
     // Limpar territórios conquistados do turno atual
@@ -477,30 +507,36 @@ io.on('connection', (socket) => {
     }
 
     // Verificar se todas as cartas selecionadas existem no deck do jogador
-    const cartasValidas = cartasSelecionadas.every(carta => cartas.includes(carta));
+    const cartasValidas = cartasSelecionadas.every(territorio => cartas.some(carta => carta.territorio === territorio));
     if (!cartasValidas) {
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Cartas inválidas selecionadas!' });
       return;
     }
 
+    // Extrair símbolos das cartas selecionadas
+    const cartasSelecionadasObjetos = cartasSelecionadas.map(territorio => 
+      cartas.find(carta => carta.territorio === territorio)
+    );
+    const simbolosSelecionados = cartasSelecionadasObjetos.map(carta => carta.simbolo);
+    
     // Verificar regras de troca: 3 iguais ou 3 diferentes (incluindo coringa)
-    const simbolosUnicos = [...new Set(cartasSelecionadas)];
-    const temCoringa = cartasSelecionadas.includes('★');
+    const simbolosUnicos = [...new Set(simbolosSelecionados)];
+    const temCoringa = simbolosSelecionados.includes('★');
     
     let podeTrocar = false;
     
     if (temCoringa) {
       // Se tem coringa, verificar se as outras cartas são válidas
-      const cartasSemCoringa = cartasSelecionadas.filter(carta => carta !== '★');
-      const simbolosSemCoringa = [...new Set(cartasSemCoringa)];
+      const simbolosSemCoringa = simbolosSelecionados.filter(simbolo => simbolo !== '★');
+      const simbolosUnicosSemCoringa = [...new Set(simbolosSemCoringa)];
       
-      if (cartasSemCoringa.length === 2) {
+      if (simbolosSemCoringa.length === 2) {
         // 2 cartas + 1 coringa: pode ser 2 iguais ou 2 diferentes
-        podeTrocar = simbolosSemCoringa.length === 1 || simbolosSemCoringa.length === 2;
-      } else if (cartasSemCoringa.length === 1) {
+        podeTrocar = simbolosUnicosSemCoringa.length === 1 || simbolosUnicosSemCoringa.length === 2;
+      } else if (simbolosSemCoringa.length === 1) {
         // 1 carta + 2 coringas: sempre válido
         podeTrocar = true;
-      } else if (cartasSemCoringa.length === 0) {
+      } else if (simbolosSemCoringa.length === 0) {
         // 3 coringas: sempre válido
         podeTrocar = true;
       }
@@ -515,8 +551,8 @@ io.on('connection', (socket) => {
     }
 
     // Remover as cartas trocadas
-    cartasSelecionadas.forEach(carta => {
-      const index = cartas.indexOf(carta);
+    cartasSelecionadas.forEach(territorio => {
+      const index = cartas.findIndex(carta => carta.territorio === territorio);
       if (index > -1) {
         cartas.splice(index, 1);
       }
@@ -532,9 +568,9 @@ io.on('connection', (socket) => {
     // Determinar tipo de troca considerando coringas
     let tipoTroca;
     if (temCoringa) {
-      const cartasSemCoringa = cartasSelecionadas.filter(carta => carta !== '★');
-      const simbolosSemCoringa = [...new Set(cartasSemCoringa)];
-      tipoTroca = simbolosSemCoringa.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
+      const simbolosSemCoringa = simbolosSelecionados.filter(simbolo => simbolo !== '★');
+      const simbolosUnicosSemCoringa = [...new Set(simbolosSemCoringa)];
+      tipoTroca = simbolosUnicosSemCoringa.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
     } else {
       tipoTroca = simbolosUnicos.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
     }
