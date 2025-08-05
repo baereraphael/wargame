@@ -39,8 +39,30 @@ let overlay;
 let textoVitoriaGrande;
 let botaoReiniciar;
 
+// Variáveis para sons
+let somTiro;
+let somMovimento;
+let somClick;
+let somHuh;
+
+// Variáveis para interface de reforço
+let interfaceReforco = null;
+let tropasParaColocar = 0;
+let territorioSelecionadoParaReforco = null;
+
+// Variáveis para interface de transferência após conquista
+let interfaceTransferenciaConquista = null;
+let tropasParaTransferir = 0;
+let dadosConquista = null;
+let botaoObjetivo = null;
+let modalObjetivoAberto = false;
+
 function preload() {
   this.load.image('mapa', 'assets/mapa.png');
+  this.load.audio('shotsfired', 'assets/shotsfired.mp3');
+  this.load.audio('armymoving', 'assets/armymoving.mp3');
+  this.load.audio('clicksound', 'assets/clicksound.mp3');
+  this.load.audio('huh', 'assets/huh.mp3');
 }
 
 function create() {
@@ -48,6 +70,12 @@ const largura = this.sys.game.config.width;
 const altura = this.sys.game.config.height;
 
 this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+
+  // Criar sons
+  somTiro = this.sound.add('shotsfired');
+  somMovimento = this.sound.add('armymoving');
+  somClick = this.sound.add('clicksound');
+  somHuh = this.sound.add('huh');
 
   hudTexto = this.add.text(10, 10, '', {
     fontSize: '18px',
@@ -66,6 +94,7 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   })
   .setInteractive({ useHandCursor: true })
   .on('pointerdown', () => {
+    tocarSomClick();
     hudVisivel = !hudVisivel;
     hudTexto.setVisible(hudVisivel);
     hudToggleButton.setText(hudVisivel ? '👁️ Ocultar HUD' : '👁️ Mostrar HUD');
@@ -93,7 +122,25 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     .on('pointerout', () => botaoTurno.setStyle({ backgroundColor: '#0077cc' }))
     .on('pointerdown', () => {
       if (vitoria || derrota) return;
+      tocarSomClick();
       socket.emit('passarTurno');
+    });
+
+  // Botão de objetivo
+  botaoObjetivo = this.add.text(0, 0, '🎯 Objetivo', {
+    fontSize: '16px',
+    fill: '#fff',
+    backgroundColor: '#9933cc',
+    padding: { x: 10, y: 5 },
+    fontFamily: 'Arial',
+  })
+    .setInteractive({ useHandCursor: true })
+    .on('pointerover', () => botaoObjetivo.setStyle({ backgroundColor: '#7a2a9e' }))
+    .on('pointerout', () => botaoObjetivo.setStyle({ backgroundColor: '#9933cc' }))
+    .on('pointerdown', () => {
+      if (modalObjetivoAberto) return; // Previne múltiplos modais
+      tocarSomClick();
+      socket.emit('consultarObjetivo');
     });
 
   posicionarBotao(this);
@@ -110,6 +157,10 @@ function posicionarBotao(scene) {
   botaoTurno.setPosition(
     largura - botaoTurno.width - 20,
     altura - botaoTurno.height - 20
+  );
+  botaoObjetivo.setPosition(
+    largura - botaoObjetivo.width - 20,
+    altura - botaoTurno.height - botaoObjetivo.height - 30
   );
 }
 
@@ -129,7 +180,7 @@ function posicionarBotao(scene) {
   textoVitoriaGrande.setVisible(false);
   textoVitoriaGrande.setDepth(11);
 
-  botaoReiniciar = this.add.text(400, 450, 'Reiniciar Jogo', {
+    botaoReiniciar = this.add.text(400, 450, 'Reiniciar Jogo', {
     fontSize: '28px',
     fill: '#fff',
     backgroundColor: '#1a1a1a',
@@ -145,24 +196,54 @@ function posicionarBotao(scene) {
   botaoReiniciar.on('pointerover', () => botaoReiniciar.setStyle({ backgroundColor: '#005fa3' }));
   botaoReiniciar.on('pointerout', () => botaoReiniciar.setStyle({ backgroundColor: '#0077cc' }));
      botaoReiniciar.on('pointerdown', () => {
-     if (vitoria || derrota) return;
-     socket.emit('reiniciarJogo');
-   });
+    if (vitoria || derrota) return;
+    tocarSomClick();
+    socket.emit('reiniciarJogo');
+  });
    
-   // DEBUG: Detectar cliques fora dos territórios
-   this.input.on('pointerdown', (pointer) => {
-     // Verificar se o clique foi em algum território
-     const territorioClicado = paises.find(pais => {
-       if (pais.polygon && pais.polygon.getBounds()) {
-         return pais.polygon.getBounds().contains(pointer.x, pointer.y);
-       }
-       return false;
-     });
-     
-     if (!territorioClicado) {
-       console.log(`DEBUG: Clique fora de territórios em (${pointer.x}, ${pointer.y})`);
-     }
-   });
+       // DEBUG: Detectar cliques fora dos territórios
+    this.input.on('pointerdown', (pointer) => {
+      // Verificar se o clique foi em algum território
+      const territorioClicado = paises.find(pais => {
+        if (pais.polygon && pais.polygon.getBounds()) {
+          return pais.polygon.getBounds().contains(pointer.x, pointer.y);
+        }
+        return false;
+      });
+      
+      if (!territorioClicado) {
+        console.log(`DEBUG: Clique fora de territórios em (${pointer.x}, ${pointer.y})`);
+      }
+      
+      // Verificar se o clique foi em algum elemento interativo das interfaces
+      let cliqueEmInterface = false;
+      
+      if (interfaceReforco) {
+        const localX = pointer.x - interfaceReforco.x;
+        const localY = pointer.y - interfaceReforco.y;
+        if (localX >= -100 && localX <= 100 && localY >= -60 && localY <= 60) {
+          cliqueEmInterface = true;
+        }
+      }
+      
+      if (interfaceTransferenciaConquista) {
+        const localX = pointer.x - interfaceTransferenciaConquista.x;
+        const localY = pointer.y - interfaceTransferenciaConquista.y;
+        // Aumentar a área de detecção para incluir todos os botões
+        if (localX >= -150 && localX <= 150 && localY >= -90 && localY <= 90) {
+          cliqueEmInterface = true;
+          console.log('DEBUG: Clique detectado dentro da interface de transferência');
+        }
+      }
+      
+      // Se clicou em uma interface, não fazer nada mais
+      if (cliqueEmInterface) {
+        return;
+      }
+      
+      // Remover a funcionalidade de esconder interfaces ao clicar fora
+      // As interfaces agora só podem ser fechadas pelos seus próprios botões
+    });
 
   socket.on('estadoAtualizado', (estado) => {
     jogadores = estado.jogadores;
@@ -206,6 +287,28 @@ function posicionarBotao(scene) {
   socket.on('derrota', () => {
     mostrarMensagem(`😞 Você perdeu!`);
     perdeuJogo(`😞 Você perdeu!`);
+  });
+
+  socket.on('tocarSomTiro', () => {
+    tocarSomTiro();
+  });
+
+  socket.on('tocarSomMovimento', () => {
+    tocarSomMovimento();
+  });
+
+  socket.on('territorioConquistado', (dados) => {
+    console.log('DEBUG: Recebido territorioConquistado, dados =', dados);
+    // Só mostrar a interface para o jogador atacante
+    if (dados.jogadorAtacante === meuNome) {
+      dadosConquista = dados;
+      console.log('DEBUG: dadosConquista definido como', dadosConquista);
+      mostrarInterfaceTransferenciaConquista(dados, this);
+    }
+  });
+
+  socket.on('mostrarObjetivo', (objetivo) => {
+    mostrarObjetivo(objetivo, this);
   });
 }
 
@@ -495,7 +598,7 @@ const dadosGeograficos = {
          const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
          const temTropasParaColocar = tropasReforco > 0 || totalBonus > 0;
          
-         if (temTropasParaColocar && obj.dono === turno) {
+         if (temTropasParaColocar && obj.dono === turno && turno === meuNome) {
            // Verificar se há tropas de bônus que precisam ser colocadas
            if (totalBonus > 0) {
              // Verificar se este país pode receber tropas de bônus
@@ -516,7 +619,8 @@ const dadosGeograficos = {
              }
            }
            
-           socket.emit('colocarReforco', obj.nome);
+           // Mostrar interface de reforço
+           mostrarInterfaceReforco(obj, pointer, scene);
            return;
          }
 
@@ -529,6 +633,7 @@ const dadosGeograficos = {
           selecionado = obj;
           obj.polygon.setFillStyle(0xffff00, 0.3);
           mostrarMensagem(`País selecionado: ${obj.nome}`);
+          tocarSomHuh(); // Tocar som quando selecionar território
         } else if (selecionado === obj) {
           obj.polygon.setFillStyle(coresDosDonos[obj.dono], 1); // usa alpha baixo se quiser estilo antigo
           selecionado = null;
@@ -678,4 +783,350 @@ function desbloquearJogo() {
   overlay.setVisible(false);
   textoVitoriaGrande.setVisible(false);
   botaoReiniciar.setVisible(false);
+}
+
+// Funções para tocar sons
+function tocarSomTiro() {
+  if (somTiro) {
+    somTiro.play();
+  }
+}
+
+function tocarSomMovimento() {
+  if (somMovimento) {
+    somMovimento.play();
+  }
+}
+
+function tocarSomClick() {
+  if (somClick) {
+    somClick.play();
+  }
+}
+
+function tocarSomHuh() {
+  if (somHuh) {
+    somHuh.play();
+  }
+}
+
+// Funções para interface de reforço
+function mostrarInterfaceReforco(territorio, pointer, scene) {
+  // Esconder interface anterior se existir
+  esconderInterfaceReforco();
+  
+  // Calcular tropas disponíveis
+  const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+  const tropasDisponiveis = tropasReforco + totalBonus;
+  
+  // Inicializar com 1 tropa
+  tropasParaColocar = 1;
+  territorioSelecionadoParaReforco = territorio;
+  
+  // Criar container para a interface
+  interfaceReforco = scene.add.container(pointer.x, pointer.y);
+  interfaceReforco.setDepth(20);
+  
+  // Background da interface
+  const background = scene.add.rectangle(0, 0, 200, 120, 0x000000, 0.9);
+  background.setStrokeStyle(2, 0xffffff);
+  interfaceReforco.add(background);
+  
+  // Título
+  const titulo = scene.add.text(0, -40, `Reforçar ${territorio.nome}`, {
+    fontSize: '14px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceReforco.add(titulo);
+  
+  // Botão menos
+  const botaoMenos = scene.add.text(-60, 0, '-', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#ff3333',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMenos.on('pointerdown', (pointer) => {
+    if (tropasParaColocar > 1) {
+      tropasParaColocar--;
+      atualizarTextoQuantidade();
+    }
+  });
+  interfaceReforco.add(botaoMenos);
+  
+  // Texto da quantidade
+  const textoQuantidade = scene.add.text(0, 0, `${tropasParaColocar}/${tropasDisponiveis}`, {
+    fontSize: '16px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceReforco.add(textoQuantidade);
+  
+  // Botão mais
+  const botaoMais = scene.add.text(60, 0, '+', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#33ff33',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMais.on('pointerdown', (pointer) => {
+    if (tropasParaColocar < tropasDisponiveis) {
+      tropasParaColocar++;
+      atualizarTextoQuantidade();
+    }
+  });
+  interfaceReforco.add(botaoMais);
+  
+  // Botão confirmar
+  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
+    fontSize: '14px',
+    fill: '#fff',
+    backgroundColor: '#0077cc',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoConfirmar.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    confirmarReforco();
+  });
+  interfaceReforco.add(botaoConfirmar);
+  
+  // Botão cancelar
+  const botaoCancelar = scene.add.text(0, 60, '❌ Cancelar', {
+    fontSize: '12px',
+    fill: '#fff',
+    backgroundColor: '#666',
+    padding: { x: 8, y: 3 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoCancelar.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    esconderInterfaceReforco();
+  });
+  interfaceReforco.add(botaoCancelar);
+  
+  // Função para atualizar o texto da quantidade
+  function atualizarTextoQuantidade() {
+    textoQuantidade.setText(`${tropasParaColocar}/${tropasDisponiveis}`);
+  }
+  
+  // Posicionar interface para não sair da tela
+  const largura = scene.scale.width;
+  const altura = scene.scale.height;
+  if (pointer.x + 100 > largura) {
+    interfaceReforco.x = largura - 100;
+  }
+  if (pointer.y + 60 > altura) {
+    interfaceReforco.y = altura - 60;
+  }
+}
+
+function esconderInterfaceReforco() {
+  if (interfaceReforco) {
+    interfaceReforco.destroy();
+    interfaceReforco = null;
+  }
+  tropasParaColocar = 0;
+  territorioSelecionadoParaReforco = null;
+}
+
+function confirmarReforco() {
+  if (territorioSelecionadoParaReforco && tropasParaColocar > 0) {
+    // Enviar múltiplas vezes para colocar as tropas
+    for (let i = 0; i < tropasParaColocar; i++) {
+      socket.emit('colocarReforco', territorioSelecionadoParaReforco.nome);
+    }
+    esconderInterfaceReforco();
+  }
+}
+
+// Funções para interface de transferência após conquista
+function mostrarInterfaceTransferenciaConquista(dados, scene) {
+  // Esconder interface anterior se existir
+  esconderInterfaceTransferenciaConquista(true);
+  
+  // Inicializar com 0 tropas (opcional)
+  tropasParaTransferir = 0;
+  
+  // Criar container para a interface
+  interfaceTransferenciaConquista = scene.add.container(400, 300);
+  interfaceTransferenciaConquista.setDepth(20);
+  
+  // Background da interface
+  const background = scene.add.rectangle(0, 0, 300, 180, 0x000000, 0.9);
+  background.setStrokeStyle(2, 0xffffff);
+  interfaceTransferenciaConquista.add(background);
+  
+  // Título
+  const titulo = scene.add.text(0, -60, `Transferir tropas após conquista`, {
+    fontSize: '16px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceTransferenciaConquista.add(titulo);
+  
+  // Descrição
+  const descricao = scene.add.text(0, -35, `De ${dados.territorioAtacante} para ${dados.territorioConquistado}`, {
+    fontSize: '14px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceTransferenciaConquista.add(descricao);
+  
+  // Botão menos
+  const botaoMenos = scene.add.text(-80, 0, '-', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#ff3333',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMenos.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    if (tropasParaTransferir > 0) {
+      tropasParaTransferir--;
+      atualizarTextoQuantidadeTransferencia();
+    }
+  });
+  interfaceTransferenciaConquista.add(botaoMenos);
+  
+  // Texto da quantidade
+  const textoQuantidade = scene.add.text(0, 0, `${tropasParaTransferir}/${dados.tropasDisponiveis}`, {
+    fontSize: '18px',
+    fill: '#fff',
+    align: 'center'
+  }).setOrigin(0.5);
+  interfaceTransferenciaConquista.add(textoQuantidade);
+  
+  // Botão mais
+  const botaoMais = scene.add.text(80, 0, '+', {
+    fontSize: '24px',
+    fill: '#fff',
+    backgroundColor: '#33ff33',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoMais.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    if (tropasParaTransferir < dados.tropasDisponiveis) {
+      tropasParaTransferir++;
+      atualizarTextoQuantidadeTransferencia();
+    }
+  });
+  interfaceTransferenciaConquista.add(botaoMais);
+  
+  // Botão confirmar
+  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
+    fontSize: '14px',
+    fill: '#fff',
+    backgroundColor: '#0077cc',
+    padding: { x: 10, y: 5 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoConfirmar.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    setTimeout(() => {
+      confirmarTransferenciaConquista();
+    }, 10);
+  });
+  interfaceTransferenciaConquista.add(botaoConfirmar);
+  
+  // Botão pular (transferir 0 tropas adicionais)
+  const botaoPular = scene.add.text(0, 70, '⏭️ Pular', {
+    fontSize: '12px',
+    fill: '#fff',
+    backgroundColor: '#666',
+    padding: { x: 8, y: 3 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoPular.on('pointerdown', (pointer) => {
+    tocarSomClick();
+    tropasParaTransferir = 0;
+    setTimeout(() => {
+      confirmarTransferenciaConquista();
+    }, 10);
+  });
+  interfaceTransferenciaConquista.add(botaoPular);
+  
+  // Função para atualizar o texto da quantidade
+  function atualizarTextoQuantidadeTransferencia() {
+    textoQuantidade.setText(`${tropasParaTransferir}/${dados.tropasDisponiveis}`);
+  }
+}
+
+function esconderInterfaceTransferenciaConquista(manterDados = false) {
+  console.log('DEBUG: esconderInterfaceTransferenciaConquista chamada, manterDados =', manterDados);
+  if (interfaceTransferenciaConquista) {
+    interfaceTransferenciaConquista.destroy();
+    interfaceTransferenciaConquista = null;
+    console.log('DEBUG: interfaceTransferenciaConquista destruída');
+  }
+  tropasParaTransferir = 0;
+  if (!manterDados) {
+    dadosConquista = null;
+    console.log('DEBUG: tropasParaTransferir e dadosConquista resetados');
+  } else {
+    console.log('DEBUG: tropasParaTransferir resetado, dadosConquista mantido');
+  }
+}
+
+function confirmarTransferenciaConquista() {
+  console.log('DEBUG: confirmarTransferenciaConquista chamada');
+  console.log('DEBUG: dadosConquista =', dadosConquista);
+  console.log('DEBUG: tropasParaTransferir =', tropasParaTransferir);
+  
+  if (dadosConquista && tropasParaTransferir >= 0) {
+    console.log('DEBUG: Enviando transferirTropasConquista para o servidor');
+    socket.emit('transferirTropasConquista', {
+      territorioAtacante: dadosConquista.territorioAtacante,
+      territorioConquistado: dadosConquista.territorioConquistado,
+      quantidade: tropasParaTransferir
+    });
+    esconderInterfaceTransferenciaConquista(false);
+  } else {
+    console.log('DEBUG: Condição não atendida - dadosConquista:', dadosConquista, 'tropasParaTransferir:', tropasParaTransferir);
+  }
+}
+
+function mostrarObjetivo(objetivo, scene) {
+  modalObjetivoAberto = true; // Marca que o modal está aberto
+  
+  // Criar overlay para mostrar o objetivo
+  const overlay = scene.add.rectangle(400, 300, 800, 400, 0x000000, 0.8);
+  overlay.setDepth(20);
+  
+  // Container para o conteúdo
+  const container = scene.add.container(400, 300);
+  container.setDepth(21);
+  
+  // Título
+  const titulo = scene.add.text(0, -150, '🎯 SEU OBJETIVO', {
+    fontSize: '24px',
+    fill: '#ffff00',
+    fontStyle: 'bold',
+    stroke: '#000',
+    strokeThickness: 4
+  }).setOrigin(0.5);
+  container.add(titulo);
+  
+  // Descrição do objetivo
+  const descricao = scene.add.text(0, -100, objetivo.descricao, {
+    fontSize: '18px',
+    fill: '#fff',
+    align: 'center',
+    wordWrap: { width: 600 },
+    stroke: '#000',
+    strokeThickness: 2
+  }).setOrigin(0.5);
+  container.add(descricao);
+  
+  // Botão de fechar
+  const botaoFechar = scene.add.text(0, 100, '✅ Entendi', {
+    fontSize: '16px',
+    fill: '#fff',
+    backgroundColor: '#0077cc',
+    padding: { x: 15, y: 8 }
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  botaoFechar.on('pointerdown', () => {
+    tocarSomClick();
+    modalObjetivoAberto = false; // Marca que o modal foi fechado
+    overlay.destroy();
+    container.destroy();
+  });
+  container.add(botaoFechar);
 }

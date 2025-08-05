@@ -103,6 +103,17 @@ let paises = [
 let tropasReforco = 0;
 let tropasBonusContinente = {}; // Track bonus troops by continent
 
+// Sistema de objetivos
+let objetivos = {}; // { jogador: objetivo }
+
+// Tipos de objetivos
+const tiposObjetivos = [
+  'conquistar3Continentes',
+  'eliminarJogador', 
+  'dominar24Territorios',
+  'dominar16TerritoriosCom2Tropas'
+];
+
 app.use(express.static('public')); // coloque seu index.html e assets na pasta public
 
 io.on('connection', (socket) => {
@@ -119,6 +130,31 @@ io.on('connection', (socket) => {
   // Envia estado inicial para o cliente
   socket.emit('estadoAtualizado', getEstado(socket.id));
 
+
+  socket.on('transferirTropasConquista', (dados) => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador.nome !== turno || vitoria || derrota) return;
+
+    const territorioAtacante = paises.find(p => p.nome === dados.territorioAtacante);
+    const territorioConquistado = paises.find(p => p.nome === dados.territorioConquistado);
+    
+    if (!territorioAtacante || !territorioConquistado) return;
+    if (territorioAtacante.dono !== turno || territorioConquistado.dono !== turno) return;
+            if (dados.quantidade < 0 || dados.quantidade > 3) return; // Máximo 3 tropas adicionais (1 já foi automaticamente transferida)
+    if (territorioAtacante.tropas - dados.quantidade < 1) return; // Garantir pelo menos 1 tropa no atacante
+
+    // Transferir tropas
+    territorioAtacante.tropas -= dados.quantidade;
+    territorioConquistado.tropas += dados.quantidade;
+
+    const mensagem = `${turno} transferiu ${dados.quantidade} tropas adicionais de ${dados.territorioAtacante} para ${dados.territorioConquistado}`;
+    io.emit('mostrarMensagem', mensagem);
+    io.emit('tocarSomMovimento');
+
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+  });
 
   socket.on('colocarReforco', (nomePais) => {
     const jogador = jogadores.find(j => j.socketId === socket.id);
@@ -170,6 +206,7 @@ io.on('connection', (socket) => {
         : `${turno} colocou 1 tropa em ${nomePais}. Reforços restantes: ${tropasReforco} base + ${Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`;
       
       io.emit('mostrarMensagem', mensagem);
+      io.emit('tocarSomMovimento'); // Emitir evento para tocar som de movimento
 
       io.sockets.sockets.forEach((s) => {
         s.emit('estadoAtualizado', getEstado(s.id));
@@ -211,10 +248,20 @@ io.on('connection', (socket) => {
 
     if (defensorPais.tropas <= 0) {
         defensorPais.dono = atacantePais.dono;
-        const tropasParaMover = dadosAtaque;
-        defensorPais.tropas = tropasParaMover;
-        atacantePais.tropas -= tropasParaMover;
+        defensorPais.tropas = 1; // Colocar 1 tropa no território conquistado
+        atacantePais.tropas -= 1; // Remover 1 tropa do território atacante
         resultadoMensagem += `${para} foi conquistado por ${turno}!\n`;
+        
+        // Calcular tropas disponíveis para transferência (máximo 3, pois 1 já foi automaticamente transferida)
+        const tropasDisponiveis = Math.min(atacantePais.tropas - 1, 3); // Máximo 3 tropas adicionais, mínimo 1 no atacante
+        
+        // Emitir evento para mostrar interface de transferência de tropas
+        io.emit('territorioConquistado', {
+          territorioConquistado: para,
+          territorioAtacante: de,
+          tropasDisponiveis: tropasDisponiveis, // Já deduzida a tropa automática
+          jogadorAtacante: turno
+        });
         
         // Verificar se conquistou algum continente
         Object.values(continentes).forEach(continente => {
@@ -233,6 +280,7 @@ io.on('connection', (socket) => {
     }
 
     io.emit('mostrarMensagem', resultadoMensagem.trim());
+    io.emit('tocarSomTiro'); // Emitir evento para tocar som de tiro
     io.sockets.sockets.forEach((s) => {
     s.emit('estadoAtualizado', getEstado(s.id));
     });
@@ -285,6 +333,16 @@ io.on('connection', (socket) => {
 
   });
 
+  socket.on('consultarObjetivo', () => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (!jogador) return;
+    
+    const objetivo = objetivos[jogador.nome];
+    if (objetivo) {
+      socket.emit('mostrarObjetivo', objetivo);
+    }
+  });
+
   socket.on('reiniciarJogo', () => {
     jogadores.forEach(j => j.ativo = true);
     indiceTurno = 0;
@@ -293,6 +351,7 @@ io.on('connection', (socket) => {
     derrota = false;
     tropasReforco = 0;
     tropasBonusContinente = {}; // Resetar tropas de bônus
+    objetivos = {}; // Resetar objetivos
 
     paises = [
       { nome: 'Emberlyn', x: 190, y: 170, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
@@ -405,7 +464,8 @@ function getEstado(socketId = null) {
     vitoria,
     derrota,
     meuNome,
-    continentes: controleContinentes
+    continentes: controleContinentes,
+    objetivos
   };
 }
 
@@ -481,12 +541,101 @@ function checarEliminacao() {
   checarVitoria();
 }
 
+function gerarObjetivoAleatorio(jogador) {
+  const tipo = tiposObjetivos[Math.floor(Math.random() * tiposObjetivos.length)];
+  
+  switch (tipo) {
+    case 'conquistar3Continentes':
+      const nomesContinentes = Object.keys(continentes);
+      const continente1 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      let continente2 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      while (continente2 === continente1) {
+        continente2 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      }
+      return {
+        tipo: 'conquistar3Continentes',
+        continente1: continente1,
+        continente2: continente2,
+        descricao: `Conquistar 3 continentes: ${continente1}, ${continente2} e qualquer outro`
+      };
+      
+    case 'eliminarJogador':
+      const jogadoresDisponiveis = jogadores.filter(j => j.nome !== jogador);
+      const jogadorAlvo = jogadoresDisponiveis[Math.floor(Math.random() * jogadoresDisponiveis.length)];
+      return {
+        tipo: 'eliminarJogador',
+        jogadorAlvo: jogadorAlvo.nome,
+        descricao: `Eliminar o jogador ${jogadorAlvo.nome}`
+      };
+      
+    case 'dominar24Territorios':
+      return {
+        tipo: 'dominar24Territorios',
+        descricao: 'Dominar 24 territórios'
+      };
+      
+    case 'dominar16TerritoriosCom2Tropas':
+      return {
+        tipo: 'dominar16TerritoriosCom2Tropas',
+        descricao: 'Dominar 16 territórios com pelo menos 2 tropas em cada'
+      };
+  }
+}
+
+function verificarObjetivo(jogador) {
+  const objetivo = objetivos[jogador];
+  if (!objetivo) return false;
+  
+  switch (objetivo.tipo) {
+    case 'conquistar3Continentes':
+      const continentesConquistados = Object.values(continentes).filter(continente => {
+        const territoriosDoContinente = continente.territorios;
+        const territoriosConquistados = territoriosDoContinente.filter(territorio => {
+          const pais = paises.find(p => p.nome === territorio);
+          return pais && pais.dono === jogador;
+        });
+        return territoriosConquistados.length === territoriosDoContinente.length;
+      });
+      
+      const temContinente1 = continentesConquistados.some(c => c.nome === objetivo.continente1);
+      const temContinente2 = continentesConquistados.some(c => c.nome === objetivo.continente2);
+      const temTerceiroContinente = continentesConquistados.length >= 3;
+      
+      return temContinente1 && temContinente2 && temTerceiroContinente;
+      
+    case 'eliminarJogador':
+      const jogadorAlvo = jogadores.find(j => j.nome === objetivo.jogadorAlvo);
+      return !jogadorAlvo || !jogadorAlvo.ativo;
+      
+    case 'dominar24Territorios':
+      const territoriosDominados = paises.filter(p => p.dono === jogador).length;
+      return territoriosDominados >= 24;
+      
+    case 'dominar16TerritoriosCom2Tropas':
+      const territoriosCom2Tropas = paises.filter(p => p.dono === jogador && p.tropas >= 2).length;
+      return territoriosCom2Tropas >= 16;
+  }
+  
+  return false;
+}
+
 function checarVitoria() {
+  // Verificar vitória por eliminação
   const ativos = jogadores.filter(j => j.ativo);
   if (ativos.length === 1) {
     vitoria = true;
     io.emit('vitoria', ativos[0].nome);
+    return;
   }
+  
+  // Verificar vitória por objetivo
+  jogadores.forEach(jogador => {
+    if (jogador.ativo && verificarObjetivo(jogador.nome)) {
+      vitoria = true;
+      io.emit('vitoria', jogador.nome);
+      return;
+    }
+  });
 }
 
 // Inicializar o jogo
@@ -506,6 +655,11 @@ function inicializarJogo() {
   // Colocar tropas extras
   paises.forEach(pais => {
     pais.tropas += 2;
+  });
+
+  // Gerar objetivos para cada jogador
+  jogadores.forEach(jogador => {
+    objetivos[jogador.nome] = gerarObjetivoAleatorio(jogador.nome);
   });
 
   indiceTurno = 0;
