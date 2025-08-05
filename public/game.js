@@ -21,8 +21,11 @@ let paises = [];
 let jogadores = [];
 let turno = null;
 let tropasReforco = 0;
+let tropasBonusContinente = {}; // Track bonus troops by continent
 let selecionado = null;
 let meuNome = null;
+let continentes = {};
+let hudVisivel = true; // Track HUD visibility
 
 let hudTexto;
 let mensagemTexto;
@@ -53,6 +56,21 @@ this.add.image(0, 0, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     padding: { x: 10, y: 5 }
   });
   hudTexto.setDepth(5);
+
+  // HUD toggle button
+  const hudToggleButton = this.add.text(10, 200, '👁️ Ocultar HUD', {
+    fontSize: '16px',
+    fill: '#fff',
+    backgroundColor: '#555',
+    padding: { x: 8, y: 4 }
+  })
+  .setInteractive({ useHandCursor: true })
+  .on('pointerdown', () => {
+    hudVisivel = !hudVisivel;
+    hudTexto.setVisible(hudVisivel);
+    hudToggleButton.setText(hudVisivel ? '👁️ Ocultar HUD' : '👁️ Mostrar HUD');
+  });
+  hudToggleButton.setDepth(5);
 
   mensagemTexto = this.add.text(10, 50, '', {
     fontSize: '16px',
@@ -126,18 +144,35 @@ function posicionarBotao(scene) {
   botaoReiniciar.setDepth(12);
   botaoReiniciar.on('pointerover', () => botaoReiniciar.setStyle({ backgroundColor: '#005fa3' }));
   botaoReiniciar.on('pointerout', () => botaoReiniciar.setStyle({ backgroundColor: '#0077cc' }));
-  botaoReiniciar.on('pointerdown', () => {
-    if (vitoria || derrota) return;
-    socket.emit('reiniciarJogo');
-  });
+     botaoReiniciar.on('pointerdown', () => {
+     if (vitoria || derrota) return;
+     socket.emit('reiniciarJogo');
+   });
+   
+   // DEBUG: Detectar cliques fora dos territórios
+   this.input.on('pointerdown', (pointer) => {
+     // Verificar se o clique foi em algum território
+     const territorioClicado = paises.find(pais => {
+       if (pais.polygon && pais.polygon.getBounds()) {
+         return pais.polygon.getBounds().contains(pointer.x, pointer.y);
+       }
+       return false;
+     });
+     
+     if (!territorioClicado) {
+       console.log(`DEBUG: Clique fora de territórios em (${pointer.x}, ${pointer.y})`);
+     }
+   });
 
   socket.on('estadoAtualizado', (estado) => {
     jogadores = estado.jogadores;
     turno = estado.turno;
     tropasReforco = estado.tropasReforco;
+    tropasBonusContinente = estado.tropasBonusContinente || {};
     vitoria = estado.vitoria;
     derrota = estado.derrota
     meuNome = estado.meuNome;
+    continentes = estado.continentes || {};
 
     atualizarPaises(estado.paises, this);
     atualizarHUD();
@@ -243,7 +278,157 @@ const dadosGeograficos = {
     pontos: [161,343,167,359,176,370,192,378,195,391,213,406,231,405,247,415,261,421,276,428,281,434,292,442,302,428,289,425,282,417,275,406,273,393,255,393,247,392,239,385,241,373,250,357,265,339,160,340],
     textoX: 180,
     textoY: 305
-  }
+  },
+  "Zul'Marak": {
+    pontos: [527,367,537,354,549,345,563,336,574,337,583,324,582,311,596,312,606,315,618,317,631,312,640,321,650,323,660,303,663,317,663,325,662,334,662,341,661,349,661,362,658,385,656,394,621,436,601,438,589,440,582,441,573,441,566,444,555,442,551,428,541,424,530,421,527,415,523,392,530,380],
+    textoX: 540,
+    textoY: 380
+  },
+  "Emberwaste": {
+    pontos: [663,354,658,306,680,315,688,315,695,312,703,313,712,313,715,319,727,317,733,310,738,301,748,297,759,297,764,306,768,314,771,320,774,329,779,337,782,343,775,350,775,351,774,353,763,360,747,369,734,374,712,389,696,403,681,417,664,433,648,451,637,467,631,468,626,459,634,449,625,444,615,440,625,431,629,424,637,417,645,408,655,398,654,402],
+    textoX: 680,
+    textoY: 350
+  },
+  "Sunjara": {
+    pontos: [783,341,792,347,800,358,806,365,805,378,799,380,792,383,789,390,801,397,811,396,825,400,819,408,810,414,807,420,803,436,789,443,781,449,767,457,759,460,753,470,742,467,732,463,722,462,714,459,698,454,686,449,677,444,670,440,664,428,703,398,731,373,757,363,773,353],
+    textoX: 800,
+    textoY: 400
+  },
+  "Tharkuun": {
+    pontos: [625,466,638,457,646,453,653,443,665,433,672,442,686,450,696,454,707,459,707,469,704,478,700,486,698,493,695,503,693,515,690,529,689,537,685,549,684,560,681,570,680,576,677,584,670,582,664,573,658,560,653,555,648,540,639,532,632,514,639,506,645,495,637,479],
+    textoX: 650,
+    textoY: 500
+  },
+  "Bareshi": {
+    pontos: [706,456,726,461,742,465,754,471,758,485,763,498,760,511,750,517,741,526,738,537,738,548,725,554,717,566,708,576,692,581,679,585,683,561,688,536,695,506,698,489,706,474],
+    textoX: 720,
+    textoY: 520
+  },
+     "Oru'Kai": {
+     pontos: [809,494,810,508,804,517,802,530,794,541,777,547,775,535,780,523,781,512,793,506,801,501],
+     textoX: 800,
+     textoY: 510
+   },
+   "Frosthollow": {
+     pontos: [310,112,328,106,344,109,356,102,367,90,382,87,395,81,409,72,426,67,444,61,460,72,478,73,492,76,509,77,522,81,515,89,503,101,489,105,482,114,477,124,466,128,456,130,449,139,451,146,442,150,435,155,433,163,429,170,422,179,422,188,419,197,412,199,403,191,395,177,384,174,373,171,367,163,359,164,348,161,338,150,341,135,327,124,316,119],
+     textoX: 400,
+     textoY: 130
+   },
+   "Eldoria": {
+     pontos: [508,130,517,139,525,147,529,161,533,173,531,183,524,194,520,206,516,215,511,222,505,231,499,241,490,232,481,227,473,241,467,248,461,249,450,249,441,241,437,224,436,212,447,211,463,199,459,185,470,176,479,172,483,161,491,157,492,140],
+     textoX: 500,
+     textoY: 180
+   },
+   "Greymoor": {
+     pontos: [525,193,534,200,540,211,548,221,554,230,556,242,550,253,541,256,529,262,521,263,515,265,508,269,502,270,493,271,496,259,494,253,500,239,508,226,515,216,520,200,496,259],
+     textoX: 520,
+     textoY: 230
+   },
+   "Thalengarde": {
+     pontos: [487,262,483,278,486,298,481,310,475,315,466,328,461,337,470,349,483,344,488,330,497,323,510,323,512,309,521,300,527,289,532,280,541,277,550,277,549,288,563,287,564,276,577,274,591,267,581,253,570,249,558,250,547,250,539,258,527,262,515,266,503,267,494,268],
+     textoX: 530,
+     textoY: 290
+   },
+   "Duskmere": {
+     pontos: [555,246,555,231,559,217,569,207,584,203,598,200,613,199,624,198,642,198,654,198,669,198,681,198,693,198,705,198,715,201,711,209,703,217,698,226,693,234,685,238,679,244,673,252,669,264,661,268,652,268,643,268,634,268,625,270,632,278,637,283,646,287,636,294,627,293,618,292,611,288,604,287,596,286,600,275,603,267,598,257,591,249,585,253,570,250],
+     textoX: 650,
+     textoY: 240
+   },
+   "Ironreach": {
+     pontos: [533,163,544,157,560,153,576,147,589,147,604,151,608,161,610,175,610,182,610,191,608,198,594,200,581,203,569,206,564,211,557,231,549,220,540,212,535,202,525,186,526,196],
+     textoX: 570,
+     textoY: 180
+   },
+   "Frosthelm": {
+     pontos: [630,113,618,120,611,124,602,132,596,140,589,146,574,148,563,150,551,154,539,156,533,160,524,147,516,138,511,130,511,114,530,105,548,97,563,91,577,91,591,86,606,80,624,77,637,76,653,72,661,72,663,84,678,85,685,89,680,96,667,104,656,107,642,112],
+     textoX: 630,
+     textoY: 100
+   },
+   "Blackmere": {
+     pontos: [592,145,600,137,609,124,622,116,632,112,630,123,634,131,638,137,629,141,627,156,637,162,646,166,654,171,667,171,684,166,695,173,707,175,714,179,720,191,721,200,713,201,706,198,691,197,676,198,662,198,650,197,636,196,625,196,616,198,608,197,610,180,611,166,603,153],
+     textoX: 650,
+     textoY: 150
+   },
+   "Kaer'Tai": {
+     pontos: [711,237,723,242,736,244,753,249,765,251,786,253,800,257,812,261,828,272,834,280,837,290,842,303,845,313,845,320,845,332,846,346,845,359,846,370,836,370,826,371,818,374,810,378,809,366,795,354,790,346,780,340,777,330,771,320,765,307,763,296,776,295,777,287,766,284,748,278,739,275,732,280,725,290,715,293,703,293,695,294,687,284,687,271,684,260,690,250,702,246,710,246],
+     textoX: 760,
+     textoY: 290
+   },
+   "Shōrenji": {
+     pontos: [823,269,836,252,845,242,851,229,857,218,857,206,850,197,836,192,823,191,808,188,797,186,782,185,768,185,758,185,747,185,747,197,740,206,730,214,728,225,723,231,715,233,723,241,739,244,754,246,773,248,790,252,803,255,811,260],
+     textoX: 800,
+     textoY: 220
+   },
+   "Nihadara": {
+     pontos: [715,135,729,136,739,141,748,142,764,132,774,127,797,134,812,128,826,121,833,126,838,134,845,141,851,150,853,161,854,174,853,183,852,192,841,192,826,189,810,185,800,184,782,184,764,183,750,183,740,176,733,161,721,156,714,144],
+     textoX: 780,
+     textoY: 160
+   },
+   "Xin'Qari": {
+     pontos: [826,117,834,102,844,107,851,115,859,117,870,116,879,112,889,108,900,102,907,111,913,120,918,130,922,140,926,150,928,164,928,173,927,186,922,199,918,209,906,215,897,218,886,220,876,220,866,220,859,219,858,206,854,193,857,174,853,158,847,141,836,129],
+     textoX: 880,
+     textoY: 150
+   },
+   "Vol'Zareth": {
+     pontos: [1048,124,1052,142,1049,155,1047,172,1042,182,1036,194,1030,208,1023,214,1007,215,995,212,980,209,965,206,951,205,938,201,925,198,928,183,928,167,927,147,919,132,913,119,904,106,905,93,921,94,934,89,948,84,962,77,973,87,986,89,1001,90,1015,94,1026,102,1035,113],
+     textoX: 980,
+     textoY: 150
+   },
+   "Omradan": {
+     pontos: [1050,124,1051,139,1051,154,1049,168,1044,181,1039,190,1035,200,1031,208,1027,217,1030,230,1038,238,1050,243,1059,245,1073,249,1083,249,1093,251,1095,261,1098,270,1110,261,1122,260,1124,251,1130,239,1137,232,1134,218,1117,222,1103,218,1094,216,1101,208,1113,199,1120,189,1135,184,1152,184,1166,192,1175,189,1182,185,1195,181,1208,182,1223,180,1233,175,1225,164,1208,157,1190,146,1178,132,1160,123,1144,131,1127,127,1105,131,1089,136,1079,138,1073,124,1074,115,1061,116],
+     textoX: 1100,
+     textoY: 200
+   },
+   "Sa'Torran": {
+     pontos: [897,218,899,226,903,235,913,248,922,253,934,258,947,263,960,266,979,269,1001,274,1019,275,1039,275,1048,266,1055,261,1060,246,1044,241,1030,233,1027,211,1017,214,1003,214,990,210,973,207,940,198,925,194,917,210],
+     textoX: 970,
+     textoY: 250
+   },
+   "Qumaran": {
+     pontos: [1060,247,1054,260,1038,272,1021,277,1006,277,991,290,964,311,886,297,861,218,826,264,847,314,842,344,908,352,964,349,981,354,997,359,1008,363,1020,372,1033,373,1043,374,1055,369,1064,363,1057,351,1066,341,1075,332,1066,323,1069,303,1077,290,1089,278,1098,272,1092,254,1077,250],
+     textoX: 1000,
+     textoY: 320
+   },
+   "Tzun'Rakai": {
+     pontos: [1122,274,1120,288,1113,296,1108,304,1100,311,1097,322,1110,320,1120,312,1127,302,1134,292,1128,279],
+     textoX: 1120,
+     textoY: 290
+   },
+   "Mei'Zhara": {
+     pontos: [866,220,879,218,892,219,900,234,910,245,922,252,937,261,954,262,971,268,988,269,1002,276,992,285,981,295,966,306,950,306,930,303,911,298,889,296,881,279,876,261,871,245,864,232],
+     textoX: 940,
+     textoY: 280
+   },
+   "Darakai": {
+     pontos: [961,352,962,365,962,379,966,388,970,402,973,418,975,427,983,442,987,461,999,472,1005,482,1005,491,997,491,984,484,976,475,970,460,963,449,967,432,963,416,961,405,955,393,946,383,937,378,928,384,923,394,919,406,914,418,913,433,909,441,898,436,889,423,877,408,871,397,863,384,852,375,842,372,847,357,846,344,859,346,883,350,903,353,922,352,942,349],
+     textoX: 950,
+     textoY: 400
+   },
+   "Ish'Tanor": {
+     pontos: [963,349,976,350,991,355,1005,361,1016,365,1032,371,1048,371,1043,379,1025,378,1015,380,1008,389,1014,400,1025,404,1025,413,1020,422,1010,426,1001,423,988,413,989,425,994,434,999,440,1034,448,1044,442,1053,442,1058,448,1061,456,1060,465,1053,474,1047,482,1034,484,1024,479,1015,468,1013,459,1027,457,1034,454,999,451,985,451,980,434,973,417,973,401,964,385,963,366],
+     textoX: 1000,
+     textoY: 400
+   },
+   "Winterholde": {
+     pontos: [1020,491,1033,494,1045,494,1053,494,1048,501,1040,501,1031,502,1024,501,1011,496],
+     textoX: 1030,
+     textoY: 495
+   },
+   "Aetheris": {
+     pontos: [1094,458,1083,454,1076,454,1070,458,1067,470,1063,480,1069,492,1079,485,1089,487,1088,472,1080,466,1095,463],
+     textoX: 1080,
+     textoY: 470
+   },
+   "Dawnwatch": {
+     pontos: [1113,475,1128,472,1144,472,1156,471,1165,479,1174,485,1184,491,1196,505,1182,505,1171,497,1162,496,1153,496,1144,488,1134,485,1123,482],
+     textoX: 1150,
+     textoY: 485
+   },
+   "Mistveil": {
+     pontos: [1078,511,1069,517,1060,524,1050,531,1039,537,1025,544,1020,554,1022,567,1019,580,1011,588,1010,597,1022,597,1034,593,1048,590,1063,585,1077,582,1089,581,1099,587,1114,591,1114,605,1122,609,1139,614,1153,610,1165,599,1173,597,1179,585,1188,581,1189,567,1184,555,1175,543,1164,529,1162,513,1154,504,1152,514,1148,524,1138,531,1127,528,1119,518,1123,509,1110,504,1099,504,1097,512,1094,519,1086,514],
+     textoX: 1100,
+     textoY: 550
+   }
   };
 
   if (paises.length === 0) {
@@ -266,25 +451,30 @@ const dadosGeograficos = {
       const centroX = somaX / (pontos.length / 2);
       const centroY = somaY / (pontos.length / 2);
 
-  // Encontrar minX e minY
-let minX = Infinity;
-let minY = Infinity;
-for (let i = 0; i < pontos.length; i += 2) {
-  if (pontos[i] < minX) minX = pontos[i];
-  if (pontos[i + 1] < minY) minY = pontos[i + 1];
-}
+        // Encontrar minX e minY para posicionar o polígono
+    let minX = Infinity;
+    let minY = Infinity;
+    for (let i = 0; i < pontos.length; i += 2) {
+      if (pontos[i] < minX) minX = pontos[i];
+      if (pontos[i + 1] < minY) minY = pontos[i + 1];
+    }
+    
+    // Ajustar pontos relativos ao canto superior esquerdo (minX, minY)
+    const pontosRelativos = [];
+    for (let i = 0; i < pontos.length; i += 2) {
+      pontosRelativos.push(pontos[i] - minX);
+      pontosRelativos.push(pontos[i + 1] - minY);
+    }
+    
+         // Criar o polígono na posição (minX, minY) com pontos relativos
+     obj.polygon = scene.add.polygon(minX, minY, pontosRelativos, 0xffffff, 0.1);
+     obj.polygon.setOrigin(0, 0);
+     obj.polygon.setInteractive({ 
+       useHandCursor: true,
+       hitArea: new Phaser.Geom.Polygon(pontosRelativos),
+       hitAreaCallback: Phaser.Geom.Polygon.Contains
+     });
 
-// Ajustar pontos relativos ao canto superior esquerdo (minX, minY)
-const pontosRelativos = [];
-for (let i = 0; i < pontos.length; i += 2) {
-  pontosRelativos.push(pontos[i] - minX);
-  pontosRelativos.push(pontos[i + 1] - minY);
-}
-
-// Criar o polígono na posição (minX, minY)
-obj.polygon = scene.add.polygon(minX, minY, pontosRelativos, 0xffffff, 0.1);
-obj.polygon.setOrigin(0, 0); // origem no canto superior esquerdo
-      obj.polygon.setInteractive({ useHandCursor: true });
 
     obj.text = scene.add.text(centroX, centroY, getTextoPais(pais), {
         fontSize: '14px',
@@ -295,12 +485,40 @@ obj.polygon.setOrigin(0, 0); // origem no canto superior esquerdo
         padding: { x: 4, y: 2 }
       }).setOrigin(0.5);
 
-      obj.polygon.on('pointerdown', () => {
-        if (vitoria || derrota) return;
-        if (tropasReforco > 0 && obj.dono === turno) {
-          socket.emit('colocarReforco', obj.nome);
-          return;
-        }
+             obj.polygon.on('pointerdown', (pointer) => {
+         // DEBUG: Mostrar coordenadas exatas do clique
+         console.log(`DEBUG: Clicou em ${obj.nome} nas coordenadas (${pointer.x}, ${pointer.y})`);
+         
+         if (vitoria || derrota) return;
+         
+         // Verificar se há tropas para colocar (base ou bônus)
+         const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+         const temTropasParaColocar = tropasReforco > 0 || totalBonus > 0;
+         
+         if (temTropasParaColocar && obj.dono === turno) {
+           // Verificar se há tropas de bônus que precisam ser colocadas
+           if (totalBonus > 0) {
+             // Verificar se este país pode receber tropas de bônus
+             let podeReceberBonus = false;
+             for (const [nomeContinente, quantidade] of Object.entries(tropasBonusContinente)) {
+               if (quantidade > 0) {
+                 const continente = continentes[nomeContinente];
+                 if (continente && continente.territorios.includes(obj.nome)) {
+                   podeReceberBonus = true;
+                   break;
+                 }
+               }
+             }
+             
+             if (!podeReceberBonus) {
+               mostrarMensagem("❌ Tropas de bônus de continente só podem ser colocadas em países do continente conquistado!");
+               return;
+             }
+           }
+           
+           socket.emit('colocarReforco', obj.nome);
+           return;
+         }
 
         if (obj.dono !== turno && !selecionado) {
           mostrarMensagem("Você só pode selecionar territórios seus no começo da jogada.");
@@ -352,7 +570,29 @@ const coresDosDonos = {
     paises[i].tropas = novosPaises[i].tropas;
     paises[i].vizinhos = novosPaises[i].vizinhos;
     paises[i].text.setText(getTextoPais(paises[i]));
-    paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono] , 0.7);
+    
+    // Verificar se este país pode receber tropas de bônus
+    let podeReceberBonus = false;
+    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    if (totalBonus > 0 && paises[i].dono === turno) {
+      for (const [nomeContinente, quantidade] of Object.entries(tropasBonusContinente)) {
+        if (quantidade > 0) {
+          const continente = continentes[nomeContinente];
+          if (continente && continente.territorios.includes(paises[i].nome)) {
+            podeReceberBonus = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Aplicar cor baseada na capacidade de receber bônus
+    if (podeReceberBonus) {
+      paises[i].polygon.setFillStyle(0x00ff00, 0.8); // Verde brilhante para países que podem receber bônus
+    } else {
+      paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono], 0.7);
+    }
+    
     paises[i].polygon.setStrokeStyle(4, 0x000000, 1);
   }
   selecionado = null;
@@ -368,7 +608,34 @@ function atualizarHUD() {
     .reduce((soma, p) => soma + p.tropas, 0);
 
   let jogadorHUD = `🧍 Você: ${meuNome || '?'}\n`;
-  hudTexto.setText(`${jogadorHUD}🎮 Turno: ${turno}   🛡️ Tropas totais: ${tropas}   🆘 Reforço restante: ${tropasReforco}`);
+  let continentesHUD = '';
+  let bonusHUD = '';
+  
+  // Adicionar informação dos continentes
+  if (Object.keys(continentes).length > 0) {
+    continentesHUD = '\n🌍 Continentes:\n';
+    Object.values(continentes).forEach(continente => {
+      const controle = continente.controle[meuNome];
+      if (controle) {
+        const status = controle.controla ? '✅' : `${controle.conquistados}/${controle.total}`;
+        continentesHUD += `${continente.nome} (${continente.bonus}): ${status}\n`;
+      }
+    });
+  }
+
+  // Adicionar informação das tropas de bônus
+  const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+  if (totalBonus > 0) {
+    bonusHUD = '\n🎁 Tropas de Bônus:\n';
+    Object.entries(tropasBonusContinente).forEach(([continente, quantidade]) => {
+      if (quantidade > 0) {
+        bonusHUD += `${continente}: ${quantidade}\n`;
+      }
+    });
+  }
+  
+  const totalReforcos = tropasReforco + totalBonus;
+  hudTexto.setText(`${jogadorHUD}🎮 Turno: ${turno}   🛡️ Tropas totais: ${tropas}   🆘 Reforço restante: ${totalReforcos} (${tropasReforco} base + ${totalBonus} bônus)${continentesHUD}${bonusHUD}`);
 }
 
 function limparSelecao() {
