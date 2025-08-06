@@ -271,7 +271,7 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
 
     if (vitoria) {
-      bloquearJogo(`Jogador ${turno} venceu!`);
+      bloquearJogo(`Jogador ${turno} venceu!`, this);
       return;
     } else {
       desbloquearJogo();
@@ -281,6 +281,36 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   socket.on('mostrarMensagem', (texto) => {
     mostrarMensagem(texto);
   });
+
+  socket.on('adicionarAoHistorico', (mensagem) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const historyEntry = {
+      timestamp: timestamp,
+      message: mensagem
+    };
+    
+    actionHistory.push(historyEntry);
+    
+    // Keep only the last N entries
+    if (actionHistory.length > actionHistoryMaxSize) {
+      actionHistory.shift();
+    }
+    
+    // Update history display if popup is visible
+    if (historyPopupVisible) {
+      updateHistoryDisplay();
+    }
+  });
+
+  socket.on('mostrarEfeitoAtaque', (dados) => {
+    mostrarEfeitoAtaque(dados.origem, dados.destino, this, dados.sucesso);
+  });
+
+  socket.on('mostrarEfeitoReforco', (dados) => {
+    mostrarEfeitoReforco(dados.territorio, dados.jogador, this);
+  });
+
+
 
   socket.on('vitoria', (nomeJogador) => {
     console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
@@ -901,13 +931,18 @@ function bloquearJogo(mensagem, scene) {
     
     // Animação de entrada
     containerVitoria.setScale(0);
-    scene.tweens.add({
-      targets: containerVitoria,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 500,
-      ease: 'Back.easeOut'
-    });
+    if (scene && scene.tweens) {
+      scene.tweens.add({
+        targets: containerVitoria,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 500,
+        ease: 'Back.easeOut'
+      });
+    } else {
+      // Fallback se scene não estiver disponível
+      containerVitoria.setScale(1);
+    }
     
     console.log('🎯 Tela de vitória exibida com sucesso!');
   } catch (error) {
@@ -943,13 +978,18 @@ function perdeuJogo(mensagem, scene) {
   
   // Animação de entrada
   containerVitoria.setScale(0);
-  scene.tweens.add({
-    targets: containerVitoria,
-    scaleX: 1,
-    scaleY: 1,
-    duration: 500,
-    ease: 'Back.easeOut'
-  });
+  if (scene && scene.tweens) {
+    scene.tweens.add({
+      targets: containerVitoria,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 500,
+      ease: 'Back.easeOut'
+    });
+  } else {
+    // Fallback se scene não estiver disponível
+    containerVitoria.setScale(1);
+  }
 }
 
 function desbloquearJogo() {
@@ -987,6 +1027,220 @@ function tocarSomHuh() {
     somHuh.play();
   }
 }
+
+// Função para mostrar efeito visual de ataque
+function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
+  // Encontrar os territórios no mapa
+  const territorioOrigem = paises.find(p => p.nome === origem);
+  const territorioDestino = paises.find(p => p.nome === destino);
+  
+  if (!territorioOrigem || !territorioDestino) return;
+  
+  // Calcular posições centrais dos territórios
+  const origemX = territorioOrigem.text.x;
+  const origemY = territorioOrigem.text.y;
+  const destinoX = territorioDestino.text.x;
+  const destinoY = territorioDestino.text.y;
+  
+  // EFEITO DE ILUMINAÇÃO NA ORIGEM (flash de tiro)
+  const flashOrigem = scene.add.circle(origemX, origemY, 15, 0xffff00);
+  flashOrigem.setDepth(24);
+  flashOrigem.setAlpha(0.8);
+  
+  // Animar o flash de origem
+  scene.tweens.add({
+    targets: flashOrigem,
+    scaleX: 0.3,
+    scaleY: 0.3,
+    alpha: 0,
+    duration: 150,
+    onComplete: () => {
+      flashOrigem.destroy();
+    }
+  });
+  
+  // Criar múltiplos projéteis para efeito de rajada
+  const numProjeteis = 5; // 5 projéteis por ataque
+  const projeteis = [];
+  const brilhos = [];
+  
+  for (let i = 0; i < numProjeteis; i++) {
+    // Pequena variação na posição inicial para simular rajada
+    const offsetX = (Math.random() - 0.5) * 10;
+    const offsetY = (Math.random() - 0.5) * 10;
+    
+    // Projétil
+    const projetil = scene.add.circle(origemX + offsetX, origemY + offsetY, 6, sucesso ? 0xff0000 : 0x666666);
+    projetil.setDepth(25);
+    projeteis.push(projetil);
+    
+    // Brilho do projétil
+    const brilho = scene.add.circle(origemX + offsetX, origemY + offsetY, 10, 0xffff00);
+    brilho.setDepth(24);
+    brilho.setAlpha(0.6);
+    brilhos.push(brilho);
+  }
+  
+  // Calcular direção do ataque
+  const deltaX = destinoX - origemX;
+  const deltaY = destinoY - origemY;
+  const distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  
+  // Duração ainda mais rápida
+  const duracao = Math.max(150, distancia * 0.6); // Ainda mais rápido
+  
+  // Animar todos os projéteis e brilhos
+  scene.tweens.add({
+    targets: [...projeteis, ...brilhos],
+    x: destinoX,
+    y: destinoY,
+    duration: duracao,
+    ease: 'Linear',
+    onComplete: () => {
+      // Efeito de impacto muito mais dramático
+      if (sucesso) {
+        // Explosão de sucesso maior e mais chamativa
+        const explosao = scene.add.circle(destinoX, destinoY, 20, 0xffaa00);
+        explosao.setDepth(26);
+        
+        // Brilho da explosão
+        const brilhoExplosao = scene.add.circle(destinoX, destinoY, 30, 0xffff00);
+        brilhoExplosao.setDepth(25);
+        brilhoExplosao.setAlpha(0.7);
+        
+        // Ondas de choque
+        const onda1 = scene.add.circle(destinoX, destinoY, 10, 0xff6600);
+        const onda2 = scene.add.circle(destinoX, destinoY, 15, 0xff4400);
+        onda1.setDepth(24);
+        onda2.setDepth(23);
+        
+        // Animar explosão
+        scene.tweens.add({
+          targets: explosao,
+          scaleX: 3,
+          scaleY: 3,
+          alpha: 0,
+          duration: 400,
+          onComplete: () => {
+            explosao.destroy();
+          }
+        });
+        
+        // Animar brilho
+        scene.tweens.add({
+          targets: brilhoExplosao,
+          scaleX: 2.5,
+          scaleY: 2.5,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            brilhoExplosao.destroy();
+          }
+        });
+        
+        // Animar ondas
+        scene.tweens.add({
+          targets: [onda1, onda2],
+          scaleX: 4,
+          scaleY: 4,
+          alpha: 0,
+          duration: 500,
+          onComplete: () => {
+            onda1.destroy();
+            onda2.destroy();
+          }
+        });
+        
+      } else {
+        // Efeito de falha mais visível
+        const falha = scene.add.circle(destinoX, destinoY, 15, 0x666666);
+        falha.setDepth(26);
+        
+        // Brilho de falha
+        const brilhoFalha = scene.add.circle(destinoX, destinoY, 25, 0x888888);
+        brilhoFalha.setDepth(25);
+        brilhoFalha.setAlpha(0.5);
+        
+        // Animar falha
+        scene.tweens.add({
+          targets: falha,
+          scaleX: 2.5,
+          scaleY: 2.5,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            falha.destroy();
+          }
+        });
+        
+        scene.tweens.add({
+          targets: brilhoFalha,
+          scaleX: 2,
+          scaleY: 2,
+          alpha: 0,
+          duration: 250,
+          onComplete: () => {
+            brilhoFalha.destroy();
+          }
+        });
+      }
+      
+      // Destruir todos os projéteis e brilhos
+      projeteis.forEach(projetil => projetil.destroy());
+      brilhos.forEach(brilho => brilho.destroy());
+    }
+  });
+}
+
+// Função para mostrar efeito visual de reforço
+function mostrarEfeitoReforco(territorio, jogador, scene) {
+  // Encontrar o território no array de países
+  const pais = paises.find(p => p.nome === territorio);
+  if (!pais) return;
+
+  // Usar as mesmas coordenadas que o efeito de ataque (texto do território)
+  const posX = pais.text.x;
+  const posY = pais.text.y;
+
+  // Criar efeito de pulsação no território
+  const efeitoPulsacao = scene.add.circle(posX, posY, 30, 0x00ff00, 0.3);
+  efeitoPulsacao.setDepth(15);
+
+  // Animação de pulsação
+  scene.tweens.add({
+    targets: efeitoPulsacao,
+    scaleX: 2,
+    scaleY: 2,
+    alpha: 0,
+    duration: 1000,
+    ease: 'Power2',
+    onComplete: () => {
+      efeitoPulsacao.destroy();
+    }
+  });
+
+  // Criar texto flutuante
+  const textoReforco = scene.add.text(posX, posY - 50, `🛡️ +1`, {
+    fontSize: '20px',
+    fill: '#00ff00',
+    stroke: '#000000',
+    strokeThickness: 3
+  }).setOrigin(0.5).setDepth(16);
+
+  // Animação do texto
+  scene.tweens.add({
+    targets: textoReforco,
+    y: textoReforco.y - 30,
+    alpha: 0,
+    duration: 1500,
+    ease: 'Power2',
+    onComplete: () => {
+      textoReforco.destroy();
+    }
+  });
+}
+
+
 
 // Funções para interface de reforço
 function mostrarInterfaceReforco(territorio, pointer, scene) {

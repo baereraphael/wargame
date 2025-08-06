@@ -57,47 +57,47 @@ const continentes = {
 
 let paises = [
   { nome: 'Emberlyn', x: 402, y: 396, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
-  { nome: 'Ravenspire', x: 450, y: 500, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
-  { nome: 'Stonevale', x: 100, y: 170, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
-  { nome: 'Duskwatch', x: 125, y: 295, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
-  { nome: 'Stormhall', x: 180, y: 305, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
-  { nome: 'Redwyn', x: 220, y: 140, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
-  { nome: 'Stormfen', x: 300, y: 180, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
-  { nome: 'Highmoor', x: 80, y: 200, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
-  { nome: 'Cragstone', x: 150, y: 320, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
-  { nome: 'Hollowspire', x: 200, y: 340, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
-  { nome: 'Westreach', x: 160, y: 350, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
-  { nome: 'Barrowfell', x: 140, y: 280, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
-  { nome: 'Zul\'Marak', x: 540, y: 380, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
-  { nome: 'Emberwaste', x: 680, y: 350, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
-  { nome: 'Sunjara', x: 800, y: 400, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
-  { nome: 'Tharkuun', x: 650, y: 500, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
-  { nome: 'Bareshi', x: 720, y: 520, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
-  { nome: 'Oru\'Kai', x: 800, y: 510, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
-  { nome: 'Frosthollow', x: 400, y: 130, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
-  { nome: 'Eldoria', x: 500, y: 180, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
-  { nome: 'Greymoor', x: 520, y: 230, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
-  { nome: 'Thalengarde', x: 530, y: 290, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
-  { nome: 'Duskmere', x: 650, y: 240, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
-  { nome: 'Ironreach', x: 570, y: 180, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
-  { nome: 'Frosthelm', x: 630, y: 100, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
-  { nome: 'Blackmere', x: 650, y: 150, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
-  { nome: 'Kaer\'Tai', x: 760, y: 290, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
-  { nome: 'Shōrenji', x: 800, y: 220, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
-  { nome: 'Nihadara', x: 780, y: 160, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
-  { nome: 'Xin\'Qari', x: 880, y: 150, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
-  { nome: 'Vol\'Zareth', x: 980, y: 150, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
-  { nome: 'Omradan', x: 1100, y: 200, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
-  { nome: 'Sa\'Torran', x: 970, y: 250, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
-  { nome: 'Qumaran', x: 1000, y: 320, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
-  { nome: 'Tzun\'Rakai', x: 1120, y: 290, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
-  { nome: 'Mei\'Zhara', x: 940, y: 280, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
-  { nome: 'Darakai', x: 950, y: 400, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
-  { nome: 'Ish\'Tanor', x: 1000, y: 400, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
-  { nome: 'Winterholde', x: 1030, y: 495, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
-  { nome: 'Aetheris', x: 1080, y: 470, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
-  { nome: 'Dawnwatch', x: 1150, y: 485, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
-  { nome: 'Mistveil', x: 1100, y: 550, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
+  { nome: 'Ravenspire', x: 463, y: 450, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
+  { nome: 'Stonevale', x: 356, y: 404, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
+  { nome: 'Duskwatch', x: 293, y: 454, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
+  { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
+  { nome: 'Redwyn', x: 111, y: 194, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
+  { nome: 'Stormfen', x: 111, y: 194, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
+  { nome: 'Highmoor', x: 305, y: 165, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
+  { nome: 'Cragstone', x: 127, y: 264, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
+  { nome: 'Hollowspire', x: 253, y: 222, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
+  { nome: 'Westreach', x: 160, y: 340, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
+  { nome: 'Barrowfell', x: 161, y: 343, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
+  { nome: 'Zul\'Marak', x: 527, y: 367, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
+  { nome: 'Emberwaste', x: 663, y: 354, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
+  { nome: 'Sunjara', x: 783, y: 341, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
+  { nome: 'Tharkuun', x: 625, y: 466, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
+  { nome: 'Bareshi', x: 706, y: 456, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
+  { nome: 'Oru\'Kai', x: 809, y: 494, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
+  { nome: 'Frosthollow', x: 310, y: 112, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
+  { nome: 'Eldoria', x: 508, y: 130, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
+  { nome: 'Greymoor', x: 525, y: 193, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
+  { nome: 'Thalengarde', x: 487, y: 262, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
+  { nome: 'Duskmere', x: 555, y: 246, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
+  { nome: 'Ironreach', x: 533, y: 163, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
+  { nome: 'Frosthelm', x: 630, y: 113, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
+  { nome: 'Blackmere', x: 592, y: 145, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
+  { nome: 'Kaer\'Tai', x: 711, y: 237, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
+  { nome: 'Shōrenji', x: 823, y: 269, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
+  { nome: 'Nihadara', x: 715, y: 135, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
+  { nome: 'Xin\'Qari', x: 826, y: 117, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
+  { nome: 'Vol\'Zareth', x: 1048, y: 124, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
+  { nome: 'Omradan', x: 1050, y: 124, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
+  { nome: 'Sa\'Torran', x: 897, y: 218, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
+  { nome: 'Qumaran', x: 1060, y: 247, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
+  { nome: 'Tzun\'Rakai', x: 1122, y: 274, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
+  { nome: 'Mei\'Zhara', x: 866, y: 220, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
+  { nome: 'Darakai', x: 961, y: 352, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
+  { nome: 'Ish\'Tanor', x: 963, y: 349, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
+  { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
+  { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
+  { nome: 'Dawnwatch', x: 1113, y: 475, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
+  { nome: 'Mistveil', x: 1078, y: 511, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
 ];
 
 let tropasReforco = 0;
@@ -153,13 +153,24 @@ io.on('connection', (socket) => {
    const jogadorDisponivel = jogadores.find(j => j.socketId === null);
   if (jogadorDisponivel) {
     jogadorDisponivel.socketId = socket.id;
+    
+    // Se o jogador era uma CPU, desativar
+    if (jogadorDisponivel.isCPU) {
+      jogadorDisponivel.isCPU = false;
+      console.log(`🤖 CPU desativada para ${jogadorDisponivel.nome} (jogador conectou)`);
+      io.emit('mostrarMensagem', `👤 ${jogadorDisponivel.nome} conectou-se e assumiu o controle!`);
+      io.emit('adicionarAoHistorico', `👤 ${jogadorDisponivel.nome} conectou-se e assumiu o controle da CPU`);
+    }
+    
     console.log(`Jogador ${jogadorDisponivel.nome} atribuído ao socket ${socket.id}`);
   } else {
     console.log('Não há jogadores disponíveis para atribuir a este socket.');
   }
 
-  // Ativar CPUs para jogadores sem conexão
-  ativarCPUs();
+  // Dar tempo para outros jogadores se conectarem antes de ativar CPUs
+  setTimeout(() => {
+    ativarCPUs();
+  }, 10000); // 10 segundos de delay
 
   // Envia estado inicial para o cliente
   socket.emit('estadoAtualizado', getEstado(socket.id));
@@ -280,6 +291,13 @@ io.on('connection', (socket) => {
       
       io.emit('mostrarMensagem', mensagem);
       io.emit('tocarSomMovimento'); // Emitir evento para tocar som de movimento
+      
+      // Mostrar efeito visual de reforço
+      io.emit('mostrarEfeitoReforco', {
+        territorio: nomePais,
+        jogador: turno,
+        tipo: 'reforco'
+      });
 
       io.sockets.sockets.forEach((s) => {
         s.emit('estadoAtualizado', getEstado(s.id));
@@ -374,6 +392,14 @@ io.on('connection', (socket) => {
 
     io.emit('mostrarMensagem', resultadoMensagem.trim());
     io.emit('tocarSomTiro'); // Emitir evento para tocar som de tiro
+    
+    // Mostrar efeito visual de ataque
+    const sucesso = defensorPais.tropas <= 0;
+    io.emit('mostrarEfeitoAtaque', {
+      origem: de,
+      destino: para,
+      sucesso: sucesso
+    });
     io.sockets.sockets.forEach((s) => {
     s.emit('estadoAtualizado', getEstado(s.id));
     });
@@ -700,6 +726,8 @@ io.on('connection', (socket) => {
     io.emit('mostrarMensagem', mensagem);
     io.emit('tocarSomMovimento');
     
+
+    
     // Verificar vitória após mover tropas
     checarVitoria();
 
@@ -724,48 +752,48 @@ io.on('connection', (socket) => {
     territoriosConquistadosNoTurno = {}; // Resetar territórios conquistados
 
     paises = [
-      { nome: 'Emberlyn', x: 190, y: 170, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
-      { nome: 'Ravenspire', x: 260, y: 160, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
-      { nome: 'Stonevale', x: 100, y: 170, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
-      { nome: 'Duskwatch', x: 125, y: 295, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
-      { nome: 'Stormhall', x: 180, y: 305, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne'] },
-      { nome: 'Redwyn', x: 190, y: 170, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
-      { nome: 'Stormfen', x: 260, y: 160, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
-      { nome: 'Highmoor', x: 100, y: 170, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
-      { nome: 'Cragstone', x: 125, y: 295, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
-      { nome: 'Hollowspire', x: 180, y: 305, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
-      { nome: 'Westreach', x: 125, y: 295, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
-      { nome: 'Barrowfell', x: 180, y: 305, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
-      { nome: 'Zul\'Marak', x: 540, y: 380, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
-      { nome: 'Emberwaste', x: 680, y: 350, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
-      { nome: 'Sunjara', x: 800, y: 400, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
-      { nome: 'Tharkuun', x: 650, y: 500, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
-      { nome: 'Bareshi', x: 720, y: 520, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
-      { nome: 'Oru\'Kai', x: 800, y: 510, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
-      { nome: 'Frosthollow', x: 400, y: 130, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
-      { nome: 'Eldoria', x: 500, y: 180, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
-      { nome: 'Greymoor', x: 520, y: 230, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
-      { nome: 'Thalengarde', x: 530, y: 290, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
-      { nome: 'Duskmere', x: 650, y: 240, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
-      { nome: 'Ironreach', x: 570, y: 180, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
-      { nome: 'Frosthelm', x: 630, y: 100, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
-      { nome: 'Blackmere', x: 650, y: 150, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
-      { nome: 'Kaer\'Tai', x: 760, y: 290, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
-      { nome: 'Shōrenji', x: 800, y: 220, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
-      { nome: 'Nihadara', x: 780, y: 160, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
-      { nome: 'Xin\'Qari', x: 880, y: 150, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
-      { nome: 'Vol\'Zareth', x: 980, y: 150, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
-      { nome: 'Omradan', x: 1100, y: 200, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
-      { nome: 'Sa\'Torran', x: 970, y: 250, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
-      { nome: 'Qumaran', x: 1000, y: 320, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
-      { nome: 'Tzun\'Rakai', x: 1120, y: 290, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
-      { nome: 'Mei\'Zhara', x: 940, y: 280, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
-      { nome: 'Darakai', x: 950, y: 400, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
-      { nome: 'Ish\'Tanor', x: 1000, y: 400, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
-      { nome: 'Winterholde', x: 1030, y: 495, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
-      { nome: 'Aetheris', x: 1080, y: 470, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
-      { nome: 'Dawnwatch', x: 1150, y: 485, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
-      { nome: 'Mistveil', x: 1100, y: 550, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
+      { nome: 'Emberlyn', x: 402, y: 396, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
+      { nome: 'Ravenspire', x: 463, y: 450, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
+      { nome: 'Stonevale', x: 356, y: 404, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
+      { nome: 'Duskwatch', x: 293, y: 454, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
+      { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
+      { nome: 'Redwyn', x: 111, y: 194, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
+      { nome: 'Stormfen', x: 111, y: 194, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
+      { nome: 'Highmoor', x: 305, y: 165, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
+      { nome: 'Cragstone', x: 127, y: 264, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
+      { nome: 'Hollowspire', x: 253, y: 222, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
+      { nome: 'Westreach', x: 160, y: 340, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
+      { nome: 'Barrowfell', x: 161, y: 343, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
+      { nome: 'Zul\'Marak', x: 527, y: 367, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
+      { nome: 'Emberwaste', x: 663, y: 354, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
+      { nome: 'Sunjara', x: 783, y: 341, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
+      { nome: 'Tharkuun', x: 625, y: 466, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
+      { nome: 'Bareshi', x: 706, y: 456, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
+      { nome: 'Oru\'Kai', x: 809, y: 494, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
+      { nome: 'Frosthollow', x: 310, y: 112, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
+      { nome: 'Eldoria', x: 508, y: 130, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
+      { nome: 'Greymoor', x: 525, y: 193, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
+      { nome: 'Thalengarde', x: 487, y: 262, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
+      { nome: 'Duskmere', x: 555, y: 246, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
+      { nome: 'Ironreach', x: 533, y: 163, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
+      { nome: 'Frosthelm', x: 630, y: 113, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
+      { nome: 'Blackmere', x: 592, y: 145, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
+      { nome: 'Kaer\'Tai', x: 711, y: 237, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
+      { nome: 'Shōrenji', x: 823, y: 269, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
+      { nome: 'Nihadara', x: 715, y: 135, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
+      { nome: 'Xin\'Qari', x: 826, y: 117, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
+      { nome: 'Vol\'Zareth', x: 1048, y: 124, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
+      { nome: 'Omradan', x: 1050, y: 124, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
+      { nome: 'Sa\'Torran', x: 897, y: 218, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
+      { nome: 'Qumaran', x: 1060, y: 247, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
+      { nome: 'Tzun\'Rakai', x: 1122, y: 274, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
+      { nome: 'Mei\'Zhara', x: 866, y: 220, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
+      { nome: 'Darakai', x: 961, y: 352, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
+      { nome: 'Ish\'Tanor', x: 963, y: 349, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
+      { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
+      { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
+      { nome: 'Dawnwatch', x: 1113, y: 475, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
+      { nome: 'Mistveil', x: 1078, y: 511, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
     ];
 
     tropasReforco = calcularReforco(turno).base;
@@ -1115,16 +1143,20 @@ function inicializarJogo() {
 // Função para ativar CPUs para jogadores sem conexão
 function ativarCPUs() {
   let cpusAtivadas = 0;
-  jogadores.forEach(jogador => {
-    if (!jogador.socketId && !jogador.isCPU) {
+  const jogadoresSemConexao = jogadores.filter(jogador => !jogador.socketId && !jogador.isCPU);
+  
+  // Só ativar CPUs se houver jogadores sem conexão
+  if (jogadoresSemConexao.length > 0) {
+    jogadoresSemConexao.forEach(jogador => {
       jogador.isCPU = true;
       cpusAtivadas++;
-      console.log(`🤖 CPU ativada para ${jogador.nome}`);
+      console.log(`🤖 CPU ativada para ${jogador.nome} (sem conexão)`);
+      io.emit('adicionarAoHistorico', `🤖 CPU ativada para ${jogador.nome}`);
+    });
+    
+    if (cpusAtivadas > 0) {
+      io.emit('mostrarMensagem', `🤖 ${cpusAtivadas} CPU(s) ativada(s) para completar a partida!`);
     }
-  });
-  
-  if (cpusAtivadas > 0) {
-    io.emit('mostrarMensagem', `🤖 ${cpusAtivadas} CPU(s) ativada(s) para completar a partida!`);
   }
   
   return cpusAtivadas;
@@ -1160,6 +1192,8 @@ function executarTurnoCPU(jogadorCPU) {
         }
         
         io.emit('mostrarMensagem', `🤖 CPU ${jogadorCPU.nome} trocou 3 cartas território e recebeu ${tropasExtras} tropas extras!`);
+        io.emit('adicionarAoHistorico', `🃏 CPU ${jogadorCPU.nome} trocou 3 cartas território (+${tropasExtras} tropas)`);
+        io.emit('tocarSomMovimento'); // Som de movimento para todos os jogadores
         
         // Continuar com o turno normal da CPU
         continuarTurnoCPU(jogadorCPU);
@@ -1179,103 +1213,431 @@ function executarTurnoCPU(jogadorCPU) {
 
 // Função auxiliar para continuar o turno da CPU após verificar cartas
 function continuarTurnoCPU(jogadorCPU) {
+  console.log(`🧠 CPU ${jogadorCPU.nome} analisando estratégia...`);
+  io.emit('adicionarAoHistorico', `🧠 CPU ${jogadorCPU.nome} iniciando turno`);
+  
+  // 1. ESTRATÉGIA DE REFORÇOS INTELIGENTE
+  const resultadoReforco = calcularReforco(jogadorCPU.nome);
+  const tropasReforcoCPU = resultadoReforco.base;
+  const tropasBonusCPU = resultadoReforco.bonus;
+  
+  // Analisar objetivo da CPU
+  const objetivo = objetivos[jogadorCPU.nome];
+  console.log(`🎯 CPU ${jogadorCPU.nome} tem objetivo: ${objetivo?.tipo}`);
+  
+    // Iniciar sequência de reforços
+  executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, 0);
+}
+
+// Função para executar reforços sequencialmente
+function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, index) {
+  if (vitoria || derrota) return;
+  
+  // Converter tropas de bônus em array para processamento sequencial
+  const tropasBonusArray = [];
+  Object.entries(tropasBonusCPU).forEach(([continente, quantidade]) => {
+    for (let i = 0; i < quantidade; i++) {
+      tropasBonusArray.push({ continente, tipo: 'bonus' });
+    }
+  });
+  
+  // Adicionar tropas base ao array
+  for (let i = 0; i < tropasReforcoCPU; i++) {
+    tropasBonusArray.push({ tipo: 'base' });
+  }
+  
+  // Se ainda há reforços para processar
+  if (index < tropasBonusArray.length) {
+    const reforco = tropasBonusArray[index];
     
-    // 1. Colocar reforços
-    const resultadoReforco = calcularReforco(jogadorCPU.nome);
-    const tropasReforcoCPU = resultadoReforco.base;
-    const tropasBonusCPU = resultadoReforco.bonus;
-    
-    // Colocar tropas de bônus primeiro
-    Object.entries(tropasBonusCPU).forEach(([continente, quantidade]) => {
-      if (quantidade > 0) {
-        const territoriosDoContinente = continentes[continente].territorios;
-        const territoriosDoJogador = territoriosDoContinente.filter(territorio => {
-          const pais = paises.find(p => p.nome === territorio);
-          return pais && pais.dono === jogadorCPU.nome;
+    if (reforco.tipo === 'bonus') {
+      // Processar tropa de bônus
+      const territoriosDoContinente = continentes[reforco.continente].territorios;
+      const territoriosDoJogador = territoriosDoContinente.filter(territorio => {
+        const pais = paises.find(p => p.nome === territorio);
+        return pais && pais.dono === jogadorCPU.nome;
+      });
+      
+      if (territoriosDoJogador.length > 0) {
+        let territorioPrioritario;
+        
+        if (objetivo?.tipo === 'conquistar3Continentes') {
+          territorioPrioritario = territoriosDoJogador.find(territorio => {
+            const pais = paises.find(p => p.nome === territorio);
+            return pais && (pais.nome === objetivo.continente1 || pais.nome === objetivo.continente2);
+          });
+        }
+        
+        if (!territorioPrioritario) {
+          territorioPrioritario = territoriosDoJogador.reduce((min, territorio) => {
+            const pais = paises.find(p => p.nome === territorio);
+            const paisMin = paises.find(p => p.nome === min);
+            return pais.tropas < paisMin.tropas ? territorio : min;
+          });
+        }
+        
+        const pais = paises.find(p => p.nome === territorioPrioritario);
+        pais.tropas++;
+        
+        console.log(`🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario} (continente ${reforco.continente})`);
+        io.emit('adicionarAoHistorico', `🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario} (continente ${reforco.continente})`);
+        io.emit('tocarSomMovimento');
+        
+        // Mostrar efeito visual de reforço
+        io.emit('mostrarEfeitoReforco', {
+          territorio: territorioPrioritario,
+          jogador: jogadorCPU.nome,
+          tipo: 'reforco'
         });
         
-        // Colocar tropas de bônus nos territórios mais fracos
-        for (let i = 0; i < quantidade; i++) {
-          if (territoriosDoJogador.length > 0) {
-            const territorioMaisFraco = territoriosDoJogador.reduce((min, territorio) => {
-              const pais = paises.find(p => p.nome === territorio);
-              const paisMin = paises.find(p => p.nome === min);
-              return pais.tropas < paisMin.tropas ? territorio : min;
-            });
-            
-            const pais = paises.find(p => p.nome === territorioMaisFraco);
-            pais.tropas++;
-          }
-        }
+        // Atualizar estado para todos os jogadores
+        io.sockets.sockets.forEach((s) => {
+          s.emit('estadoAtualizado', getEstado(s.id));
+        });
       }
-    });
-    
-    // Colocar tropas base nos territórios mais fracos
-    for (let i = 0; i < tropasReforcoCPU; i++) {
+    } else {
+      // Processar tropa base
       const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
       if (territoriosDoJogador.length > 0) {
-        const territorioMaisFraco = territoriosDoJogador.reduce((min, atual) => 
-          atual.tropas < min.tropas ? atual : min
-        );
-        territorioMaisFraco.tropas++;
+        let territorioPrioritario;
+        
+        if (objetivo?.tipo === 'dominar24Territorios' || objetivo?.tipo === 'dominar16TerritoriosCom2Tropas') {
+          territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
+            atual.tropas < min.tropas ? atual : min
+          );
+        } else if (objetivo?.tipo === 'conquistar3Continentes') {
+          territorioPrioritario = territoriosDoJogador.find(territorio => {
+            const vizinhos = territorio.vizinhos.filter(vizinho => {
+              const paisVizinho = paises.find(p => p.nome === vizinho);
+              return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+            });
+            return vizinhos.length > 0;
+          });
+          
+          if (!territorioPrioritario) {
+            territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
+              atual.tropas < min.tropas ? atual : min
+            );
+          }
+        } else {
+          territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
+            atual.tropas < min.tropas ? atual : min
+          );
+        }
+        
+        territorioPrioritario.tropas++;
+        
+        console.log(`🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario.nome} (estratégico)`);
+        io.emit('adicionarAoHistorico', `🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario.nome} (estratégico)`);
+        io.emit('tocarSomMovimento');
+        
+        // Mostrar efeito visual de reforço
+        io.emit('mostrarEfeitoReforco', {
+          territorio: territorioPrioritario.nome,
+          jogador: jogadorCPU.nome,
+          tipo: 'reforco'
+        });
+        
+        // Atualizar estado para todos os jogadores
+        io.sockets.sockets.forEach((s) => {
+          s.emit('estadoAtualizado', getEstado(s.id));
+        });
       }
     }
     
-    // 2. Fazer ataques
+    // Processar próximo reforço após delay
+    setTimeout(() => {
+      executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, index + 1);
+    }, 800); // 800ms entre cada reforço
+    
+  } else {
+    // Todos os reforços foram processados, iniciar ataques
     setTimeout(() => {
       if (vitoria || derrota) return;
-      
-      const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
-      const ataquesRealizados = [];
-      
-      // Tentar atacar territórios inimigos
-      territoriosDoJogador.forEach(territorio => {
-        if (territorio.tropas > 1 && ataquesRealizados.length < 3) { // Máximo 3 ataques por turno
-          const vizinhosInimigos = territorio.vizinhos.filter(vizinho => {
-            const paisVizinho = paises.find(p => p.nome === vizinho);
-            return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
-          });
-          
-          if (vizinhosInimigos.length > 0) {
-            // Escolher o vizinho mais fraco
-            const alvo = vizinhosInimigos.reduce((min, vizinho) => {
-              const paisVizinho = paises.find(p => p.nome === vizinho);
-              const paisMin = paises.find(p => p.nome === min);
-              return paisVizinho.tropas < paisMin.tropas ? vizinho : min;
-            });
-            
-            const paisAlvo = paises.find(p => p.nome === alvo);
-            
-            // Atacar se tiver vantagem numérica
-            if (territorio.tropas > paisAlvo.tropas) {
-              // Simular ataque
-              const dadosAtacante = Math.floor(Math.random() * 6) + 1;
-              const dadosDefensor = Math.floor(Math.random() * 6) + 1;
-              
-              if (dadosAtacante > dadosDefensor) {
-                // Ataque bem-sucedido
-                paisAlvo.dono = jogadorCPU.nome;
-                paisAlvo.tropas = territorio.tropas - 1;
-                territorio.tropas = 1;
-                
-                ataquesRealizados.push({ origem: territorio.nome, destino: alvo });
-                io.emit('mostrarMensagem', `⚔️ CPU ${jogadorCPU.nome} conquistou ${alvo} de ${territorio.nome}!`);
-              }
-            }
-          }
-        }
-      });
-      
-      // 3. Passar turno
-      setTimeout(() => {
-        if (vitoria || derrota) return;
-        
-        passarTurno();
-      }, 1000);
-      
+      executarAtaquesSequenciais(jogadorCPU, objetivo);
     }, 1000);
+  }
 }
 
+// Função para executar ataques sequencialmente
+function executarAtaquesSequenciais(jogadorCPU, objetivo) {
+  if (vitoria || derrota) return;
+  
+  console.log(`⚔️ CPU ${jogadorCPU.nome} planejando ataques...`);
+  io.emit('adicionarAoHistorico', `⚔️ CPU ${jogadorCPU.nome} planejando ataques...`);
+  
+  const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
+  const oportunidadesAtaque = [];
+  
+  // Analisar oportunidades de ataque
+  territoriosDoJogador.forEach(territorio => {
+    if (territorio.tropas > 1) {
+      const vizinhosInimigos = territorio.vizinhos.filter(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+      });
+      
+      vizinhosInimigos.forEach(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        const vantagemNumerica = territorio.tropas - paisVizinho.tropas;
+        
+        let pontuacao = 0;
+        
+        if (vantagemNumerica >= 2) pontuacao += 50;
+        else if (vantagemNumerica >= 1) pontuacao += 30;
+        else if (vantagemNumerica >= 0) pontuacao += 10;
+        else pontuacao -= 50;
+        
+        if (objetivo?.tipo === 'conquistar3Continentes') {
+          const continenteVizinho = Object.keys(continentes).find(cont => 
+            continentes[cont].territorios.includes(vizinho)
+          );
+          if (continenteVizinho === objetivo.continente1 || continenteVizinho === objetivo.continente2) {
+            pontuacao += 40;
+          }
+        }
+        
+        if (objetivo?.tipo === 'dominar24Territorios' || objetivo?.tipo === 'dominar16TerritoriosCom2Tropas') {
+          pontuacao += 20;
+        }
+        
+        const vizinhosDoVizinho = paisVizinho.vizinhos.filter(v => {
+          const paisV = paises.find(p => p.nome === v);
+          return paisV && paisV.dono !== jogadorCPU.nome;
+        });
+        if (vizinhosDoVizinho.length > 0) pontuacao += 15;
+        
+        // Só adicionar se tiver vantagem numérica
+        if (vantagemNumerica >= 1) {
+          oportunidadesAtaque.push({
+            origem: territorio,
+            destino: paisVizinho,
+            pontuacao: pontuacao,
+            vantagemNumerica: vantagemNumerica
+          });
+        }
+      });
+    }
+  });
+  
+  // Ordenar oportunidades por pontuação
+  oportunidadesAtaque.sort((a, b) => b.pontuacao - a.pontuacao);
+  
+  // Executar ataques sequencialmente
+  executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, 0, objetivo);
+}
+
+// Função para executar um ataque individual
+function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objetivo) {
+  if (vitoria || derrota) return;
+  
+  // Máximo 3 ataques por turno
+  if (index >= 3 || index >= oportunidadesAtaque.length) {
+    // Finalizar turno da CPU
+      if (vitoria || derrota) return;
+      console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno...`);
+      io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+      passarTurno(); // Reduzido de 1000ms para 300ms para finalização mais rápida
+    return;
+  }
+  
+  const oportunidade = oportunidadesAtaque[index];
+  
+  // Só atacar se tiver vantagem numérica clara
+  if (oportunidade.vantagemNumerica >= 1) {
+    console.log(`⚔️ CPU ${jogadorCPU.nome} atacando ${oportunidade.destino.nome} (vantagem: +${oportunidade.vantagemNumerica}, pontuação: ${oportunidade.pontuacao})`);
+    io.emit('adicionarAoHistorico', `⚔️ CPU ${jogadorCPU.nome} atacando ${oportunidade.destino.nome} (vantagem: +${oportunidade.vantagemNumerica})`);
+    
+    // Verificar se ainda tem tropas suficientes para atacar
+    if (oportunidade.origem.tropas <= 1) {
+      console.log(`❌ CPU ${jogadorCPU.nome} não pode atacar ${oportunidade.destino.nome} - origem tem apenas ${oportunidade.origem.tropas} tropas`);
+      io.emit('adicionarAoHistorico', `❌ CPU ${jogadorCPU.nome} não pode atacar ${oportunidade.destino.nome} (tropas insuficientes)`);
+      
+      // Processar próximo ataque
+      setTimeout(() => {
+        executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index + 1, objetivo);
+      }, 400); // Reduzido de 1200ms para 400ms para casos de tropas insuficientes
+      return;
+    }
+    
+    // Usar a mesma lógica de dados dos jogadores humanos
+    const dadosAtaque = Math.min(oportunidade.origem.tropas - 1, 3);
+    const dadosDefesa = Math.min(oportunidade.destino.tropas, 2);
+
+    const rolagemAtaque = Array.from({ length: dadosAtaque }, rolarDado).sort((a, b) => b - a);
+    const rolagemDefesa = Array.from({ length: dadosDefesa }, rolarDado).sort((a, b) => b - a);
+
+    let resultadoMensagem = `${oportunidade.origem.nome} ataca ${oportunidade.destino.nome}
+    Ataque: [${rolagemAtaque.join(', ')}] | Defesa: [${rolagemDefesa.join(', ')}]\n`;
+
+    const comparacoes = Math.min(rolagemAtaque.length, rolagemDefesa.length);
+    for (let i = 0; i < comparacoes; i++) {
+        if (rolagemAtaque[i] > rolagemDefesa[i]) {
+        oportunidade.destino.tropas--;
+        resultadoMensagem += `Defesa perdeu 1 tropa.\n`;
+        } else {
+        oportunidade.origem.tropas--;
+        resultadoMensagem += `Ataque perdeu 1 tropa.\n`;
+        }
+    }
+
+    if (oportunidade.destino.tropas <= 0) {
+        // Ataque bem-sucedido - conquista o território
+        oportunidade.destino.dono = jogadorCPU.nome;
+        oportunidade.destino.tropas = 1; // Colocar 1 tropa no território conquistado
+        oportunidade.origem.tropas -= 1; // Remover 1 tropa do território atacante
+        resultadoMensagem += `${oportunidade.destino.nome} foi conquistado por ${jogadorCPU.nome}!\n`;
+        
+        // Registrar território conquistado no turno atual
+        if (!territoriosConquistadosNoTurno[jogadorCPU.nome]) {
+          territoriosConquistadosNoTurno[jogadorCPU.nome] = [];
+        }
+        territoriosConquistadosNoTurno[jogadorCPU.nome].push(oportunidade.destino.nome);
+        
+        // Verificar se conquistou algum continente
+        Object.values(continentes).forEach(continente => {
+          const territoriosDoContinente = continente.territorios;
+          const territoriosConquistados = territoriosDoContinente.filter(territorio => {
+            const pais = paises.find(p => p.nome === territorio);
+            return pais && pais.dono === jogadorCPU.nome;
+          });
+          
+          if (territoriosConquistados.length === territoriosDoContinente.length) {
+            resultadoMensagem += `🎉 ${jogadorCPU.nome} conquistou o continente ${continente.nome}! (+${continente.bonus} tropas por rodada)\n`;
+          }
+        });
+        
+        checarEliminacao();
+        checarVitoria();
+        
+        io.emit('mostrarMensagem', `⚔️ CPU ${jogadorCPU.nome} conquistou ${oportunidade.destino.nome} de ${oportunidade.origem.nome}!`);
+        io.emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} conquistou ${oportunidade.destino.nome} de ${oportunidade.origem.nome}!`);
+        io.emit('tocarSomTiro');
+        
+        // Mostrar efeito visual de ataque bem-sucedido
+        io.emit('mostrarEfeitoAtaque', {
+          origem: oportunidade.origem.nome,
+          destino: oportunidade.destino.nome,
+          sucesso: true
+        });
+        
+        io.sockets.sockets.forEach((s) => {
+          s.emit('estadoAtualizado', getEstado(s.id));
+        });
+        // Recalcular oportunidades de ataque após conquista
+        setTimeout(() => {
+          recalcularOportunidadesAtaque(jogadorCPU, objetivo, index + 1);
+        }, 800);
+        return;
+        
+    } else {
+        // Ataque falhou ou não conquistou
+        console.log(`❌ CPU ${jogadorCPU.nome} falhou no ataque a ${oportunidade.destino.nome}`);
+        io.emit('adicionarAoHistorico', `❌ CPU ${jogadorCPU.nome} falhou no ataque a ${oportunidade.destino.nome}`);
+        io.emit('tocarSomTiro');
+        
+        // Mostrar efeito visual de ataque falhado
+        io.emit('mostrarEfeitoAtaque', {
+          origem: oportunidade.origem.nome,
+          destino: oportunidade.destino.nome,
+          sucesso: false
+        });
+    }
+    
+    // Atualizar estado para todos os jogadores
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+    
+  } else {
+    console.log(`🤔 CPU ${jogadorCPU.nome} desistiu de atacar ${oportunidade.destino.nome} (desvantagem numérica)`);
+    io.emit('adicionarAoHistorico', `🤔 CPU ${jogadorCPU.nome} desistiu de atacar ${oportunidade.destino.nome} (desvantagem)`);
+  }
+  
+
+  io.sockets.sockets.forEach((s) => {
+    s.emit('estadoAtualizado', getEstado(s.id));
+  });
+  // Processar próximo ataque após delay
+  setTimeout(() => {
+    executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index + 1, objetivo);
+  }, 800); // Reduzido de 1200ms para 800ms entre ataques
+}
+
+// Função para recalcular oportunidades de ataque após uma conquista
+function recalcularOportunidadesAtaque(jogadorCPU, objetivo, index) {
+  if (vitoria || derrota) return;
+  
+  console.log(`🔄 CPU ${jogadorCPU.nome} recalculando oportunidades após conquista...`);
+  
+  const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
+  const oportunidadesAtaque = [];
+  
+  // Analisar oportunidades de ataque (mesma lógica da função original)
+  territoriosDoJogador.forEach(territorio => {
+    if (territorio.tropas > 1) {
+      const vizinhosInimigos = territorio.vizinhos.filter(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+      });
+      
+      vizinhosInimigos.forEach(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        const vantagemNumerica = territorio.tropas - paisVizinho.tropas;
+        
+        let pontuacao = 0;
+        
+        if (vantagemNumerica >= 2) pontuacao += 50;
+        else if (vantagemNumerica >= 1) pontuacao += 30;
+        else if (vantagemNumerica >= 0) pontuacao += 10;
+        else pontuacao -= 50;
+        
+        if (objetivo?.tipo === 'conquistar3Continentes') {
+          const continenteVizinho = Object.keys(continentes).find(cont => 
+            continentes[cont].territorios.includes(vizinho)
+          );
+          if (continenteVizinho === objetivo.continente1 || continenteVizinho === objetivo.continente2) {
+            pontuacao += 40;
+          }
+        }
+        
+        if (objetivo?.tipo === 'dominar24Territorios' || objetivo?.tipo === 'dominar16TerritoriosCom2Tropas') {
+          pontuacao += 20;
+        }
+        
+        const vizinhosDoVizinho = paisVizinho.vizinhos.filter(v => {
+          const paisV = paises.find(p => p.nome === v);
+          return paisV && paisV.dono !== jogadorCPU.nome;
+        });
+        if (vizinhosDoVizinho.length > 0) pontuacao += 15;
+        
+        // Só adicionar se tiver vantagem numérica
+        if (vantagemNumerica >= 1) {
+          oportunidadesAtaque.push({
+            origem: territorio,
+            destino: paisVizinho,
+            pontuacao: pontuacao,
+            vantagemNumerica: vantagemNumerica
+          });
+        }
+      });
+    }
+  });
+  
+  // Ordenar oportunidades por pontuação
+  oportunidadesAtaque.sort((a, b) => b.pontuacao - a.pontuacao);
+  
+  // Continuar ataques com as novas oportunidades
+  if (oportunidadesAtaque.length > 0 && index < 3) {
+    console.log(`🎯 CPU ${jogadorCPU.nome} encontrou ${oportunidadesAtaque.length} novas oportunidades após conquista`);
+    executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, 0, objetivo);
+  } else {
+    // Finalizar turno se não há mais oportunidades ou já fez 3 ataques
+    console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno após recalcular oportunidades...`);
+    io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+    passarTurno();
+  }
+}
 // Função para verificar se é turno de CPU
 function verificarTurnoCPU() {
   const jogadorAtual = jogadores[indiceTurno];
