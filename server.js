@@ -435,36 +435,8 @@ io.on('connection', (socket) => {
     // Se está na fase de remanejamento, passar para o próximo jogador
     faseRemanejamento = false;
     
-    // Verificar se o jogador conquistou territórios neste turno e conceder carta
-    if (territoriosConquistadosNoTurno[turno] && territoriosConquistadosNoTurno[turno].length > 0) {
-      // Inicializar cartas do jogador se não existir
-      if (!cartasTerritorio[turno]) {
-        cartasTerritorio[turno] = [];
-      }
-      
-      // Verificar se o jogador já tem 5 cartas (máximo permitido)
-      if (cartasTerritorio[turno].length >= 5) {
-        io.emit('mostrarMensagem', `⚠️ ${turno} não pode receber mais cartas território (máximo 5)!`);
-      } else {
-        // Escolher um território aleatório dos conquistados para gerar a carta
-        const territoriosConquistados = territoriosConquistadosNoTurno[turno];
-        const territorioAleatorio = territoriosConquistados[Math.floor(Math.random() * territoriosConquistados.length)];
-        const simbolo = mapeamentoTerritorioSimbolo[territorioAleatorio] || simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
-        
-        // Criar carta com nome do território e símbolo
-        const carta = {
-          territorio: territorioAleatorio,
-          simbolo: simbolo
-        };
-        
-        cartasTerritorio[turno].push(carta);
-        
-        io.emit('mostrarMensagem', `🎴 ${turno} ganhou uma carta território de ${territorioAleatorio} (${simbolo}) por conquistar territórios neste turno!`);
-      }
-    }
-    
-    // Limpar territórios conquistados do turno atual
-    territoriosConquistadosNoTurno[turno] = [];
+    // Processar cartas do jogador atual (se for humano)
+    processarCartasJogador(turno);
     
     // Limpar o controle de movimentos do jogador atual
     if (movimentosRemanejamento[turno]) {
@@ -612,6 +584,7 @@ io.on('connection', (socket) => {
     }
     
     io.emit('mostrarMensagem', `🎴 ${jogador.nome} trocou 3 cartas de ${tipoTroca} (${cartasSelecionadas.join(', ')}) e recebeu ${bonusTroca} exércitos bônus!`);
+    io.emit('tocarSomTakeCard');
     
     socket.emit('resultadoTrocaCartas', { sucesso: true, mensagem: `Cartas trocadas com sucesso! Você recebeu ${bonusTroca} exércitos bônus!` });
     
@@ -1096,6 +1069,8 @@ function checarVitoria() {
 
 // Inicializar o jogo
 function inicializarJogo() {
+  console.log(`🎮 Inicializando jogo...`);
+  
   // Distribuir territórios aleatoriamente
   const territoriosDisponiveis = [...paises];
   let indiceJogador = 0;
@@ -1116,6 +1091,7 @@ function inicializarJogo() {
   // Gerar objetivos para cada jogador
   jogadores.forEach(jogador => {
     objetivos[jogador.nome] = gerarObjetivoAleatorio(jogador.nome);
+    console.log(`🎯 Objetivo de ${jogador.nome}: ${objetivos[jogador.nome].descricao}`);
   });
 
   indiceTurno = 0;
@@ -1127,6 +1103,8 @@ function inicializarJogo() {
   cartasTerritorio = {};
   territoriosConquistadosNoTurno = {};
   numeroTrocasRealizadas = 0; // Resetar contador de trocas
+  
+  console.log(`🎮 Jogo inicializado - turno: ${turno}, cartas: ${Object.keys(cartasTerritorio).length} jogadores com cartas`);
   
   const resultadoReforco = calcularReforco(turno);
   tropasReforco = resultadoReforco.base;
@@ -1145,6 +1123,8 @@ function ativarCPUs() {
   let cpusAtivadas = 0;
   const jogadoresSemConexao = jogadores.filter(jogador => !jogador.socketId && !jogador.isCPU);
   
+  console.log(`🤖 Verificando CPUs - jogadores sem conexão:`, jogadoresSemConexao.map(j => j.nome));
+  
   // Só ativar CPUs se houver jogadores sem conexão
   if (jogadoresSemConexao.length > 0) {
     jogadoresSemConexao.forEach(jogador => {
@@ -1157,8 +1137,11 @@ function ativarCPUs() {
     if (cpusAtivadas > 0) {
       io.emit('mostrarMensagem', `🤖 ${cpusAtivadas} CPU(s) ativada(s) para completar a partida!`);
     }
+  } else {
+    console.log(`🤖 Nenhuma CPU precisa ser ativada`);
   }
   
+  console.log(`🤖 Status final das CPUs:`, jogadores.map(j => `${j.nome}: CPU=${j.isCPU}, Ativo=${j.ativo}, Socket=${j.socketId ? 'Conectado' : 'Desconectado'}`));
   return cpusAtivadas;
 }
 
@@ -1166,34 +1149,52 @@ function ativarCPUs() {
 function executarTurnoCPU(jogadorCPU) {
   console.log(`🤖 CPU ${jogadorCPU.nome} executando turno...`);
   
-  // Verificar se a CPU tem 5 ou mais cartas e forçar troca
+  // Verificar se a CPU deve trocar cartas (inteligente)
   const cartasCPU = cartasTerritorio[jogadorCPU.nome] || [];
-  if (cartasCPU.length >= 5) {
-    console.log(`🤖 CPU ${jogadorCPU.nome} tem ${cartasCPU.length} cartas, forçando troca...`);
+  console.log(`🃏 CPU ${jogadorCPU.nome} tem ${cartasCPU.length} cartas:`, cartasCPU.map(c => `${c.territorio}(${c.simbolo})`).join(', '));
+  
+  const deveTrocar = analisarSeCPUDeveriaTrocarCartas(jogadorCPU, cartasCPU);
+  console.log(`🤔 CPU ${jogadorCPU.nome} deve trocar cartas? ${deveTrocar}`);
+  
+  if (deveTrocar) {
+    console.log(`🤖 CPU ${jogadorCPU.nome} decidiu trocar cartas (${cartasCPU.length} cartas)...`);
     
-    // CPU troca cartas automaticamente (primeiras 3 cartas)
-    if (cartasCPU.length >= 3) {
-      const cartasParaTrocar = cartasCPU.slice(0, 3).map(carta => carta.territorio);
-      
+    // CPU troca cartas de forma inteligente
+    const cartasParaTrocar = selecionarCartasInteligentesParaTroca(cartasCPU);
+    console.log(`🎯 CPU ${jogadorCPU.nome} selecionou cartas para trocar:`, cartasParaTrocar);
+    
+    if (cartasParaTrocar.length === 3) {
       // Simular troca de cartas da CPU
       setTimeout(() => {
         // Remover as 3 cartas trocadas
-        cartasTerritorio[jogadorCPU.nome] = cartasCPU.slice(3);
+        const cartasRestantes = cartasCPU.filter(carta => 
+          !cartasParaTrocar.includes(carta.territorio)
+        );
+        cartasTerritorio[jogadorCPU.nome] = cartasRestantes;
         
-        // Dar tropas extras para a CPU (baseado no tipo de troca)
-        const tropasExtras = Math.floor(Math.random() * 3) + 2; // 2-4 tropas extras
+        // Calcular bônus baseado no tipo de troca
+        const bonusTroca = calcularBonusTrocaCartas(cartasParaTrocar);
         const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
         
-        for (let i = 0; i < tropasExtras; i++) {
+        // Distribuir tropas estrategicamente
+        for (let i = 0; i < bonusTroca; i++) {
           if (territoriosDoJogador.length > 0) {
-            const territorioAleatorio = territoriosDoJogador[Math.floor(Math.random() * territoriosDoJogador.length)];
-            territorioAleatorio.tropas++;
+            const territorioEstrategico = selecionarTerritorioEstrategicoParaReforco(jogadorCPU, territoriosDoJogador);
+            territorioEstrategico.tropas++;
+            
+            // Emitir efeito visual e som para todos os jogadores verem
+            io.emit('mostrarEfeitoReforco', {
+              territorio: territorioEstrategico.nome,
+              jogador: jogadorCPU.nome
+            });
+            
+            console.log(`🎯 CPU ${jogadorCPU.nome} reforçou ${territorioEstrategico.nome} com tropa de troca de cartas (${territorioEstrategico.tropas} tropas)`);
           }
         }
         
-        io.emit('mostrarMensagem', `🤖 CPU ${jogadorCPU.nome} trocou 3 cartas território e recebeu ${tropasExtras} tropas extras!`);
-        io.emit('adicionarAoHistorico', `🃏 CPU ${jogadorCPU.nome} trocou 3 cartas território (+${tropasExtras} tropas)`);
-        io.emit('tocarSomMovimento'); // Som de movimento para todos os jogadores
+        io.emit('mostrarMensagem', `🤖 CPU ${jogadorCPU.nome} trocou 3 cartas território e recebeu ${bonusTroca} tropas extras!`);
+        io.emit('adicionarAoHistorico', `🃏 CPU ${jogadorCPU.nome} trocou 3 cartas território (+${bonusTroca} tropas)`);
+        io.emit('tocarSomTakeCard');
         
         // Continuar com o turno normal da CPU
         continuarTurnoCPU(jogadorCPU);
@@ -1431,12 +1432,17 @@ function executarAtaquesSequenciais(jogadorCPU, objetivo) {
 function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objetivo) {
   if (vitoria || derrota) return;
   
-  // Máximo 3 ataques por turno
-  if (index >= 3 || index >= oportunidadesAtaque.length) {
+  // Finalizar turno se não há mais oportunidades de ataque
+  if (index >= oportunidadesAtaque.length) {
     // Finalizar turno da CPU
       if (vitoria || derrota) return;
       console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno...`);
+      console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
       io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+      
+      // Processar cartas da CPU ANTES de passar o turno
+      processarCartasJogador(jogadorCPU.nome);
+      
       passarTurno(); // Reduzido de 1000ms para 300ms para finalização mais rápida
     return;
   }
@@ -1493,6 +1499,8 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
           territoriosConquistadosNoTurno[jogadorCPU.nome] = [];
         }
         territoriosConquistadosNoTurno[jogadorCPU.nome].push(oportunidade.destino.nome);
+        console.log(`🏆 CPU ${jogadorCPU.nome} registrou território conquistado: ${oportunidade.destino.nome}`);
+        console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} neste turno:`, territoriosConquistadosNoTurno[jogadorCPU.nome]);
         
         // Verificar se conquistou algum continente
         Object.values(continentes).forEach(continente => {
@@ -1628,22 +1636,264 @@ function recalcularOportunidadesAtaque(jogadorCPU, objetivo, index) {
   oportunidadesAtaque.sort((a, b) => b.pontuacao - a.pontuacao);
   
   // Continuar ataques com as novas oportunidades
-  if (oportunidadesAtaque.length > 0 && index < 3) {
+  if (oportunidadesAtaque.length > 0) {
     console.log(`🎯 CPU ${jogadorCPU.nome} encontrou ${oportunidadesAtaque.length} novas oportunidades após conquista`);
     executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, 0, objetivo);
   } else {
-    // Finalizar turno se não há mais oportunidades ou já fez 3 ataques
+    // Finalizar turno se não há mais oportunidades
     console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno após recalcular oportunidades...`);
+    console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
     io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+    
+    // Processar cartas da CPU ANTES de passar o turno
+    processarCartasJogador(jogadorCPU.nome);
+    
     passarTurno();
   }
 }
+// Função para analisar se a CPU deveria trocar cartas
+function analisarSeCPUDeveriaTrocarCartas(jogadorCPU, cartasCPU) {
+  console.log(`🔍 Analisando se CPU ${jogadorCPU.nome} deve trocar cartas...`);
+  console.log(`📊 Cartas: ${cartasCPU.length}, Símbolos: ${cartasCPU.map(c => c.simbolo).join(', ')}`);
+  
+  // Forçar troca se tem 5 ou mais cartas
+  if (cartasCPU.length >= 5) {
+    console.log(`✅ CPU ${jogadorCPU.nome} deve trocar (5+ cartas)`);
+    return true;
+  }
+  
+  // Trocar se tem 3 cartas e pode formar uma combinação válida
+  if (cartasCPU.length >= 3) {
+    const simbolos = cartasCPU.map(carta => carta.simbolo);
+    const temCoringa = simbolos.includes('★');
+    
+    console.log(`🔍 Analisando combinações: tem coringa=${temCoringa}`);
+    
+    // Verificar se pode formar combinação válida
+    if (temCoringa) {
+      // Lógica com coringa
+      const coringas = simbolos.filter(simbolo => simbolo === '★');
+      const simbolosSemCoringa = simbolos.filter(simbolo => simbolo !== '★');
+      const simbolosUnicosSemCoringa = [...new Set(simbolosSemCoringa)];
+      
+      console.log(`🎴 Com coringa - coringas: ${coringas.length}, símbolos sem coringa: [${simbolosSemCoringa.join(', ')}], únicos: [${simbolosUnicosSemCoringa.join(', ')}]`);
+      
+      // Pode trocar se:
+      // 1. 3 coringas
+      // 2. 2 coringas + 1 carta qualquer
+      // 3. 1 coringa + 2 cartas iguais
+      // 4. 1 coringa + 2 cartas diferentes
+      const podeTrocar = coringas.length >= 3 || 
+                        (coringas.length === 2 && simbolosSemCoringa.length === 1) ||
+                        (coringas.length === 1 && simbolosSemCoringa.length === 2);
+      
+      console.log(`🎯 Com coringa: pode trocar=${podeTrocar} (${coringas.length} coringas, ${simbolosSemCoringa.length} sem coringa)`);
+      return podeTrocar;
+    } else {
+      // Lógica sem coringa - verificar se tem 3 iguais ou 3 diferentes
+      const contagemSimbolos = {};
+      simbolos.forEach(simbolo => {
+        contagemSimbolos[simbolo] = (contagemSimbolos[simbolo] || 0) + 1;
+      });
+      
+      const simbolosUnicos = Object.keys(contagemSimbolos);
+      const tem3Iguais = Object.values(contagemSimbolos).some(contagem => contagem >= 3);
+      const tem3Diferentes = simbolosUnicos.length === 3;
+      
+      console.log(`🎴 Sem coringa - contagem:`, contagemSimbolos, `símbolos únicos: [${simbolosUnicos.join(', ')}]`);
+      console.log(`🎯 Sem coringa: tem 3 iguais=${tem3Iguais}, tem 3 diferentes=${tem3Diferentes}`);
+      
+      const podeTrocar = tem3Iguais || tem3Diferentes;
+      console.log(`🎯 Sem coringa: pode trocar=${podeTrocar}`);
+      return podeTrocar;
+    }
+  }
+  
+  console.log(`❌ CPU ${jogadorCPU.nome} não deve trocar (${cartasCPU.length} cartas, não forma combinação válida)`);
+  return false;
+}
+
+// Função para selecionar cartas inteligentes para troca
+function selecionarCartasInteligentesParaTroca(cartasCPU) {
+  console.log(`🎯 Selecionando cartas inteligentes para troca...`);
+  console.log(`📋 Cartas disponíveis:`, cartasCPU.map(c => `${c.territorio}(${c.simbolo})`).join(', '));
+  
+  const simbolos = cartasCPU.map(carta => carta.simbolo);
+  const temCoringa = simbolos.includes('★');
+  
+  console.log(`🔍 Símbolos: [${simbolos.join(', ')}], Tem coringa: ${temCoringa}`);
+  
+  if (temCoringa) {
+    // Se tem coringa, tentar formar a melhor combinação
+    const simbolosSemCoringa = simbolos.filter(simbolo => simbolo !== '★');
+    const simbolosUnicosSemCoringa = [...new Set(simbolosSemCoringa)];
+    
+    console.log(`🎴 Com coringa - símbolos sem coringa: [${simbolosSemCoringa.join(', ')}], únicos: [${simbolosUnicosSemCoringa.join(', ')}]`);
+    
+    if (simbolosSemCoringa.length === 2) {
+      // 2 cartas + 1 coringa
+      if (simbolosUnicosSemCoringa.length === 1) {
+        // Mesmo símbolo + coringa
+        const simbolo = simbolosUnicosSemCoringa[0];
+        const cartasMesmoSimbolo = cartasCPU.filter(carta => carta.simbolo === simbolo);
+        const coringas = cartasCPU.filter(carta => carta.simbolo === '★');
+        const selecao = [...cartasMesmoSimbolo.slice(0, 2), coringas[0]].map(carta => carta.territorio);
+        console.log(`✅ Selecionado: 2 iguais + coringa = [${selecao.join(', ')}]`);
+        return selecao;
+      } else {
+        // Símbolos diferentes + coringa
+        const simbolo1 = simbolosSemCoringa[0];
+        const simbolo2 = simbolosSemCoringa[1];
+        const carta1 = cartasCPU.find(carta => carta.simbolo === simbolo1);
+        const carta2 = cartasCPU.find(carta => carta.simbolo === simbolo2);
+        const coringa = cartasCPU.find(carta => carta.simbolo === '★');
+        const selecao = [carta1, carta2, coringa].map(carta => carta.territorio);
+        console.log(`✅ Selecionado: 2 diferentes + coringa = [${selecao.join(', ')}]`);
+        return selecao;
+      }
+    } else if (simbolosSemCoringa.length === 1) {
+      // 1 carta + 2 coringas
+      const simbolo = simbolosSemCoringa[0];
+      const carta = cartasCPU.find(carta => carta.simbolo === simbolo);
+      const coringas = cartasCPU.filter(carta => carta.simbolo === '★').slice(0, 2);
+      const selecao = [carta, ...coringas].map(carta => carta.territorio);
+      console.log(`✅ Selecionado: 1 + 2 coringas = [${selecao.join(', ')}]`);
+      return selecao;
+    } else {
+      // 3 coringas
+      const coringas = cartasCPU.filter(carta => carta.simbolo === '★').slice(0, 3);
+      const selecao = coringas.map(carta => carta.territorio);
+      console.log(`✅ Selecionado: 3 coringas = [${selecao.join(', ')}]`);
+      return selecao;
+    }
+  } else {
+    // Sem coringa, verificar se tem 3 iguais ou 3 diferentes
+    const contagemSimbolos = {};
+    simbolos.forEach(simbolo => {
+      contagemSimbolos[simbolo] = (contagemSimbolos[simbolo] || 0) + 1;
+    });
+    
+    const simbolosUnicos = Object.keys(contagemSimbolos);
+    const tem3Iguais = Object.values(contagemSimbolos).some(contagem => contagem >= 3);
+    const tem3Diferentes = simbolosUnicos.length === 3;
+    
+    console.log(`🎴 Sem coringa - contagem:`, contagemSimbolos, `símbolos únicos: [${simbolosUnicos.join(', ')}]`);
+    
+    if (tem3Iguais) {
+      // 3 iguais - encontrar o símbolo que tem 3 ou mais
+      const simboloCom3 = Object.keys(contagemSimbolos).find(simbolo => contagemSimbolos[simbolo] >= 3);
+      const cartasIguais = cartasCPU.filter(carta => carta.simbolo === simboloCom3).slice(0, 3);
+      const selecao = cartasIguais.map(carta => carta.territorio);
+      console.log(`✅ Selecionado: 3 iguais (${simboloCom3}) = [${selecao.join(', ')}]`);
+      return selecao;
+    } else if (tem3Diferentes) {
+      // 3 diferentes
+      const cartasDiferentes = simbolosUnicos.map(simbolo => 
+        cartasCPU.find(carta => carta.simbolo === simbolo)
+      );
+      const selecao = cartasDiferentes.map(carta => carta.territorio);
+      console.log(`✅ Selecionado: 3 diferentes = [${selecao.join(', ')}]`);
+      return selecao;
+    }
+  }
+  
+  // Fallback: primeiras 3 cartas
+  const fallback = cartasCPU.slice(0, 3).map(carta => carta.territorio);
+  console.log(`⚠️ Fallback: primeiras 3 cartas = [${fallback.join(', ')}]`);
+  return fallback;
+}
+
+// Função para calcular bônus de troca de cartas
+function calcularBonusTrocaCartas(cartasParaTrocar) {
+  // Simular o cálculo de bônus baseado no tipo de troca
+  // Na implementação real, isso seria baseado no número de trocas já realizadas
+  numeroTrocasRealizadas++;
+  const bonus = 2 + (numeroTrocasRealizadas * 2); // 4, 6, 8, 10, ...
+  console.log(`💰 Calculando bônus de troca: troca #${numeroTrocasRealizadas} = ${bonus} tropas`);
+  return bonus;
+}
+
+// Função para selecionar território estratégico para reforço
+function selecionarTerritorioEstrategicoParaReforco(jogadorCPU, territoriosDoJogador) {
+  const objetivo = objetivos[jogadorCPU.nome];
+  console.log(`🎯 Selecionando território estratégico para CPU ${jogadorCPU.nome} - objetivo: ${objetivo?.tipo}`);
+  
+  // Priorizar territórios baseado no objetivo
+  if (objetivo?.tipo === 'conquistar3Continentes') {
+    // Reforçar territórios em continentes alvo
+    const territorioPrioritario = territoriosDoJogador.find(territorio => {
+      const continente = Object.keys(continentes).find(cont => 
+        continentes[cont].territorios.includes(territorio.nome)
+      );
+      return continente === objetivo.continente1 || continente === objetivo.continente2;
+    });
+    
+    if (territorioPrioritario) {
+      console.log(`🎯 Território prioritário selecionado: ${territorioPrioritario.nome} (continente alvo)`);
+      return territorioPrioritario;
+    }
+  }
+  
+  // Reforçar territórios com menos tropas (mais vulneráveis)
+  const territorioVulneravel = territoriosDoJogador.reduce((min, atual) => 
+    atual.tropas < min.tropas ? atual : min
+  );
+  console.log(`🎯 Território vulnerável selecionado: ${territorioVulneravel.nome} (${territorioVulneravel.tropas} tropas)`);
+  return territorioVulneravel;
+}
+
+// Função para processar cartas de qualquer jogador (CPU ou humano)
+function processarCartasJogador(nomeJogador) {
+  console.log(`🎴 Processando cartas para ${nomeJogador} - territórios conquistados:`, territoriosConquistadosNoTurno[nomeJogador] || []);
+  
+  if (territoriosConquistadosNoTurno[nomeJogador] && territoriosConquistadosNoTurno[nomeJogador].length > 0) {
+    console.log(`🎴 ${nomeJogador} conquistou ${territoriosConquistadosNoTurno[nomeJogador].length} territórios neste turno`);
+    
+    // Inicializar cartas do jogador se não existir
+    if (!cartasTerritorio[nomeJogador]) {
+      cartasTerritorio[nomeJogador] = [];
+    }
+    
+    // Verificar se o jogador já tem 5 cartas (máximo permitido)
+    if (cartasTerritorio[nomeJogador].length >= 5) {
+      io.emit('mostrarMensagem', `⚠️ ${nomeJogador} não pode receber mais cartas território (máximo 5)!`);
+      console.log(`⚠️ ${nomeJogador} já tem ${cartasTerritorio[nomeJogador].length} cartas (máximo 5)`);
+    } else {
+      // Escolher um território aleatório dos conquistados para gerar a carta
+      const territoriosConquistados = territoriosConquistadosNoTurno[nomeJogador];
+      const territorioAleatorio = territoriosConquistados[Math.floor(Math.random() * territoriosConquistados.length)];
+      const simbolo = mapeamentoTerritorioSimbolo[territorioAleatorio] || simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
+      
+      // Criar carta com nome do território e símbolo
+      const carta = {
+        territorio: territorioAleatorio,
+        simbolo: simbolo
+      };
+      
+      cartasTerritorio[nomeJogador].push(carta);
+      
+      console.log(`🎴 ${nomeJogador} ganhou carta: ${territorioAleatorio} (${simbolo}) - Total: ${cartasTerritorio[nomeJogador].length} cartas`);
+      io.emit('mostrarMensagem', `🎴 ${nomeJogador} ganhou uma carta território de ${territorioAleatorio} (${simbolo}) por conquistar territórios neste turno!`);
+    }
+  } else {
+    console.log(`🎴 ${nomeJogador} não conquistou territórios neste turno`);
+  }
+  
+  // Limpar territórios conquistados do jogador
+  console.log(`🧹 Limpando territórios conquistados de ${nomeJogador}:`, territoriosConquistadosNoTurno[nomeJogador] || []);
+  territoriosConquistadosNoTurno[nomeJogador] = [];
+}
+
 // Função para verificar se é turno de CPU
 function verificarTurnoCPU() {
   const jogadorAtual = jogadores[indiceTurno];
+  console.log(`🤖 Verificando turno de CPU: ${jogadorAtual.nome} - é CPU? ${jogadorAtual.isCPU}, ativo? ${jogadorAtual.ativo}`);
   
   if (jogadorAtual.isCPU && jogadorAtual.ativo) {
+    console.log(`🤖 Iniciando turno da CPU ${jogadorAtual.nome}`);
     executarTurnoCPU(jogadorAtual);
+  } else {
+    console.log(`👤 Turno de jogador humano: ${jogadorAtual.nome}`);
   }
 }
 
@@ -1660,10 +1910,65 @@ function passarTurno() {
   
   // Verificar se o jogador tem 5 ou mais cartas território e forçar troca ANTES de dar reforços
   const cartasJogador = cartasTerritorio[turno] || [];
+  console.log(`🔄 Passando turno para ${turno} - cartas: ${cartasJogador.length}`);
+  
   if (cartasJogador.length >= 5) {
-    io.emit('mostrarMensagem', `⚠️ ${turno} tem ${cartasJogador.length} cartas território! É obrigatório trocar cartas antes de continuar.`);
-    io.emit('forcarTrocaCartas', { jogador: turno, cartas: cartasJogador });
-    return; // Não avança o turno até trocar as cartas
+    const jogadorAtual = jogadores.find(j => j.nome === turno);
+    console.log(`⚠️ ${turno} tem ${cartasJogador.length} cartas - é CPU? ${jogadorAtual.isCPU}`);
+    
+    if (jogadorAtual.isCPU) {
+      // CPU troca cartas automaticamente
+      console.log(`🤖 CPU ${turno} forçada a trocar ${cartasJogador.length} cartas...`);
+      const cartasParaTrocar = selecionarCartasInteligentesParaTroca(cartasJogador);
+      
+      if (cartasParaTrocar.length === 3) {
+        // Remover as 3 cartas trocadas
+        const cartasRestantes = cartasJogador.filter(carta => 
+          !cartasParaTrocar.includes(carta.territorio)
+        );
+        cartasTerritorio[turno] = cartasRestantes;
+        
+        // Calcular bônus
+        const bonusTroca = calcularBonusTrocaCartas(cartasParaTrocar);
+        const territoriosDoJogador = paises.filter(p => p.dono === turno);
+        
+        // Distribuir tropas estrategicamente
+        for (let i = 0; i < bonusTroca; i++) {
+          if (territoriosDoJogador.length > 0) {
+            const territorioEstrategico = selecionarTerritorioEstrategicoParaReforco(jogadorAtual, territoriosDoJogador);
+            territorioEstrategico.tropas++;
+            
+            // Emitir efeito visual e som para todos os jogadores verem
+            io.emit('mostrarEfeitoReforco', {
+              territorio: territorioEstrategico.nome,
+              jogador: turno
+            });
+            
+            console.log(`🎯 CPU ${turno} reforçou ${territorioEstrategico.nome} com tropa de troca obrigatória (${territorioEstrategico.tropas} tropas)`);
+          }
+        }
+        
+        console.log(`✅ CPU ${turno} trocou cartas obrigatoriamente e recebeu ${bonusTroca} tropas`);
+        io.emit('mostrarMensagem', `🤖 CPU ${turno} trocou 3 cartas território obrigatoriamente e recebeu ${bonusTroca} tropas extras!`);
+        io.emit('adicionarAoHistorico', `🃏 CPU ${turno} trocou 3 cartas território obrigatoriamente (+${bonusTroca} tropas)`);
+        io.emit('tocarSomTakeCard');
+        
+        // Continuar com o turno
+        io.sockets.sockets.forEach((s) => {
+          s.emit('estadoAtualizado', getEstado(s.id));
+        });
+      } else {
+        console.log(`❌ CPU ${turno} não conseguiu selecionar 3 cartas para trocar`);
+      }
+    } else {
+      // Jogador humano
+      console.log(`👤 Jogador humano ${turno} precisa trocar cartas`);
+      io.emit('mostrarMensagem', `⚠️ ${turno} tem ${cartasJogador.length} cartas território! É obrigatório trocar cartas antes de continuar.`);
+      io.emit('forcarTrocaCartas', { jogador: turno, cartas: cartasJogador });
+      return; // Não avança o turno até trocar as cartas
+    }
+  } else {
+    console.log(`✅ ${turno} tem ${cartasJogador.length} cartas (não precisa trocar)`);
   }
   
   const resultadoReforco = calcularReforco(turno);

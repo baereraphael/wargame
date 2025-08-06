@@ -69,6 +69,7 @@ function preload() {
   this.load.audio('armymoving', 'assets/armymoving.mp3');
   this.load.audio('clicksound', 'assets/clicksound.mp3');
   this.load.audio('huh', 'assets/huh.mp3');
+  this.load.audio('takecard', 'assets/takecard.mp3');
 }
 
 function create() {
@@ -82,6 +83,7 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   somMovimento = this.sound.add('armymoving');
   somClick = this.sound.add('clicksound');
   somHuh = this.sound.add('huh');
+  somTakeCard = this.sound.add('takecard');
 
   // Adicionar indicadores de continentes (será chamado após os territórios serem carregados)
 
@@ -329,6 +331,10 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
 
   socket.on('tocarSomMovimento', () => {
     tocarSomMovimento();
+  });
+
+  socket.on('tocarSomTakeCard', () => {
+    tocarSomTakeCard();
   });
 
   socket.on('territorioConquistado', (dados) => {
@@ -1025,6 +1031,12 @@ function tocarSomClick() {
 function tocarSomHuh() {
   if (somHuh) {
     somHuh.play();
+  }
+}
+
+function tocarSomTakeCard() {
+  if (somTakeCard) {
+    somTakeCard.play();
   }
 }
 
