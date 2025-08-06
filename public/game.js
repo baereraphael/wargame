@@ -2,6 +2,14 @@
 let playerLoggedIn = false;
 let playerUsername = '';
 
+// Turn Timer System
+let turnTimer = null;
+let turnTimeLeft = 90; // 1 minute and 30 seconds in seconds
+let turnTimerInterval = null;
+let isPlayerTurn = false;
+let isClockTickingPlaying = false; // Track if clock ticking sound is playing
+let timerJustExpired = false; // Prevent timer from restarting immediately after expiration
+
 // Initialize login system
 document.addEventListener('DOMContentLoaded', function() {
   initializeLoginSystem();
@@ -28,6 +36,110 @@ function initializeLoginSystem() {
   }
 }
 
+// Global Turn Timer Functions
+function startTurnTimer() {
+  if (turnTimerInterval) {
+    clearInterval(turnTimerInterval);
+  }
+  
+  turnTimeLeft = 90; // Reset to 1:30
+  isPlayerTurn = true;
+  timerJustExpired = false; // Reset the expiration flag
+  
+  // Update global timer display
+  updateGlobalTimerDisplay();
+  
+  turnTimerInterval = setInterval(() => {
+    turnTimeLeft--;
+    updateGlobalTimerDisplay();
+    
+    if (turnTimeLeft <= 0) {
+      endTurnByTimeout();
+    }
+  }, 1000);
+}
+
+function stopTurnTimer() {
+  if (turnTimerInterval) {
+    clearInterval(turnTimerInterval);
+    turnTimerInterval = null;
+  }
+  
+  isPlayerTurn = false;
+  isClockTickingPlaying = false; // Reset clock ticking flag
+  turnTimeLeft = 0; // Reset time to 0
+  
+  // Hide global timer when not active
+  const globalTimer = document.getElementById('global-turn-timer');
+  if (globalTimer) {
+    globalTimer.style.display = 'none';
+  }
+  
+  // Update display to hide timer
+  updateGlobalTimerDisplay();
+}
+
+function updateGlobalTimerDisplay() {
+  const timerDisplay = document.getElementById('timer-display');
+  const globalTimer = document.getElementById('global-turn-timer');
+  if (!timerDisplay) return;
+  
+  // Hide timer if time has expired
+  if (turnTimeLeft <= 0) {
+    if (globalTimer) {
+      globalTimer.style.display = 'none';
+    }
+    return;
+  }
+  
+  const minutes = Math.floor(turnTimeLeft / 60);
+  const seconds = turnTimeLeft % 60;
+  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  timerDisplay.textContent = timeString;
+  
+  // Update visual state based on time remaining
+  timerDisplay.className = 'timer-display';
+  if (turnTimeLeft <= 30) {
+    timerDisplay.classList.add('danger');
+  } else if (turnTimeLeft <= 60) {
+    timerDisplay.classList.add('warning');
+  }
+  
+  // Handle clock ticking sound for last 10 seconds
+  if (turnTimeLeft <= 10 && turnTimeLeft > 0) {
+    if (!isClockTickingPlaying) {
+      tocarSomClockTicking();
+      isClockTickingPlaying = true;
+    }
+  } else {
+    isClockTickingPlaying = false;
+  }
+}
+
+// Legacy function for compatibility
+function updateTimerDisplay() {
+  updateGlobalTimerDisplay();
+}
+
+function endTurnByTimeout() {
+  console.log('⏰ Turno encerrado por timeout! Timer just expired flag set to true');
+  timerJustExpired = true; // Set flag to prevent immediate restart
+  stopTurnTimer();
+  
+  // Automatically end turn - force it regardless of game state
+  if (getSocket() && meuNome === turno) {
+    console.log('📤 Emitting passarTurno due to timeout - forcing turn change');
+    getSocket().emit('passarTurno');
+    
+    // Also emit a force turn change event as backup
+    setTimeout(() => {
+      console.log('🔄 Backup: Emitting forceTurnChange due to timeout');
+      getSocket().emit('forceTurnChange');
+    }, 1000);
+  }
+}
+
 function handleLogin() {
   const usernameInput = document.getElementById('username');
   const username = usernameInput.value.trim();
@@ -46,21 +158,15 @@ function handleLogin() {
   playerUsername = username;
   playerLoggedIn = true;
   
-  // Hide login screen and show game
+  // Hide login screen and show lobby
   const loginScreen = document.getElementById('login-screen');
-  const gameContainer = document.getElementById('game-container');
+  const lobbyScreen = document.getElementById('lobby-screen');
   
   if (loginScreen) loginScreen.style.display = 'none';
-  if (gameContainer) gameContainer.style.display = 'block';
+  if (lobbyScreen) lobbyScreen.style.display = 'flex';
   
-  // Debug game container
-  console.log('🎮 Game container:', gameContainer);
-  console.log('🎮 Game container display:', gameContainer.style.display);
-  console.log('🎮 Game container visibility:', gameContainer.style.visibility);
-  console.log('🎮 Game container dimensions:', gameContainer.offsetWidth, 'x', gameContainer.offsetHeight);
-  
-  // Initialize the game
-  initializeGame();
+  // Initialize the lobby
+  initializeLobby();
 }
 
 function initializeGame() {
@@ -81,25 +187,19 @@ function initializeGame() {
     }
   };
 
-  const socket = io(); // conecta no servidor socket.io
-  window.socket = socket; // Make socket globally available
+  // Use existing socket from lobby
+  const socket = getSocket();
   
-  // Wait for socket connection before initializing the game
-  socket.on('connect', () => {
-    console.log('Socket conectado, inicializando jogo...');
-    
-    // Initialize Phaser game after socket is connected
-    console.log('🎮 Criando instância do Phaser...');
-    const game = new Phaser.Game(config);
-    window.game = game; // Make game globally available
-    console.log('✅ Phaser criado com sucesso!');
-  });
+  if (!socket) {
+    console.error('Socket não encontrado!');
+    return;
+  }
   
-  // Handle connection errors
-  socket.on('connect_error', (error) => {
-    console.error('Erro ao conectar com o servidor:', error);
-    alert('Erro ao conectar com o servidor. Tente novamente.');
-  });
+  // Initialize Phaser game
+  console.log('🎮 Criando instância do Phaser...');
+  const game = new Phaser.Game(config);
+  window.game = game; // Make game globally available
+  console.log('✅ Phaser criado com sucesso!');
   
   // Chat message listener
   socket.on('chatMessage', (dados) => {
@@ -111,6 +211,160 @@ function initializeGame() {
     }
   });
 }
+
+function initializeLobby() {
+  console.log('🎮 Inicializando lobby...');
+  
+  const socket = io(); // conecta no servidor socket.io
+  window.socket = socket; // Make socket globally available
+  
+  // Wait for socket connection before starting lobby
+  socket.on('connect', () => {
+    console.log('Socket conectado, iniciando lobby...');
+    
+    // Emit player joined event
+    socket.emit('playerJoinedLobby', { username: playerUsername });
+    
+    // Start lobby timer
+    startLobbyTimer();
+  });
+  
+  // Handle connection errors
+  socket.on('connect_error', (error) => {
+    console.error('Erro ao conectar com o servidor:', error);
+    alert('Erro ao conectar com o servidor. Tente novamente.');
+  });
+  
+  // Lobby events
+  socket.on('lobbyUpdate', (data) => {
+    updateLobbyDisplay(data);
+  });
+  
+  socket.on('gameStarting', () => {
+    console.log('🎮 Jogo iniciando...');
+    startGame();
+  });
+  
+  // Chat message listener (for lobby chat if needed)
+  socket.on('chatMessage', (dados) => {
+    // Could implement lobby chat here if needed
+  });
+}
+
+function startLobbyTimer() {
+  console.log('⏰ Iniciando timer do lobby...');
+  lobbyTimeLeft = 5; // Reset to 5 seconds
+  updateLobbyTimerDisplay();
+  
+  lobbyTimerInterval = setInterval(() => {
+    lobbyTimeLeft--;
+    updateLobbyTimerDisplay();
+    
+    if (lobbyTimeLeft <= 0) {
+      console.log('⏰ Timer do lobby expirou!');
+      clearInterval(lobbyTimerInterval);
+      // Server will handle game start
+    }
+  }, 1000);
+}
+
+function updateLobbyTimerDisplay() {
+  const timerDisplay = document.getElementById('lobby-timer-display');
+  const timerElement = document.getElementById('lobby-timer');
+  
+  if (!timerDisplay) return;
+  
+  const minutes = Math.floor(lobbyTimeLeft / 60);
+  const seconds = lobbyTimeLeft % 60;
+  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  timerDisplay.textContent = timeString;
+  
+  // Update visual state based on time remaining
+  timerElement.className = 'lobby-timer';
+  if (lobbyTimeLeft <= 10) {
+    timerElement.classList.add('danger');
+  } else if (lobbyTimeLeft <= 30) {
+    timerElement.classList.add('warning');
+  }
+}
+
+function updateLobbyDisplay(data) {
+  const playersList = document.getElementById('lobby-players-list');
+  const statusText = document.getElementById('lobby-status-text');
+  
+  if (!playersList || !statusText) return;
+  
+  // Update players list
+  playersList.innerHTML = '';
+  data.players.forEach(player => {
+    const playerElement = document.createElement('div');
+    playerElement.className = 'lobby-player';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'lobby-player-avatar';
+    avatar.textContent = getPlayerAvatar(player.nome);
+    
+    const name = document.createElement('div');
+    name.className = 'lobby-player-name';
+    name.textContent = player.nome;
+    
+    const status = document.createElement('div');
+    status.className = 'lobby-player-status';
+    if (player.socketId) {
+      status.textContent = 'Conectado';
+      status.classList.add('connected');
+    } else if (player.isCPU) {
+      status.textContent = 'CPU';
+      status.classList.add('cpu');
+    } else {
+      status.textContent = 'Conectando...';
+      status.classList.add('connecting');
+    }
+    
+    playerElement.appendChild(avatar);
+    playerElement.appendChild(name);
+    playerElement.appendChild(status);
+    playersList.appendChild(playerElement);
+  });
+  
+  // Update status text
+  const connectedPlayers = data.players.filter(p => p.socketId).length;
+  const totalPlayers = data.players.length;
+  
+  if (connectedPlayers === totalPlayers) {
+    statusText.textContent = `Todos os jogadores conectados! Iniciando jogo...`;
+  } else {
+    statusText.textContent = `${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
+  }
+}
+
+function startGame() {
+  console.log('🎮 Iniciando jogo...');
+  gameStarted = true;
+  
+  // Clear lobby timer
+  if (lobbyTimerInterval) {
+    clearInterval(lobbyTimerInterval);
+    lobbyTimerInterval = null;
+  }
+  
+  // Hide lobby and show game
+  const lobbyScreen = document.getElementById('lobby-screen');
+  const gameContainer = document.getElementById('game-container');
+  
+  if (lobbyScreen) lobbyScreen.style.display = 'none';
+  if (gameContainer) gameContainer.style.display = 'block';
+  
+  // Initialize the game
+  initializeGame();
+}
+
+// Lobby variables
+let lobbyTimeLeft = 5; // 5 seconds
+let lobbyTimerInterval = null;
+let lobbyPlayers = [];
+let gameStarted = false;
 
 let paises = [];
 let jogadores = [];
@@ -195,6 +449,7 @@ function preload() {
   this.load.audio('clicksound', 'assets/clicksound.mp3');
   this.load.audio('huh', 'assets/huh.mp3');
   this.load.audio('takecard', 'assets/takecard.mp3');
+  this.load.audio('clockticking', 'assets/clockticking.mp3');
   console.log('✅ Preload concluído!');
 }
 
@@ -256,6 +511,7 @@ function create() {
   somClick = this.sound.add('clicksound');
   somHuh = this.sound.add('huh');
   somTakeCard = this.sound.add('takecard');
+  somClockTicking = this.sound.add('clockticking');
 
   // Adicionar indicadores de continentes (será chamado após os territórios serem carregados)
 
@@ -277,6 +533,7 @@ function create() {
   botaoTurno.addEventListener('click', () => {
     if (vitoria || derrota) return;
     tocarSomClick();
+    stopTurnTimer(); // Stop timer when manually ending turn
     getSocket().emit('passarTurno');
   });
 
@@ -428,7 +685,14 @@ function create() {
     console.log('📊 Estado completo:', estado);
     
     jogadores = estado.jogadores;
+    const previousTurn = turno; // Store previous turn
     turno = estado.turno;
+    
+    // Reset timer expiration flag when turn changes
+    if (previousTurn !== turno) {
+      timerJustExpired = false;
+    }
+    
     tropasReforco = estado.tropasReforco;
     tropasBonusContinente = estado.tropasBonusContinente || {};
     vitoria = estado.vitoria;
@@ -1118,6 +1382,11 @@ function limparSelecao() {
 }
 
 function mostrarMensagem(texto) {
+  // Handle game restart
+  if (texto.includes('Jogo reiniciado')) {
+    stopTurnTimer(); // Stop any existing timer
+  }
+  
   // Filter messages to only include reinforcements, attacks, and action phases
   const shouldInclude = 
     // Reinforcements
@@ -1165,6 +1434,9 @@ function mostrarMensagem(texto) {
 function bloquearJogo(mensagem, scene) {
   console.log('🎯 bloquearJogo chamado com mensagem:', mensagem);
   
+  // Stop turn timer
+  stopTurnTimer();
+  
   try {
     // botaoTurno é um elemento HTML, não Phaser
     botaoTurno.disabled = true;
@@ -1206,6 +1478,9 @@ function bloquearJogo(mensagem, scene) {
 }
 
 function perdeuJogo(mensagem, scene) {
+  // Stop turn timer
+  stopTurnTimer();
+  
   // botaoTurno é um elemento HTML, não Phaser
   botaoTurno.disabled = true;
   botaoTurno.style.backgroundColor = '#555';
@@ -1286,6 +1561,12 @@ function tocarSomHuh() {
 function tocarSomTakeCard() {
   if (somTakeCard) {
     somTakeCard.play();
+  }
+}
+
+function tocarSomClockTicking() {
+  if (somClockTicking) {
+    somClockTicking.play();
   }
 }
 
@@ -2681,6 +2962,33 @@ function updateCSSHUD() {
       turnTextEl.textContent = '⚔️';
     } else {
       turnTextEl.textContent = '⏳';
+    }
+
+    // Update global turn timer
+    const globalTimerEl = document.getElementById('global-turn-timer');
+    if (globalTimerEl) {
+      // Show timer for all human players' turns (not CPU)
+      const currentPlayer = jogadores.find(j => j.nome === turno);
+      const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
+      
+      if (isHumanPlayer && !vitoria && !derrota) {
+        // Show timer for all players to see
+        globalTimerEl.style.display = 'flex';
+        
+        // Start timer if it's our turn and not already running and timer hasn't just expired
+        if (meuNome === turno && !isPlayerTurn && !timerJustExpired) {
+          console.log('🚀 Starting turn timer for player:', meuNome);
+          startTurnTimer();
+        } else if (meuNome === turno && !isPlayerTurn && timerJustExpired) {
+          console.log('⏸️ Timer not started - just expired for player:', meuNome);
+        }
+      } else {
+        // Hide timer if it's CPU turn or game is over
+        globalTimerEl.style.display = 'none';
+        if (isPlayerTurn) {
+          stopTurnTimer();
+        }
+      }
     }
 
 

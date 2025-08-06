@@ -6,6 +6,12 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Lobby variables
+let lobbyActive = false;
+let lobbyTimer = null;
+let lobbyTimeLeft = 5; // 5 seconds
+let gameStarted = false;
+
 const jogadores = [
   { nome: 'Azul', ativo: true, socketId: null, isCPU: false },
   { nome: 'Vermelho', ativo: true, socketId: null, isCPU: false },
@@ -131,48 +137,54 @@ app.use(express.static('public')); // coloque seu index.html e assets na pasta p
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado');
 
-   const jogadorDisponivel = jogadores.find(j => j.socketId === null);
-  if (jogadorDisponivel) {
-    jogadorDisponivel.socketId = socket.id;
+  // Handle player joining lobby
+  socket.on('playerJoinedLobby', (data) => {
+    console.log(`🎮 ${data.username} entrou no lobby`);
     
-    // Se o jogador era uma CPU, desativar
-    if (jogadorDisponivel.isCPU) {
-      jogadorDisponivel.isCPU = false;
-      console.log(`🤖 CPU desativada para ${jogadorDisponivel.nome} (jogador conectou)`);
-      io.emit('mostrarMensagem', `👤 ${jogadorDisponivel.nome} conectou-se e assumiu o controle!`);
-      io.emit('adicionarAoHistorico', `👤 ${jogadorDisponivel.nome} conectou-se e assumiu o controle da CPU`);
+    // Assign player to available slot
+    const jogadorDisponivel = jogadores.find(j => j.socketId === null);
+    if (jogadorDisponivel) {
+      jogadorDisponivel.socketId = socket.id;
+      
+      // Se o jogador era uma CPU, desativar
+      if (jogadorDisponivel.isCPU) {
+        jogadorDisponivel.isCPU = false;
+        console.log(`🤖 CPU desativada para ${jogadorDisponivel.nome} (jogador conectou)`);
+      }
+      
+      console.log(`Jogador ${jogadorDisponivel.nome} atribuído ao socket ${socket.id}`);
+    } else {
+      console.log('Não há jogadores disponíveis para atribuir a este socket.');
     }
     
-    console.log(`Jogador ${jogadorDisponivel.nome} atribuído ao socket ${socket.id}`);
-  } else {
-    console.log('Não há jogadores disponíveis para atribuir a este socket.');
-  }
-
-  // Dar tempo para outros jogadores se conectarem antes de ativar CPUs
-  setTimeout(() => {
-    ativarCPUs();
-  }, 10000); // 10 segundos de delay
-
-  // Envia estado inicial para o cliente com um pequeno delay
-  setTimeout(() => {
-    console.log('📤 Enviando estado inicial para socket:', socket.id);
-    const estadoInicial = getEstado(socket.id);
-    console.log('📊 Estado inicial:', estadoInicial);
-    socket.emit('estadoAtualizado', estadoInicial);
-    
-    // Se este é o primeiro jogador a conectar, reiniciar o jogo automaticamente
-    const jogadoresConectados = jogadores.filter(j => j.socketId !== null).length;
-    if (jogadoresConectados === 1 && !vitoria && !derrota) {
-      console.log('🎮 Primeiro jogador conectado - reiniciando jogo automaticamente');
-      setTimeout(() => {
-        inicializarJogo();
-        io.emit('mostrarMensagem', '🎮 Jogo iniciado! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
-      }, 500);
+    // Start lobby if not already active
+    if (!lobbyActive) {
+      startLobby();
     }
-  }, 100); // 100ms delay
+    
+    // Send lobby update to all clients
+    sendLobbyUpdate();
+  });
 
-
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    console.log('Jogador desconectado:', socket.id);
+    
+    // Find and clear the player's socket
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador) {
+      jogador.socketId = null;
+      console.log(`Socket ${socket.id} removido de ${jogador.nome}`);
+    }
+    
+    // Send lobby update
+    sendLobbyUpdate();
+  });
+  
+  // Game events (only active after game starts)
   socket.on('transferirTropasConquista', (dados) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
     
@@ -222,6 +234,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('colocarReforco', (nomePais) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
     
@@ -329,6 +343,8 @@ io.on('connection', (socket) => {
   });
 
     socket.on('atacar', ({ de, para }) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
     
@@ -433,8 +449,10 @@ io.on('connection', (socket) => {
 
     });
 
-  socket.on('passarTurno', () => {
-        const jogador = jogadores.find(j => j.socketId === socket.id);
+    socket.on('passarTurno', () => {
+    if (!gameStarted) return;
+    
+    const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno) return;
     if (vitoria || derrota) {
       io.emit('mostrarMensagem', 'O jogo já terminou!');
@@ -508,7 +526,70 @@ io.on('connection', (socket) => {
 
   });
 
+  // Force turn change event for timer timeout
+  socket.on('forceTurnChange', () => {
+    if (!gameStarted) return;
+    
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (jogador.nome !== turno) return;
+    
+    console.log(`⏰ Forcing turn change due to timeout for ${turno}`);
+    
+    // Force end any current phase
+    faseRemanejamento = false;
+    
+    // Clear any remaining bonus troops
+    tropasBonusContinente = {};
+    
+    // Process cards for current player
+    processarCartasJogador(turno);
+    
+    // Clear movement control for current player
+    if (movimentosRemanejamento[turno]) {
+      delete movimentosRemanejamento[turno];
+    }
+    
+    // Activate CPUs if needed
+    ativarCPUs();
+    
+    // Find next active player
+    let encontrouJogadorAtivo = false;
+    let tentativas = 0;
+    do {
+      indiceTurno = (indiceTurno + 1) % jogadores.length;
+      tentativas++;
+      if (jogadores[indiceTurno].ativo) {
+        encontrouJogadorAtivo = true;
+      }
+      if (tentativas > jogadores.length) {
+        encontrouJogadorAtivo = false;
+        break;
+      }
+    } while (!encontrouJogadorAtivo);
+
+    if (!encontrouJogadorAtivo) {
+      io.emit('mostrarMensagem', 'Não há jogadores ativos!');
+      return;
+    }
+
+    turno = jogadores[indiceTurno].nome;
+    
+    const resultadoReforco = calcularReforco(turno);
+    tropasReforco = resultadoReforco.base;
+    tropasBonusContinente = resultadoReforco.bonus;
+
+    io.emit('mostrarMensagem', `⏰ Turno forçado para ${turno} devido ao timeout. Reforços: ${tropasReforco} base + ${Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+    
+    // Check if it's CPU turn
+    verificarTurnoCPU();
+  });
+
   socket.on('consultarObjetivo', () => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (!jogador) return;
     
@@ -519,6 +600,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('consultarCartasTerritorio', () => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (!jogador) return;
     
@@ -527,6 +610,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('trocarCartasTerritorio', (cartasSelecionadas) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (!jogador || jogador.nome !== turno) {
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Não é sua vez!' });
@@ -673,6 +758,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('verificarMovimentoRemanejamento', (dados) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota || !faseRemanejamento) {
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Não é sua vez ou não está na fase de remanejamento' });
@@ -726,6 +813,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('moverTropas', (dados) => {
+    if (!gameStarted) return;
+    
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota || !faseRemanejamento) return;
 
@@ -774,6 +863,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('reiniciarJogo', () => {
+    if (!gameStarted) return;
+    
     jogadores.forEach(j => j.ativo = true);
       indiceTurno = 0;
   turno = jogadores[indiceTurno].nome;
@@ -837,26 +928,7 @@ io.on('connection', (socket) => {
     tropasBonusContinente = calcularReforco(turno).bonus;
     io.emit('mostrarMensagem', `Jogo reiniciado! É a vez do jogador ${turno}.`);
     io.sockets.sockets.forEach((s) => {
-    s.emit('estadoAtualizado', getEstado(s.id));
-    });
-
-
-        socket.on('disconnect', () => {
-        console.log('Jogador desconectado:', socket.id);
-        // Liberar o jogador atribuído ao socket desconectado
-        const jogador = jogadores.find(j => j.socketId === socket.id);
-        if (jogador) {
-        jogador.socketId = null;
-        jogador.ativo = true; // ou decidir outra lógica se quiser desativar
-        console.log(`Jogador ${jogador.nome} liberado`);
-        
-        // Ativar CPU para o jogador desconectado
-        ativarCPUs();
-        }
-    });
-
-    socket.on('reiniciarJogo', () => {
-      inicializarJogo();
+      s.emit('estadoAtualizado', getEstado(s.id));
     });
   });
 });
@@ -2178,6 +2250,98 @@ function passarTurno() {
 }
 
 
+
+// Lobby functions
+function startLobby() {
+  console.log('🎮 Iniciando lobby...');
+  lobbyActive = true;
+  lobbyTimeLeft = 5; // 5 seconds
+  
+  // Start lobby timer
+  lobbyTimer = setInterval(() => {
+    lobbyTimeLeft--;
+    
+    // Check if all players are connected
+    const connectedPlayers = jogadores.filter(j => j.socketId !== null).length;
+    const totalPlayers = jogadores.length;
+    
+    if (connectedPlayers === totalPlayers) {
+      console.log('🎮 Todos os jogadores conectados! Iniciando jogo...');
+      startGame();
+      return;
+    }
+    
+    // Check if timer expired
+    if (lobbyTimeLeft <= 0) {
+      console.log('⏰ Timer do lobby expirou! Iniciando jogo com CPUs...');
+      startGameWithCPUs();
+      return;
+    }
+    
+    // Send lobby update
+    sendLobbyUpdate();
+  }, 1000);
+}
+
+function sendLobbyUpdate() {
+  const lobbyData = {
+    players: jogadores,
+    timeLeft: lobbyTimeLeft,
+    connectedPlayers: jogadores.filter(j => j.socketId !== null).length,
+    totalPlayers: jogadores.length
+  };
+  
+  io.emit('lobbyUpdate', lobbyData);
+}
+
+function startGame() {
+  console.log('🎮 Iniciando jogo com jogadores reais...');
+  gameStarted = true;
+  lobbyActive = false;
+  
+  if (lobbyTimer) {
+    clearInterval(lobbyTimer);
+    lobbyTimer = null;
+  }
+  
+  // Initialize the game
+  inicializarJogo();
+  
+  // Notify all clients that game is starting
+  io.emit('gameStarting');
+  io.emit('mostrarMensagem', '🎮 Jogo iniciado! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
+  
+  // Send initial state to all clients
+  io.sockets.sockets.forEach((s) => {
+    s.emit('estadoAtualizado', getEstado(s.id));
+  });
+}
+
+function startGameWithCPUs() {
+  console.log('🎮 Iniciando jogo com CPUs...');
+  gameStarted = true;
+  lobbyActive = false;
+  
+  if (lobbyTimer) {
+    clearInterval(lobbyTimer);
+    lobbyTimer = null;
+  }
+  
+  // Activate CPUs for unconnected players
+  ativarCPUs();
+  
+  // Initialize the game
+  inicializarJogo();
+  
+  // Notify all clients that game is starting
+  io.emit('gameStarting');
+  io.emit('mostrarMensagem', '🎮 Jogo iniciado com CPUs! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
+  
+  // Send initial state to all clients
+  io.sockets.sockets.forEach((s) => {
+    s.emit('estadoAtualizado', getEstado(s.id));
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
