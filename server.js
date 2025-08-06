@@ -172,8 +172,13 @@ io.on('connection', (socket) => {
     ativarCPUs();
   }, 10000); // 10 segundos de delay
 
-  // Envia estado inicial para o cliente
-  socket.emit('estadoAtualizado', getEstado(socket.id));
+  // Envia estado inicial para o cliente com um pequeno delay
+  setTimeout(() => {
+    console.log('📤 Enviando estado inicial para socket:', socket.id);
+    const estadoInicial = getEstado(socket.id);
+    console.log('📊 Estado inicial:', estadoInicial);
+    socket.emit('estadoAtualizado', estadoInicial);
+  }, 100); // 100ms delay
 
 
   socket.on('transferirTropasConquista', (dados) => {
@@ -205,6 +210,18 @@ io.on('connection', (socket) => {
     
     // Verificar vitória após transferir tropas
     checarVitoria();
+  });
+
+  socket.on('chatMessage', (dados) => {
+    const jogador = jogadores.find(j => j.socketId === socket.id);
+    if (!jogador) return;
+    
+    // Broadcast the chat message to all players
+    io.emit('chatMessage', {
+      player: dados.player,
+      message: dados.message,
+      timestamp: new Date()
+    });
   });
 
   socket.on('colocarReforco', (nomePais) => {

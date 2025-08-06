@@ -1,21 +1,116 @@
-const config = {
-  type: Phaser.AUTO,
-  width: 1280, // resolução base
-  height: 720,
-  backgroundColor: '#1a1a1a',
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  },
-  scene: {
-    preload,
-    create
+// Login System
+let playerLoggedIn = false;
+let playerUsername = '';
+
+// Initialize login system
+document.addEventListener('DOMContentLoaded', function() {
+  initializeLoginSystem();
+});
+
+function initializeLoginSystem() {
+  const loginForm = document.getElementById('login-form');
+  const usernameInput = document.getElementById('username');
+  
+  if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      handleLogin();
+    });
   }
-};
+  
+  // Allow Enter key to submit
+  if (usernameInput) {
+    usernameInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        handleLogin();
+      }
+    });
+  }
+}
 
-const socket = io(); // conecta no servidor socket.io
+function handleLogin() {
+  const usernameInput = document.getElementById('username');
+  const username = usernameInput.value.trim();
+  
+  if (username.length < 2) {
+    alert('Por favor, digite um nome com pelo menos 2 caracteres.');
+    return;
+  }
+  
+  if (username.length > 20) {
+    alert('Por favor, digite um nome com no máximo 20 caracteres.');
+    return;
+  }
+  
+  // Store username and mark as logged in
+  playerUsername = username;
+  playerLoggedIn = true;
+  
+  // Hide login screen and show game
+  const loginScreen = document.getElementById('login-screen');
+  const gameContainer = document.getElementById('game-container');
+  
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (gameContainer) gameContainer.style.display = 'block';
+  
+  // Debug game container
+  console.log('🎮 Game container:', gameContainer);
+  console.log('🎮 Game container display:', gameContainer.style.display);
+  console.log('🎮 Game container visibility:', gameContainer.style.visibility);
+  console.log('🎮 Game container dimensions:', gameContainer.offsetWidth, 'x', gameContainer.offsetHeight);
+  
+  // Initialize the game
+  initializeGame();
+}
 
-const game = new Phaser.Game(config);
+function initializeGame() {
+  // Create Phaser game only after login
+  const config = {
+    type: Phaser.AUTO,
+    width: 1280, // resolução base
+    height: 720,
+    backgroundColor: '#1a1a1a',
+    parent: 'game-container',
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    scene: {
+      preload,
+      create
+    }
+  };
+
+  const socket = io(); // conecta no servidor socket.io
+  window.socket = socket; // Make socket globally available
+  
+  // Wait for socket connection before initializing the game
+  socket.on('connect', () => {
+    console.log('Socket conectado, inicializando jogo...');
+    
+    // Initialize Phaser game after socket is connected
+    console.log('🎮 Criando instância do Phaser...');
+    const game = new Phaser.Game(config);
+    window.game = game; // Make game globally available
+    console.log('✅ Phaser criado com sucesso!');
+  });
+  
+  // Handle connection errors
+  socket.on('connect_error', (error) => {
+    console.error('Erro ao conectar com o servidor:', error);
+    alert('Erro ao conectar com o servidor. Tente novamente.');
+  });
+  
+  // Chat message listener
+  socket.on('chatMessage', (dados) => {
+    addChatMessage(dados.player, dados.message, new Date(dados.timestamp));
+    
+    // Play sound if message is from another player and chat is not open
+    if (dados.player !== (playerUsername || meuNome) && !historyPopupVisible) {
+      tocarSomHuh();
+    }
+  });
+}
 
 let paises = [];
 let jogadores = [];
@@ -31,10 +126,30 @@ let cartasTerritorio = {}; // Cartas território do jogador
 let actionHistory = []; // Array to store action history
 let actionHistoryMaxSize = 50; // Maximum number of history entries to keep
 let historyPopupVisible = false; // Track if history popup is visible
+let chatMessages = []; // Array to store chat messages
+let chatMessagesMaxSize = 100; // Maximum number of chat messages to keep
+let currentTab = 'chat'; // Track current active tab
+let unreadMessages = 0; // Track unread messages
+
+// Get socket from global scope
+function getSocket() {
+  return window.socket;
+}
+
+// Cores dos jogadores
+const coresDosDonos = {
+  Azul: 0x3366ff,
+  Vermelho: 0xff3333,
+  Amarelo: 0xffcc00,
+  Verde: 0x33cc33,
+  Roxo: 0x9933cc,
+  Preto: 0x222222
+};
 
 
 
 let botaoTurno;
+let currentScene = null; // Global reference to current Phaser scene
 
 let vitoria = false;
 let derrota = false;
@@ -64,19 +179,76 @@ let botaoCartasTerritorio = null;
 let modalCartasTerritorioAberto = false;
 
 function preload() {
+  console.log('📦 Preload iniciado...');
+  
+  // Load map image with error handling
   this.load.image('mapa', 'assets/mapa.png');
+  this.load.on('loaderror', (file) => {
+    console.error('❌ Erro ao carregar arquivo:', file.src);
+  });
+  this.load.on('complete', () => {
+    console.log('✅ Todos os arquivos carregados com sucesso!');
+  });
+  
   this.load.audio('shotsfired', 'assets/shotsfired.mp3');
   this.load.audio('armymoving', 'assets/armymoving.mp3');
   this.load.audio('clicksound', 'assets/clicksound.mp3');
   this.load.audio('huh', 'assets/huh.mp3');
   this.load.audio('takecard', 'assets/takecard.mp3');
+  console.log('✅ Preload concluído!');
 }
 
 function create() {
-const largura = this.sys.game.config.width;
-const altura = this.sys.game.config.height;
+  console.log('🎨 Create iniciado...');
+  currentScene = this; // Set global reference to current scene
+  console.log('🎯 CurrentScene definido:', currentScene);
+  
+  const largura = this.sys.game.config.width;
+  const altura = this.sys.game.config.height;
+  console.log('📐 Dimensões:', largura, 'x', altura);
+  
+  // Debug canvas information
+  console.log('🎨 Game canvas:', this.sys.game.canvas);
+  console.log('🎨 Game canvas width:', this.sys.game.canvas.width);
+  console.log('🎨 Game canvas height:', this.sys.game.canvas.height);
+  console.log('🎨 Game canvas style:', this.sys.game.canvas.style);
+  
+  // Check if canvas is in DOM
+  const canvasInDOM = document.querySelector('canvas');
+  console.log('🎨 Canvas in DOM:', canvasInDOM);
+  if (canvasInDOM) {
+    console.log('🎨 Canvas display style:', canvasInDOM.style.display);
+    console.log('🎨 Canvas visibility:', canvasInDOM.style.visibility);
+    console.log('🎨 Canvas opacity:', canvasInDOM.style.opacity);
+    console.log('🎨 Canvas z-index:', canvasInDOM.style.zIndex);
+    console.log('🎨 Canvas margin-top:', canvasInDOM.style.marginTop);
+    console.log('🎨 Canvas margin-left:', canvasInDOM.style.marginLeft);
+    console.log('🎨 Canvas position:', canvasInDOM.style.position);
+    console.log('🎨 Canvas top:', canvasInDOM.style.top);
+    console.log('🎨 Canvas left:', canvasInDOM.style.left);
+  }
 
-this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+  const mapaImage = this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+  console.log('🗺️ Imagem do mapa adicionada!');
+  console.log('🗺️ Mapa image object:', mapaImage);
+  console.log('🗺️ Mapa visible:', mapaImage.visible);
+  console.log('🗺️ Mapa alpha:', mapaImage.alpha);
+  console.log('🗺️ Mapa scale:', mapaImage.scale);
+  
+  // Force canvas positioning after a short delay
+  setTimeout(() => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvas.style.marginTop = '0px';
+      canvas.style.marginLeft = '0px';
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0px';
+      canvas.style.left = '0px';
+      canvas.style.transform = 'translateX(8.5%)';
+      canvas.style.zIndex = '1';
+      console.log('🎨 Canvas positioning forced and centered!');
+    }
+  }, 100);
 
   // Criar sons
   somTiro = this.sound.add('shotsfired');
@@ -93,6 +265,9 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   // Initialize action history system
   initializeActionHistory();
 
+  // Initialize player info modal
+  initializePlayerInfoModal();
+
   // Initialize CSS-based buttons
   botaoTurno = document.getElementById('btn-turn');
   botaoObjetivo = document.getElementById('btn-objective');
@@ -102,17 +277,17 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   botaoTurno.addEventListener('click', () => {
     if (vitoria || derrota) return;
     tocarSomClick();
-    socket.emit('passarTurno');
+    getSocket().emit('passarTurno');
   });
 
   botaoObjetivo.addEventListener('click', () => {
     tocarSomClick();
-    socket.emit('consultarObjetivo');
+    getSocket().emit('consultarObjetivo');
   });
 
   botaoCartasTerritorio.addEventListener('click', () => {
     tocarSomClick();
-    socket.emit('consultarCartasTerritorio');
+    getSocket().emit('consultarCartasTerritorio');
   });
 
   // CSS HUD handles positioning automatically
@@ -199,7 +374,7 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   botaoReiniciar.on('pointerdown', () => {
     if (vitoria || derrota) return;
     tocarSomClick();
-    socket.emit('reiniciarJogo');
+    getSocket().emit('reiniciarJogo');
   });
    
        // DEBUG: Detectar cliques fora dos territórios
@@ -246,7 +421,12 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
       // As interfaces agora só podem ser fechadas pelos seus próprios botões
     });
 
-  socket.on('estadoAtualizado', (estado) => {
+  getSocket().on('estadoAtualizado', (estado) => {
+    console.log('🔄 Estado atualizado recebido!');
+    console.log('🎯 CurrentScene:', currentScene);
+    console.log('🗺️ Países recebidos:', estado.paises ? estado.paises.length : 'undefined');
+    console.log('📊 Estado completo:', estado);
+    
     jogadores = estado.jogadores;
     turno = estado.turno;
     tropasReforco = estado.tropasReforco;
@@ -259,7 +439,15 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     faseRemanejamento = estado.faseRemanejamento || false;
     cartasTerritorio = estado.cartasTerritorio || {};
 
-    atualizarPaises(estado.paises, this);
+    if (currentScene && estado.paises) {
+      console.log('✅ Chamando atualizarPaises...');
+      atualizarPaises(estado.paises, currentScene);
+    } else {
+      console.log('❌ Erro: currentScene ou estado.paises não disponível');
+      console.log('currentScene:', currentScene);
+      console.log('estado.paises:', estado.paises);
+    }
+    
     atualizarHUD();
     atualizarTextoBotaoTurno();
 
@@ -280,11 +468,11 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
   });
 
-  socket.on('mostrarMensagem', (texto) => {
+  getSocket().on('mostrarMensagem', (texto) => {
     mostrarMensagem(texto);
   });
 
-  socket.on('adicionarAoHistorico', (mensagem) => {
+  getSocket().on('adicionarAoHistorico', (mensagem) => {
     const timestamp = new Date().toLocaleTimeString();
     const historyEntry = {
       timestamp: timestamp,
@@ -304,40 +492,40 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
   });
 
-  socket.on('mostrarEfeitoAtaque', (dados) => {
+  getSocket().on('mostrarEfeitoAtaque', (dados) => {
     mostrarEfeitoAtaque(dados.origem, dados.destino, this, dados.sucesso);
   });
 
-  socket.on('mostrarEfeitoReforco', (dados) => {
+  getSocket().on('mostrarEfeitoReforco', (dados) => {
     mostrarEfeitoReforco(dados.territorio, dados.jogador, this);
   });
 
 
 
-  socket.on('vitoria', (nomeJogador) => {
+  getSocket().on('vitoria', (nomeJogador) => {
     console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
     mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
     bloquearJogo(`Jogador ${nomeJogador} venceu!`, this);
   });
 
-  socket.on('derrota', () => {
+  getSocket().on('derrota', () => {
     mostrarMensagem(`Você perdeu!`);
     perdeuJogo(`Você perdeu!`, this);
   });
 
-  socket.on('tocarSomTiro', () => {
+  getSocket().on('tocarSomTiro', () => {
     tocarSomTiro();
   });
 
-  socket.on('tocarSomMovimento', () => {
+  getSocket().on('tocarSomMovimento', () => {
     tocarSomMovimento();
   });
 
-  socket.on('tocarSomTakeCard', () => {
+  getSocket().on('tocarSomTakeCard', () => {
     tocarSomTakeCard();
   });
 
-  socket.on('territorioConquistado', (dados) => {
+  getSocket().on('territorioConquistado', (dados) => {
     console.log('DEBUG: Recebido territorioConquistado, dados =', dados);
     // Só mostrar a interface para o jogador atacante
     if (dados.jogadorAtacante === meuNome) {
@@ -347,17 +535,17 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
   });
 
-  socket.on('mostrarObjetivo', (objetivo) => {
+  getSocket().on('mostrarObjetivo', (objetivo) => {
     mostrarObjetivo(objetivo, this);
   });
 
-  socket.on('mostrarCartasTerritorio', (cartas) => {
+  getSocket().on('mostrarCartasTerritorio', (cartas) => {
     // Não abrir se já estiver aberto
     if (modalCartasTerritorioAberto) return;
     mostrarCartasTerritorio(cartas, this);
   });
 
-  socket.on('forcarTrocaCartas', (dados) => {
+  getSocket().on('forcarTrocaCartas', (dados) => {
     // Só mostrar para o jogador específico
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
@@ -365,7 +553,7 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
   });
 
-  socket.on('resultadoTrocaCartas', (resultado) => {
+  getSocket().on('resultadoTrocaCartas', (resultado) => {
     if (resultado.sucesso) {
       mostrarMensagem(resultado.mensagem);
       // Fechar modal e continuar o turno
@@ -380,11 +568,11 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
     }
   });
 
-  socket.on('iniciarFaseRemanejamento', () => {
+  getSocket().on('iniciarFaseRemanejamento', () => {
     mostrarMensagem('🔄 Fase de remanejamento iniciada. Clique em um território para mover tropas.');
   });
 
-  socket.on('resultadoVerificacaoMovimento', (resultado) => {
+  getSocket().on('resultadoVerificacaoMovimento', (resultado) => {
     if (resultado.podeMover) {
       // Encontrar os territórios selecionados
       const territorioOrigem = paises.find(p => p.nome === selecionado.nome);
@@ -399,18 +587,16 @@ this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
       limparSelecao();
     }
   });
+  
+  console.log('✅ Create concluído! Jogo pronto para receber dados do servidor.');
 }
 
 function atualizarPaises(novosPaises, scene) {
-const coresDosDonos = {
-  Azul: 0x3366ff,
-  Vermelho: 0xff3333,
-  Amarelo: 0xffcc00,
-  Verde: 0x33cc33,
-  Roxo: 0x9933cc,
-  Preto: 0x222222
-};
-const dadosGeograficos = {
+  console.log('🗺️ atualizarPaises chamada com:', novosPaises.length, 'países');
+  console.log('🎮 Scene:', scene);
+  
+  // Atualizar dados dos países
+  const dadosGeograficos = {
   "Emberlyn": {
     pontos: [402,396,370,405,359,437,368,460,396,459,440,426,434,413,419,406],
     textoX: 402,
@@ -623,7 +809,12 @@ const dadosGeograficos = {
    }
   };
 
+  console.log('📊 Verificando criação de territórios...');
+  console.log('📊 paises.length:', paises.length);
+  console.log('📊 novosPaises.length:', novosPaises.length);
+  
   if (paises.length === 0) {
+    console.log('✅ Criando territórios pela primeira vez...');
     paises = novosPaises.map(pais => {
       const obj = { ...pais };
 
@@ -659,24 +850,65 @@ const dadosGeograficos = {
     }
     
          // Criar o polígono na posição (minX, minY + 40) com pontos relativos para alinhar com o mapa
-     obj.polygon = scene.add.polygon(minX, minY + 40, pontosRelativos, 0xffffff, 0.1);
+     obj.polygon = scene.add.polygon(minX, minY + 40, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
      obj.polygon.setOrigin(0, 0);
+     obj.polygon.setStrokeStyle(4, 0x000000, 1); // Add black border for visibility
      obj.polygon.setInteractive({ 
        useHandCursor: true,
        hitArea: new Phaser.Geom.Polygon(pontosRelativos),
        hitAreaCallback: Phaser.Geom.Polygon.Contains
      });
+     
+     // Debug logs for first few territories
+     if (paises.length < 5) {
+       console.log(`🗺️ Território criado: ${pais.nome}`);
+       console.log(`🗺️ Posição: (${minX}, ${minY + 40})`);
+       console.log(`🗺️ Cor: ${coresDosDonos[pais.dono] || 0xffffff}`);
+       console.log(`🗺️ Pontos: ${pontosRelativos.length} pontos`);
+       console.log(`🗺️ Polygon object:`, obj.polygon);
+       console.log(`🗺️ Polygon visible:`, obj.polygon.visible);
+       console.log(`🗺️ Polygon alpha:`, obj.polygon.alpha);
+     }
 
 
-    obj.text = scene.add.text(centroX, centroY + 40, getTextoPais(pais), {
+    // Criar texto com apenas o nome do território (inicialmente invisível)
+    obj.text = scene.add.text(centroX, centroY + 25, getTextoPais(pais), {
         fontSize: '14px',
-        fill: '#fff',
+        fill: '#ffffff',
         align: 'center',
-        wordWrap: { width: 80 },
-        backgroundColor: '#00000033',
-        padding: { x: 4, y: 2 }
-      }).setOrigin(0.5);
+        wordWrap: { width: 100 },
+        backgroundColor: '#000000cc',
+        padding: { x: 8, y: 6 },
+        stroke: '#000000',
+        strokeThickness: 3,
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(10);
+    
+    // Inicialmente esconder o texto
+    obj.text.setVisible(false);
 
+    // Criar círculo com o número de tropas
+    obj.troopCircle = scene.add.circle(centroX, centroY + 50, 12, 0xffffff, 1);
+    obj.troopCircle.setStrokeStyle(2, 0x000000, 1);
+    obj.troopCircle.setDepth(3);
+    
+    // Criar texto do número de tropas dentro do círculo
+    obj.troopText = scene.add.text(centroX, centroY + 50, pais.tropas.toString(), {
+        fontSize: '14px',
+        fill: '#000000',
+        align: 'center',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(6);
+
+             // Eventos de hover para mostrar/esconder o texto
+             obj.polygon.on('pointerover', (pointer) => {
+               obj.text.setVisible(true);
+             });
+             
+             obj.polygon.on('pointerout', (pointer) => {
+               obj.text.setVisible(false);
+             });
+             
              obj.polygon.on('pointerdown', (pointer) => {
          // DEBUG: Mostrar coordenadas exatas do clique
          console.log(`DEBUG: Clicou em ${obj.nome} nas coordenadas (${pointer.x}, ${pointer.y})`);
@@ -737,7 +969,7 @@ const dadosGeograficos = {
              // Destacar território de destino com borda branca grossa
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              // Verificar se é possível mover tropas antes de mostrar a interface
-             socket.emit('verificarMovimentoRemanejamento', {
+             getSocket().emit('verificarMovimentoRemanejamento', {
                origem: selecionado.nome,
                destino: obj.nome
              });
@@ -774,7 +1006,7 @@ const dadosGeograficos = {
             mostrarMensagem("Você precisa de mais de 1 tropa para atacar.");
             return;
           }
-          socket.emit('atacar', { de: selecionado.nome, para: obj.nome });
+          getSocket().emit('atacar', { de: selecionado.nome, para: obj.nome });
           limparSelecao();
         }
       });
@@ -785,19 +1017,18 @@ const dadosGeograficos = {
 
 
   for (let i = 0; i < paises.length; i++) {
-const coresDosDonos = {
-  Azul: 0x3366ff,
-  Vermelho: 0xff3333,
-  Amarelo: 0xffcc00,
-  Verde: 0x33cc33,
-  Roxo: 0x9933cc,
-  Preto: 0x222222
-};
 
     paises[i].dono = novosPaises[i].dono;
     paises[i].tropas = novosPaises[i].tropas;
     paises[i].vizinhos = novosPaises[i].vizinhos;
     paises[i].text.setText(getTextoPais(paises[i]));
+    
+    // Atualizar círculo e texto das tropas
+    if (paises[i].troopCircle && paises[i].troopText) {
+      // Atualizar cor do círculo baseada no dono
+      paises[i].troopCircle.setFillStyle(coresDosDonos[paises[i].dono] || 0xffffff, 1);
+      paises[i].troopText.setText(paises[i].tropas.toString());
+    }
     
     // Verificar se este país pertence ao continente prioritário
     let pertenceAoContinentePrioritario = false;
@@ -823,10 +1054,16 @@ const coresDosDonos = {
   
   // Adicionar indicadores de continentes após os territórios serem carregados
   adicionarIndicadoresContinentes(scene);
+  
+  // Atualizar cards dos jogadores se estiverem visíveis
+  const panel = document.getElementById('player-info-panel');
+  if (panel && panel.classList.contains('open')) {
+    updatePlayerInfoPanel();
+  }
 }
 
 function getTextoPais(pais) {
-  return `${pais.nome}\n${pais.tropas}`;
+  return pais.nome;
 }
 
 function atualizarHUD() {
@@ -1280,87 +1517,179 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   interfaceReforco = scene.add.container(pointer.x, pointer.y);
   interfaceReforco.setDepth(20);
   
-  // Background da interface
-  const background = scene.add.rectangle(0, 0, 200, 120, 0x000000, 0.9);
-  background.setStrokeStyle(2, 0xffffff);
+  // Background principal com gradiente
+  const background = scene.add.rectangle(0, 0, 350, 200, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0x33cc33);
+  background.setDepth(0);
   interfaceReforco.add(background);
   
+  // Header com gradiente
+  const headerBg = scene.add.rectangle(0, -80, 350, 40, 0x33cc33, 0.9);
+  headerBg.setDepth(1);
+  interfaceReforco.add(headerBg);
+  
+  // Ícone de reforço
+  const reforcoIcon = scene.add.text(-150, -80, '🛡️', {
+    fontSize: '20px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  interfaceReforco.add(reforcoIcon);
+  
   // Título
-  let tituloTexto = `Reforçar ${territorio.nome}`;
+  let tituloTexto = 'REFORÇAR TERRITÓRIO';
   if (totalBonus > 0 && continentePrioritario) {
-    tituloTexto = `Colocar tropas de bônus (${continentePrioritario.nome}) em ${territorio.nome}`;
+    tituloTexto = `BÔNUS ${continentePrioritario.nome.toUpperCase()}`;
   }
   
-  const titulo = scene.add.text(0, -40, tituloTexto, {
-    fontSize: '14px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
+  const titulo = scene.add.text(-120, -80, tituloTexto, {
+    fontSize: '16px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0, 0.5).setDepth(2);
   interfaceReforco.add(titulo);
   
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -60, 300, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  interfaceReforco.add(linhaDecorativa);
+  
+  // Container para informações do território
+  const territorioContainer = scene.add.container(0, -30);
+  territorioContainer.setDepth(2);
+  interfaceReforco.add(territorioContainer);
+  
+  // Background do território
+  const territorioBg = scene.add.rectangle(0, 0, 280, 35, 0x2a2a2a, 0.9);
+  territorioBg.setStrokeStyle(2, 0x33cc33);
+  territorioContainer.add(territorioBg);
+  
+  // Ícone do território
+  const territorioIcon = scene.add.text(-120, 0, '🗺️', {
+    fontSize: '16px'
+  }).setOrigin(0.5).setDepth(2);
+  territorioContainer.add(territorioIcon);
+  
+  // Nome do território
+  const territorioText = scene.add.text(-100, 0, territorio.nome, {
+    fontSize: '14px',
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0, 0.5).setDepth(2);
+  territorioContainer.add(territorioText);
+  
+  // Tropas atuais
+  const tropasAtuaisText = scene.add.text(80, 0, `Tropas: ${territorio.tropas}`, {
+    fontSize: '12px',
+    fill: '#cccccc',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  territorioContainer.add(tropasAtuaisText);
+  
+  // Container para controles de quantidade
+  const controlesContainer = scene.add.container(0, 20);
+  controlesContainer.setDepth(2);
+  interfaceReforco.add(controlesContainer);
+  
+  // Background dos controles
+  const controlesBg = scene.add.rectangle(0, 0, 280, 50, 0x2a2a2a, 0.9);
+  controlesBg.setStrokeStyle(2, 0x444444);
+  controlesContainer.add(controlesBg);
+  
+  // Título dos controles
+  const controlesTitulo = scene.add.text(0, -15, 'Quantidade a Adicionar', {
+    fontSize: '12px',
+    fill: '#cccccc',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(controlesTitulo);
+  
   // Botão menos
-  const botaoMenos = scene.add.text(-60, 0, '-', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMenos = scene.add.text(-70, 8, '-', {
+    fontSize: '18px',
+    fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 8, y: 4 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMenos.on('pointerdown', (pointer) => {
+    tocarSomClick();
     if (tropasParaColocar > 1) {
       tropasParaColocar--;
       atualizarTextoQuantidade();
     }
   });
-  interfaceReforco.add(botaoMenos);
+  controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 0, `${tropasParaColocar}/${tropasDisponiveis}`, {
-    fontSize: '16px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
-  interfaceReforco.add(textoQuantidade);
+  const textoQuantidade = scene.add.text(0, 8, `${tropasParaColocar}/${tropasDisponiveis}`, {
+    fontSize: '18px',
+    fill: '#ffffff',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(textoQuantidade);
   
   // Botão mais
-  const botaoMais = scene.add.text(60, 0, '+', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMais = scene.add.text(70, 8, '+', {
+    fontSize: '18px',
+    fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 8, y: 4 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMais.on('pointerdown', (pointer) => {
+    tocarSomClick();
     if (tropasParaColocar < tropasDisponiveis) {
       tropasParaColocar++;
       atualizarTextoQuantidade();
     }
   });
-  interfaceReforco.add(botaoMais);
+  controlesContainer.add(botaoMais);
+  
+  // Container para botões de ação
+  const botoesContainer = scene.add.container(0, 80);
+  botoesContainer.setDepth(2);
+  interfaceReforco.add(botoesContainer);
   
   // Botão confirmar
-  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
-    fontSize: '14px',
-    fill: '#fff',
-    backgroundColor: '#0077cc',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  const botaoConfirmarBg = scene.add.rectangle(-70, 0, 120, 35, 0x33cc33, 0.9);
+  botaoConfirmarBg.setStrokeStyle(2, 0x2a9e2a);
+  botoesContainer.add(botaoConfirmarBg);
+  
+  const botaoConfirmar = scene.add.text(-70, 0, '✅ CONFIRMAR', {
+    fontSize: '12px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoConfirmar.on('pointerdown', (pointer) => {
     tocarSomClick();
     confirmarReforco();
   });
-  interfaceReforco.add(botaoConfirmar);
+  botoesContainer.add(botaoConfirmar);
   
   // Botão cancelar
-  const botaoCancelar = scene.add.text(0, 60, '❌ Cancelar', {
+  const botaoCancelarBg = scene.add.rectangle(70, 0, 120, 35, 0x666666, 0.9);
+  botaoCancelarBg.setStrokeStyle(2, 0x444444);
+  botoesContainer.add(botaoCancelarBg);
+  
+  const botaoCancelar = scene.add.text(70, 0, '❌ CANCELAR', {
     fontSize: '12px',
-    fill: '#fff',
-    backgroundColor: '#666',
-    padding: { x: 8, y: 3 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoCancelar.on('pointerdown', (pointer) => {
     tocarSomClick();
     esconderInterfaceReforco();
   });
-  interfaceReforco.add(botaoCancelar);
+  botoesContainer.add(botaoCancelar);
   
   // Função para atualizar o texto da quantidade
   function atualizarTextoQuantidade() {
@@ -1391,7 +1720,7 @@ function confirmarReforco() {
   if (territorioSelecionadoParaReforco && tropasParaColocar > 0) {
     // Enviar múltiplas vezes para colocar as tropas
     for (let i = 0; i < tropasParaColocar; i++) {
-      socket.emit('colocarReforco', territorioSelecionadoParaReforco.nome);
+      getSocket().emit('colocarReforco', territorioSelecionadoParaReforco.nome);
     }
     esconderInterfaceReforco();
   }
@@ -1409,34 +1738,110 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   interfaceTransferenciaConquista = scene.add.container(400, 300);
   interfaceTransferenciaConquista.setDepth(20);
   
-  // Background da interface
-  const background = scene.add.rectangle(0, 0, 300, 180, 0x000000, 0.9);
-  background.setStrokeStyle(2, 0xffffff);
+  // Background principal com gradiente
+  const background = scene.add.rectangle(0, 0, 400, 250, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0xcc6633);
+  background.setDepth(0);
   interfaceTransferenciaConquista.add(background);
   
+  // Header com gradiente
+  const headerBg = scene.add.rectangle(0, -100, 400, 50, 0xcc6633, 0.9);
+  headerBg.setDepth(1);
+  interfaceTransferenciaConquista.add(headerBg);
+  
+  // Ícone de conquista
+  const conquistaIcon = scene.add.text(-170, -100, '⚔️', {
+    fontSize: '24px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  interfaceTransferenciaConquista.add(conquistaIcon);
+  
   // Título
-  const titulo = scene.add.text(0, -60, `Transferir tropas após conquista`, {
-    fontSize: '16px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
+  const titulo = scene.add.text(-140, -100, 'TRANSFERIR TROPAS', {
+    fontSize: '20px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0, 0.5).setDepth(2);
   interfaceTransferenciaConquista.add(titulo);
   
-  // Descrição
-  const descricao = scene.add.text(0, -35, `De ${dados.territorioAtacante} para ${dados.territorioConquistado}`, {
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  interfaceTransferenciaConquista.add(linhaDecorativa);
+  
+  // Container para territórios
+  const territoriosContainer = scene.add.container(0, -30);
+  territoriosContainer.setDepth(2);
+  interfaceTransferenciaConquista.add(territoriosContainer);
+  
+  // Território atacante
+  const atacanteBg = scene.add.rectangle(-100, 0, 180, 40, 0x2a2a2a, 0.9);
+  atacanteBg.setStrokeStyle(2, 0xcc6633);
+  territoriosContainer.add(atacanteBg);
+  
+  const atacanteIcon = scene.add.text(-170, 0, '⚔️', {
+    fontSize: '18px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(atacanteIcon);
+  
+  const atacanteText = scene.add.text(-130, 0, dados.territorioAtacante, {
     fontSize: '14px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
-  interfaceTransferenciaConquista.add(descricao);
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0, 0.5).setDepth(2);
+  territoriosContainer.add(atacanteText);
+  
+  // Seta de direção
+  const seta = scene.add.text(0, 0, '➡️', {
+    fontSize: '20px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(seta);
+  
+  // Território conquistado
+  const conquistadoBg = scene.add.rectangle(100, 0, 180, 40, 0x2a2a2a, 0.9);
+  conquistadoBg.setStrokeStyle(2, 0xcc6633);
+  territoriosContainer.add(conquistadoBg);
+  
+  const conquistadoIcon = scene.add.text(30, 0, '🏆', {
+    fontSize: '18px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(conquistadoIcon);
+  
+  const conquistadoText = scene.add.text(70, 0, dados.territorioConquistado, {
+    fontSize: '14px',
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0, 0.5).setDepth(2);
+  territoriosContainer.add(conquistadoText);
+  
+  // Container para controles de quantidade
+  const controlesContainer = scene.add.container(0, 30);
+  controlesContainer.setDepth(2);
+  interfaceTransferenciaConquista.add(controlesContainer);
+  
+  // Background dos controles
+  const controlesBg = scene.add.rectangle(0, 0, 300, 60, 0x2a2a2a, 0.9);
+  controlesBg.setStrokeStyle(2, 0x444444);
+  controlesContainer.add(controlesBg);
+  
+  // Título dos controles
+  const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
+    fontSize: '14px',
+    fill: '#cccccc',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(controlesTitulo);
   
   // Botão menos
-  const botaoMenos = scene.add.text(-80, 0, '-', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMenos = scene.add.text(-80, 10, '-', {
+    fontSize: '20px',
+    fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 10, y: 5 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
@@ -1444,23 +1849,27 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
       atualizarTextoQuantidadeTransferencia();
     }
   });
-  interfaceTransferenciaConquista.add(botaoMenos);
+  controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 0, `${tropasParaTransferir}/${dados.tropasDisponiveis}`, {
-    fontSize: '18px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
-  interfaceTransferenciaConquista.add(textoQuantidade);
+  const textoQuantidade = scene.add.text(0, 10, `${tropasParaTransferir}/${dados.tropasDisponiveis}`, {
+    fontSize: '20px',
+    fill: '#ffffff',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(textoQuantidade);
   
   // Botão mais
-  const botaoMais = scene.add.text(80, 0, '+', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMais = scene.add.text(80, 10, '+', {
+    fontSize: '20px',
+    fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 10, y: 5 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMais.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaTransferir < dados.tropasDisponiveis) {
@@ -1468,38 +1877,34 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
       atualizarTextoQuantidadeTransferencia();
     }
   });
-  interfaceTransferenciaConquista.add(botaoMais);
+  controlesContainer.add(botaoMais);
+  
+  // Container para botões de ação
+  const botoesContainer = scene.add.container(0, 100);
+  botoesContainer.setDepth(2);
+  interfaceTransferenciaConquista.add(botoesContainer);
   
   // Botão confirmar
-  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
+  const botaoConfirmarBg = scene.add.rectangle(0, 0, 140, 40, 0xcc6633, 0.9);
+  botaoConfirmarBg.setStrokeStyle(2, 0xa55229);
+  botoesContainer.add(botaoConfirmarBg);
+  
+  const botaoConfirmar = scene.add.text(0, 0, '✅ CONFIRMAR', {
     fontSize: '14px',
-    fill: '#fff',
-    backgroundColor: '#0077cc',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoConfirmar.on('pointerdown', (pointer) => {
     tocarSomClick();
     setTimeout(() => {
       confirmarTransferenciaConquista();
     }, 10);
   });
-  interfaceTransferenciaConquista.add(botaoConfirmar);
+  botoesContainer.add(botaoConfirmar);
   
-  // Botão pular (manter apenas a tropa automática)
-  const botaoPular = scene.add.text(0, 70, '⏭️ Manter automática', {
-    fontSize: '12px',
-    fill: '#fff',
-    backgroundColor: '#666',
-    padding: { x: 8, y: 3 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-  botaoPular.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    tropasParaTransferir = 1; // Manter apenas a tropa automática
-    setTimeout(() => {
-      confirmarTransferenciaConquista();
-    }, 10);
-  });
-  interfaceTransferenciaConquista.add(botaoPular);
+
   
   // Função para atualizar o texto da quantidade
   function atualizarTextoQuantidadeTransferencia() {
@@ -1530,7 +1935,7 @@ function confirmarTransferenciaConquista() {
   
   if (dadosConquista && tropasParaTransferir >= 0) {
     console.log('DEBUG: Enviando transferirTropasConquista para o servidor');
-    socket.emit('transferirTropasConquista', {
+    getSocket().emit('transferirTropasConquista', {
       territorioAtacante: dadosConquista.territorioAtacante,
       territorioConquistado: dadosConquista.territorioConquistado,
       quantidade: tropasParaTransferir
@@ -1550,34 +1955,110 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   const interfaceRemanejamento = scene.add.container(400, 300);
   interfaceRemanejamento.setDepth(20);
   
-  // Background da interface
-  const background = scene.add.rectangle(0, 0, 300, 180, 0x000000, 0.9);
-  background.setStrokeStyle(2, 0xffffff);
+  // Background principal com gradiente
+  const background = scene.add.rectangle(0, 0, 400, 250, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0x0077cc);
+  background.setDepth(0);
   interfaceRemanejamento.add(background);
   
+  // Header com gradiente
+  const headerBg = scene.add.rectangle(0, -100, 400, 50, 0x0077cc, 0.9);
+  headerBg.setDepth(1);
+  interfaceRemanejamento.add(headerBg);
+  
+  // Ícone de movimento
+  const movimentoIcon = scene.add.text(-170, -100, '🔄', {
+    fontSize: '24px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  interfaceRemanejamento.add(movimentoIcon);
+  
   // Título
-  const titulo = scene.add.text(0, -60, `Mover tropas`, {
-    fontSize: '16px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
+  const titulo = scene.add.text(-140, -100, 'MOVER TROPAS', {
+    fontSize: '20px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0, 0.5).setDepth(2);
   interfaceRemanejamento.add(titulo);
   
-  // Descrição
-  const descricao = scene.add.text(0, -35, `De ${origem.nome} para ${destino.nome}`, {
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  interfaceRemanejamento.add(linhaDecorativa);
+  
+  // Container para territórios
+  const territoriosContainer = scene.add.container(0, -30);
+  territoriosContainer.setDepth(2);
+  interfaceRemanejamento.add(territoriosContainer);
+  
+  // Território de origem
+  const origemBg = scene.add.rectangle(-100, 0, 180, 40, 0x2a2a2a, 0.9);
+  origemBg.setStrokeStyle(2, 0x0077cc);
+  territoriosContainer.add(origemBg);
+  
+  const origemIcon = scene.add.text(-170, 0, '📤', {
+    fontSize: '18px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(origemIcon);
+  
+  const origemText = scene.add.text(-130, 0, origem.nome, {
     fontSize: '14px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
-  interfaceRemanejamento.add(descricao);
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0, 0.5).setDepth(2);
+  territoriosContainer.add(origemText);
+  
+  // Seta de direção
+  const seta = scene.add.text(0, 0, '➡️', {
+    fontSize: '20px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(seta);
+  
+  // Território de destino
+  const destinoBg = scene.add.rectangle(100, 0, 180, 40, 0x2a2a2a, 0.9);
+  destinoBg.setStrokeStyle(2, 0x0077cc);
+  territoriosContainer.add(destinoBg);
+  
+  const destinoIcon = scene.add.text(30, 0, '📥', {
+    fontSize: '18px'
+  }).setOrigin(0.5).setDepth(2);
+  territoriosContainer.add(destinoIcon);
+  
+  const destinoText = scene.add.text(70, 0, destino.nome, {
+    fontSize: '14px',
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0, 0.5).setDepth(2);
+  territoriosContainer.add(destinoText);
+  
+  // Container para controles de quantidade
+  const controlesContainer = scene.add.container(0, 30);
+  controlesContainer.setDepth(2);
+  interfaceRemanejamento.add(controlesContainer);
+  
+  // Background dos controles
+  const controlesBg = scene.add.rectangle(0, 0, 300, 60, 0x2a2a2a, 0.9);
+  controlesBg.setStrokeStyle(2, 0x444444);
+  controlesContainer.add(controlesBg);
+  
+  // Título dos controles
+  const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
+    fontSize: '14px',
+    fill: '#cccccc',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(controlesTitulo);
   
   // Botão menos
-  const botaoMenos = scene.add.text(-80, 0, '-', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMenos = scene.add.text(-80, 10, '-', {
+    fontSize: '28px',
+    fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 15, y: 8 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaMover > 1) {
@@ -1585,23 +2066,27 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
       atualizarTextoQuantidadeRemanejamento();
     }
   });
-  interfaceRemanejamento.add(botaoMenos);
+  controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 0, `${tropasParaMover}/${maxTropas}`, {
-    fontSize: '18px',
-    fill: '#fff',
-    align: 'center'
-  }).setOrigin(0.5);
-  interfaceRemanejamento.add(textoQuantidade);
+  const textoQuantidade = scene.add.text(0, 10, `${tropasParaMover}/${maxTropas}`, {
+    fontSize: '20px',
+    fill: '#ffffff',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setDepth(2);
+  controlesContainer.add(textoQuantidade);
   
   // Botão mais
-  const botaoMais = scene.add.text(80, 0, '+', {
-    fontSize: '24px',
-    fill: '#fff',
+  const botaoMais = scene.add.text(80, 10, '+', {
+    fontSize: '20px',
+    fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    padding: { x: 10, y: 5 },
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoMais.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaMover < maxTropas) {
@@ -1609,18 +2094,28 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
       atualizarTextoQuantidadeRemanejamento();
     }
   });
-  interfaceRemanejamento.add(botaoMais);
+  controlesContainer.add(botaoMais);
+  
+  // Container para botões de ação
+  const botoesContainer = scene.add.container(0, 100);
+  botoesContainer.setDepth(2);
+  interfaceRemanejamento.add(botoesContainer);
   
   // Botão confirmar
-  const botaoConfirmar = scene.add.text(0, 40, '✅ Confirmar', {
+  const botaoConfirmarBg = scene.add.rectangle(-80, 0, 140, 40, 0x0077cc, 0.9);
+  botaoConfirmarBg.setStrokeStyle(2, 0x005fa3);
+  botoesContainer.add(botaoConfirmarBg);
+  
+  const botaoConfirmar = scene.add.text(-80, 0, '✅ CONFIRMAR', {
     fontSize: '14px',
-    fill: '#fff',
-    backgroundColor: '#0077cc',
-    padding: { x: 10, y: 5 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoConfirmar.on('pointerdown', (pointer) => {
     tocarSomClick();
-    socket.emit('moverTropas', {
+    getSocket().emit('moverTropas', {
       origem: origem.nome,
       destino: destino.nome,
       quantidade: tropasParaMover
@@ -1628,21 +2123,26 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
     limparSelecao();
     interfaceRemanejamento.destroy();
   });
-  interfaceRemanejamento.add(botaoConfirmar);
+  botoesContainer.add(botaoConfirmar);
   
   // Botão cancelar
-  const botaoCancelar = scene.add.text(0, 70, '❌ Cancelar', {
-    fontSize: '12px',
-    fill: '#fff',
-    backgroundColor: '#666',
-    padding: { x: 8, y: 3 }
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  const botaoCancelarBg = scene.add.rectangle(80, 0, 140, 40, 0x666666, 0.9);
+  botaoCancelarBg.setStrokeStyle(2, 0x444444);
+  botoesContainer.add(botaoCancelarBg);
+  
+  const botaoCancelar = scene.add.text(80, 0, '❌ CANCELAR', {
+    fontSize: '14px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoCancelar.on('pointerdown', (pointer) => {
     tocarSomClick();
     limparSelecao();
     interfaceRemanejamento.destroy();
   });
-  interfaceRemanejamento.add(botaoCancelar);
+  botoesContainer.add(botaoCancelar);
   
   // Função para atualizar o texto da quantidade
   function atualizarTextoQuantidadeRemanejamento() {
@@ -2015,7 +2515,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
       if (cartasSelecionadas.length === 3) {
         // Mapear os containers de carta de volta para os nomes dos territórios
         const territoriosSelecionados = cartasSelecionadas.map(cartaContainer => cartaContainer.getData('carta').territorio);
-        socket.emit('trocarCartasTerritorio', territoriosSelecionados);
+        getSocket().emit('trocarCartasTerritorio', territoriosSelecionados);
       }
     });
   }
@@ -2105,7 +2605,9 @@ function updateCSSHUD() {
 
   // Update player info
   if (playerNameEl) {
-    playerNameEl.textContent = meuNome || 'Carregando...';
+    // Use logged in username first, then server-assigned name, then loading
+    const displayName = playerUsername || meuNome || 'Carregando...';
+    playerNameEl.textContent = displayName;
   }
 
   // Update player stats
@@ -2197,6 +2699,12 @@ function updateCSSHUD() {
   }
   if (botaoCartasTerritorio) {
     botaoCartasTerritorio.disabled = vitoria || derrota;
+  }
+  
+  // Atualizar cards dos jogadores se estiverem visíveis
+  const panel = document.getElementById('player-info-panel');
+  if (panel && panel.classList.contains('open')) {
+    updatePlayerInfoPanel();
   }
 }
 
@@ -2337,11 +2845,11 @@ function fecharTodasModais() {
 
 // Action History Functions
 function initializeActionHistory() {
-  // Create history button in the HUD
+  // Create chat button in the HUD
   const historyButton = document.createElement('button');
   historyButton.className = 'hud-button btn-history';
   historyButton.id = 'btn-history';
-  historyButton.innerHTML = '<span>📜</span><span>Histórico</span>';
+  historyButton.innerHTML = '<span>💬</span><span>Chat</span>';
   
   // Add to action buttons container
   const actionButtons = document.querySelector('.action-buttons');
@@ -2366,12 +2874,30 @@ function createHistoryPopup() {
   popup.className = 'history-popup';
   popup.style.display = 'none';
   
-  // Create popup content
+  // Create popup content with tabs
   popup.innerHTML = `
     <div class="history-header">
-      <h3>📜 Histórico de Ações</h3>
+      <div class="history-tabs">
+        <button class="history-tab active" id="chat-tab">💬 Chat</button>
+        <button class="history-tab" id="history-tab">📜 Histórico</button>
+      </div>
       <button class="history-close" id="history-close">✕</button>
     </div>
+    
+    <!-- Chat Content -->
+    <div class="chat-content" id="chat-content">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty">Nenhuma mensagem ainda. Seja o primeiro a conversar!</div>
+      </div>
+      <div class="chat-input-container" id="chat-input-container">
+        <form class="chat-input-form" id="chat-form">
+          <input type="text" class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." maxlength="200">
+          <button type="submit" class="chat-send-btn" id="chat-send-btn">Enviar</button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- History Content -->
     <div class="history-content" id="history-content">
       <div class="history-empty">Nenhuma ação registrada ainda.</div>
     </div>
@@ -2380,29 +2906,247 @@ function createHistoryPopup() {
   // Add to body
   document.body.appendChild(popup);
   
-  // Add close button event listener
+  // Add event listeners
   document.getElementById('history-close').addEventListener('click', () => {
     tocarSomClick();
     fecharTodasModais();
   });
+  
+  // Tab switching
+  document.getElementById('chat-tab').addEventListener('click', () => {
+    tocarSomClick();
+    switchToChat();
+  });
+  
+  document.getElementById('history-tab').addEventListener('click', () => {
+    tocarSomClick();
+    switchToHistory();
+  });
+  
+  // Chat form submission
+  document.getElementById('chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    sendChatMessage();
+  });
+  
+  // Debug: Check if chat elements are created
+  console.log('🔍 Chat elements created:');
+  console.log('🔍 Chat content:', document.getElementById('chat-content'));
+  console.log('🔍 Chat input container:', document.getElementById('chat-input-container'));
+  console.log('🔍 Chat form:', document.getElementById('chat-form'));
+  console.log('🔍 Chat input:', document.getElementById('chat-input'));
 }
 
 function toggleHistoryPopup() {
   const popup = document.getElementById('history-popup');
-  if (!popup) return;
+  if (!popup) {
+    console.log('❌ History popup not found!');
+    return;
+  }
+  
+  console.log('🔄 Toggling history popup, current state:', historyPopupVisible);
   
   if (!historyPopupVisible) {
     // Fechar outras modais primeiro
     fecharTodasModais();
     
-    // Abrir histórico
+    // Abrir popup
     historyPopupVisible = true;
     popup.style.display = 'block';
-    updateHistoryDisplay();
+    
+    console.log('✅ Popup opened, current tab:', currentTab);
+    
+    // Show current tab content
+    if (currentTab === 'chat') {
+      switchToChat();
+    } else {
+      switchToHistory();
+    }
   } else {
-    // Fechar histórico
+    // Fechar popup
     historyPopupVisible = false;
     popup.style.display = 'none';
+    console.log('✅ Popup closed');
+  }
+}
+
+function switchToChat() {
+  currentTab = 'chat';
+  
+  console.log('🔄 Switching to chat...');
+  
+  // Update tab buttons
+  document.getElementById('chat-tab').classList.add('active');
+  document.getElementById('history-tab').classList.remove('active');
+  
+  // Show chat content, hide history content
+  const chatContent = document.getElementById('chat-content');
+  const historyContent = document.getElementById('history-content');
+  
+  console.log('🔍 Chat content element:', chatContent);
+  console.log('🔍 History content element:', historyContent);
+  
+  chatContent.style.display = 'flex';
+  historyContent.style.display = 'none';
+  
+  // Ensure input container is visible
+  const inputContainer = document.getElementById('chat-input-container');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+  
+  console.log('🔍 Input container:', inputContainer);
+  console.log('🔍 Chat form:', chatForm);
+  console.log('🔍 Chat input:', chatInput);
+  
+  if (inputContainer) {
+    inputContainer.style.display = 'block';
+    console.log('✅ Input container display set to block');
+  }
+  
+  if (chatForm) {
+    chatForm.style.display = 'flex';
+    console.log('✅ Chat form display set to flex');
+  }
+  
+  if (chatInput) {
+    chatInput.style.display = 'block';
+    console.log('✅ Chat input display set to block');
+    console.log('🔍 Chat input computed style:', window.getComputedStyle(chatInput));
+    console.log('🔍 Chat input offsetTop:', chatInput.offsetTop);
+    console.log('🔍 Chat input offsetLeft:', chatInput.offsetLeft);
+    console.log('🔍 Chat input offsetWidth:', chatInput.offsetWidth);
+    console.log('🔍 Chat input offsetHeight:', chatInput.offsetHeight);
+    
+    // Debug parent elements
+    const inputContainer = chatInput.parentElement;
+    const chatForm = inputContainer?.parentElement;
+    const chatContent = chatForm?.parentElement;
+    
+    console.log('🔍 Input container computed style:', inputContainer ? window.getComputedStyle(inputContainer) : 'null');
+    console.log('🔍 Chat form computed style:', chatForm ? window.getComputedStyle(chatForm) : 'null');
+    console.log('🔍 Chat content computed style:', chatContent ? window.getComputedStyle(chatContent) : 'null');
+    
+    console.log('🔍 Input container offsetTop:', inputContainer?.offsetTop);
+    console.log('🔍 Chat form offsetTop:', chatForm?.offsetTop);
+    console.log('🔍 Chat content offsetTop:', chatContent?.offsetTop);
+  }
+  
+  // Reset unread messages when opening chat
+  unreadMessages = 0;
+  updateHistoryButtonBadge();
+  
+  // Update chat display
+  updateChatDisplay();
+}
+
+function switchToHistory() {
+  currentTab = 'history';
+  
+  // Update tab buttons
+  document.getElementById('history-tab').classList.add('active');
+  document.getElementById('chat-tab').classList.remove('active');
+  
+  // Show history content, hide chat content
+  document.getElementById('history-content').style.display = 'flex';
+  document.getElementById('chat-content').style.display = 'none';
+  
+  // Update history display
+  updateHistoryDisplay();
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  
+  if (message.length === 0) return;
+  
+  // Send message to server
+  getSocket().emit('chatMessage', {
+    message: message,
+    player: playerUsername || meuNome
+  });
+  
+  // Clear input
+  input.value = '';
+}
+
+function addChatMessage(player, message, timestamp = new Date()) {
+  const chatMessage = {
+    player: player,
+    message: message,
+    timestamp: timestamp
+  };
+  
+  chatMessages.push(chatMessage);
+  
+  // Keep only the last N messages
+  if (chatMessages.length > chatMessagesMaxSize) {
+    chatMessages.shift();
+  }
+  
+  // Increment unread messages if from another player and chat not open
+  if (player !== (playerUsername || meuNome) && !historyPopupVisible) {
+    unreadMessages++;
+    updateHistoryButtonBadge();
+  }
+  
+  // Update display if chat is currently visible
+  if (currentTab === 'chat') {
+    updateChatDisplay();
+  }
+}
+
+function updateChatDisplay() {
+  const messagesContainer = document.getElementById('chat-messages');
+  if (!messagesContainer) return;
+  
+  if (chatMessages.length === 0) {
+    messagesContainer.innerHTML = '<div class="chat-empty">Nenhuma mensagem ainda. Seja o primeiro a conversar!</div>';
+    return;
+  }
+  
+  const messagesHTML = chatMessages.map(msg => {
+    const isOwnMessage = msg.player === (playerUsername || meuNome);
+    const timeStr = msg.timestamp.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `
+      <div class="chat-message ${isOwnMessage ? 'own-message' : ''}">
+        <div class="chat-message-content">
+          <div class="chat-message-header">
+            <span class="chat-player">${msg.player}</span>
+            <span class="chat-time">${timeStr}</span>
+          </div>
+          <div class="chat-text">${msg.message}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  messagesContainer.innerHTML = messagesHTML;
+  
+  // Scroll to bottom
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function updateHistoryButtonBadge() {
+  const historyButton = document.getElementById('btn-history');
+  if (!historyButton) return;
+  
+  // Remove existing badge
+  const existingBadge = historyButton.querySelector('.message-badge');
+  if (existingBadge) {
+    existingBadge.remove();
+  }
+  
+  // Add badge if there are unread messages
+  if (unreadMessages > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'message-badge';
+    badge.textContent = unreadMessages > 99 ? '99+' : unreadMessages.toString();
+    historyButton.appendChild(badge);
   }
 }
 
@@ -2428,4 +3172,114 @@ function updateHistoryDisplay() {
     .join('');
   
   content.innerHTML = historyHTML;
+}
+
+// Player Info Panel Functions
+function initializePlayerInfoModal() {
+  const turnIndicator = document.getElementById('turn-indicator');
+  const panel = document.getElementById('player-info-panel');
+
+  if (turnIndicator) {
+    turnIndicator.addEventListener('click', () => {
+      tocarSomClick();
+      togglePlayerInfoPanel();
+    });
+  }
+}
+
+function togglePlayerInfoPanel() {
+  const panel = document.getElementById('player-info-panel');
+  if (panel) {
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open');
+    } else {
+      panel.classList.add('open');
+      updatePlayerInfoPanel();
+    }
+  }
+}
+
+function updatePlayerInfoPanel() {
+  const panelBody = document.getElementById('panel-body');
+  if (!panelBody || !jogadores) return;
+
+  const playerCards = jogadores.map(jogador => {
+    // Calcular estatísticas do jogador
+    const territorios = paises.filter(p => p.dono === jogador.nome).length;
+    const tropas = paises.filter(p => p.dono === jogador.nome).reduce((sum, p) => sum + p.tropas, 0);
+    const cartas = cartasTerritorio[jogador.nome] ? cartasTerritorio[jogador.nome].length : 0;
+    const isCurrentTurn = jogador.nome === turno;
+    const isActive = jogador.ativo !== false;
+
+    // Avatar baseado no nome do jogador
+    const avatar = getPlayerAvatar(jogador.nome);
+    const colorClass = getPlayerColorClass(jogador.nome);
+
+    return `
+      <div class="player-card ${isCurrentTurn ? 'current-turn' : ''} ${!isActive ? 'inactive' : ''}">
+        <div class="player-header">
+          <div class="player-avatar-modal" style="background: ${getPlayerColor(jogador.nome)};">
+            ${avatar}
+          </div>
+          <div class="player-name-modal">${jogador.nome}</div>
+          ${isCurrentTurn ? '<div class="turn-badge">TURNO ATUAL</div>' : ''}
+        </div>
+        <div class="player-stats-modal">
+          <div class="stat-item">
+            <span class="stat-label">Territórios:</span>
+            <span class="stat-value">${territorios}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tropas:</span>
+            <span class="stat-value">${tropas}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Cartas:</span>
+            <span class="stat-value">${cartas}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Status:</span>
+            <span class="stat-value">${isActive ? 'Ativo' : 'Inativo'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  panelBody.innerHTML = `
+    <div class="player-grid">
+      ${playerCards}
+    </div>
+  `;
+}
+
+function getPlayerAvatar(playerName) {
+  // Gerar avatar baseado no nome do jogador
+  const avatars = ['👤', '🎮', '⚔️', '🛡️', '👑', '🎯', '🏆', '⚡'];
+  const index = playerName.length % avatars.length;
+  return avatars[index];
+}
+
+function getPlayerColor(playerName) {
+  const colorMap = {
+    'Vermelho': '#ff4444',
+    'Azul': '#4444ff', 
+    'Verde': '#44ff44',
+    'Amarelo': '#ffff44',
+    'Preto': '#444444',
+    'Roxo': '#ff44ff'
+  };
+  
+  // Se o nome do jogador contém uma cor, usar essa cor
+  for (const [colorName, colorValue] of Object.entries(colorMap)) {
+    if (playerName.includes(colorName)) {
+      return colorValue;
+    }
+  }
+  
+  // Caso contrário, gerar cor baseada no nome
+  const colors = Object.values(colorMap);
+  const index = playerName.length % colors.length;
+  return colors[index];
 }

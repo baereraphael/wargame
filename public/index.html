@@ -13,6 +13,141 @@
     font-family: 'Arial', sans-serif;
   }
 
+  /* Login Screen Styles */
+  .login-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('assets/background2.png') center center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .login-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #444;
+    border-radius: 20px;
+    padding: 40px;
+    width: 400px;
+    max-width: 90vw;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+  }
+
+  .login-header h1 {
+    color: #fff;
+    font-size: 32px;
+    margin: 0 0 10px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .login-header p {
+    color: #ccc;
+    font-size: 16px;
+    margin: 0 0 30px 0;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .input-group label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .input-group input {
+    padding: 12px 16px;
+    border: 2px solid #444;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: #0077cc;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 10px rgba(0, 119, 204, 0.3);
+  }
+
+  .input-group input::placeholder {
+    color: #888;
+  }
+
+  .login-button {
+    padding: 15px 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(45deg, #0077cc, #005fa3);
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .login-button:hover {
+    background: linear-gradient(45deg, #005fa3, #004a82);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 119, 204, 0.4);
+  }
+
+  .login-button:active {
+    transform: translateY(0);
+  }
+
+  .login-footer {
+    margin-top: 30px;
+  }
+
+  .login-footer p {
+    color: #888;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  /* Game Container */
+  .game-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+  
+  /* Ensure Phaser canvas is visible */
+  .game-container canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    z-index: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
   /* Modern HUD Container */
   .game-hud {
     position: fixed;
@@ -21,7 +156,7 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 10;
   }
 
   /* Top HUD Bar */
@@ -88,6 +223,16 @@
     align-items: center;
     justify-content: center;
     z-index: 1001;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .turn-indicator:hover {
+    transform: scale(1.05);
+  }
+
+  .turn-indicator:active {
+    transform: scale(0.95);
   }
 
   .turn-circle {
@@ -193,6 +338,7 @@
     align-items: center;
     gap: 6px;
     pointer-events: auto;
+    position: relative;
   }
 
   .hud-button:hover {
@@ -344,10 +490,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 600px;
-    max-width: 90vw;
-    height: 400px;
-    max-height: 80vh;
+    width: min(600px, 95vw);
+    height: min(400px, 85vh);
     background: rgba(0, 0, 0, 0.95);
     border: 2px solid #444;
     border-radius: 15px;
@@ -363,10 +507,44 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
+    padding: min(15px, 3vw) min(20px, 4vw);
     border-bottom: 1px solid #444;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 13px 13px 0 0;
+    flex-shrink: 0;
+  }
+
+  .history-tabs {
+    display: flex;
+    gap: min(10px, 2vw);
+  }
+
+  .history-tab {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #444;
+    color: #ccc;
+    padding: min(8px, 2vw) min(16px, 3vw);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: min(14px, 3.5vw);
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .history-tab.active {
+    background: #0077cc;
+    border-color: #0077cc;
+    color: white;
+  }
+
+  .history-tab:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .history-tab.active:hover {
+    background: #005fa3;
   }
 
   .history-header h3 {
@@ -380,9 +558,9 @@
     background: none;
     border: none;
     color: #ccc;
-    font-size: 20px;
+    font-size: min(20px, 5vw);
     cursor: pointer;
-    padding: 5px;
+    padding: min(5px, 1.5vw);
     border-radius: 5px;
     transition: all 0.2s ease;
   }
@@ -394,24 +572,24 @@
 
   .history-content {
     flex: 1;
-    padding: 15px;
+    padding: min(15px, 3vw);
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: min(8px, 2vw);
     min-height: 0;
-    max-height: calc(100% - 70px);
     box-sizing: border-box;
     width: 100%;
-    padding-bottom: 20px;
+    max-height: calc(100% - 70px);
+    border-radius: 0 0 13px 13px;
   }
 
   .history-entry {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 8px 12px;
+    gap: min(10px, 2vw);
+    padding: min(8px, 2vw) min(12px, 3vw);
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     border-left: 3px solid #0077cc;
@@ -425,12 +603,190 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
+  /* Chat Styles */
+  .chat-content {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    border-radius: 0 0 13px 13px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: min(15px, 3vw);
+    display: flex;
+    flex-direction: column;
+    gap: min(8px, 2vw);
+    min-height: 0;
+    max-height: calc(100% - 80px);
+  }
+
+  .chat-message {
+    display: flex;
+    align-items: flex-start;
+    gap: min(10px, 2vw);
+    padding: min(8px, 2vw) min(12px, 3vw);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #0077cc;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .chat-message:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .chat-message.own-message {
+    border-left-color: #33cc33;
+    background: rgba(51, 204, 51, 0.1);
+  }
+
+  .chat-message.own-message:hover {
+    background: rgba(51, 204, 51, 0.15);
+  }
+
+  .chat-input-container {
+    padding: min(15px, 3vw);
+    border-top: 1px solid #444;
+    background: rgba(0, 0, 0, 1);
+    border: 1px solid #444;
+    border-radius: 0 0 13px 13px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    height: min(80px, 20vw);
+    box-sizing: border-box;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    margin-top: auto;
+  }
+
+  .chat-input-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: min(10px, 2.5vw) min(12px, 3vw);
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: min(14px, 3.5vw);
+    transition: all 0.2s ease;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
+
+  .chat-input:focus {
+    outline: none;
+    border-color: #0077cc;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .chat-input::placeholder {
+    color: #888;
+  }
+
+  .chat-send-btn {
+    padding: min(10px, 2.5vw) min(16px, 3vw);
+    background: #0077cc;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: min(14px, 3.5vw);
+    white-space: nowrap;
+  }
+
+  .chat-send-btn:hover {
+    background: #005fa3;
+  }
+
+  .chat-send-btn:disabled {
+    background: #444;
+    cursor: not-allowed;
+  }
+
+  .chat-message-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .chat-message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .chat-player {
+    font-weight: bold;
+    color: #0077cc;
+    font-size: min(12px, 3vw);
+  }
+
+  .chat-time {
+    color: #888;
+    font-size: min(11px, 2.5vw);
+    font-family: monospace;
+  }
+
+  .chat-text {
+    color: white;
+    font-size: min(14px, 3.5vw);
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
+
+  .chat-empty {
+    color: #888;
+    text-align: center;
+    font-style: italic;
+    padding: 20px;
+  }
+
+  /* Message Badge */
+  .message-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff3333;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border: 2px solid #1a1a1a;
+    min-width: 20px;
+  }
+
   .history-timestamp {
     color: #888;
-    font-size: 12px;
+    font-size: min(12px, 3vw);
     font-family: monospace;
     white-space: nowrap;
-    min-width: 60px;
+    min-width: min(60px, 15vw);
     flex-shrink: 0;
   }
 
@@ -479,8 +835,159 @@
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
   }
 
+  /* Player Info Panel - Bottom */
+  .player-info-panel {
+    position: fixed;
+    bottom: 5vh;
+    left: calc(2vw + 180px);
+    z-index: 1001;
+    display: none;
+  }
+
+  .player-info-panel.open {
+    display: block;
+  }
+
+  .panel-body {
+    padding: 0;
+  }
+
+  .player-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 200px);
+  }
+
+  .player-card {
+    background: rgba(42, 42, 42, 0.95);
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 8px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    min-width: 120px;
+  }
+
+  .player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .player-card.current-turn {
+    border-color: #ffaa00;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
+  }
+
+  .player-card.inactive {
+    opacity: 0.6;
+    filter: grayscale(50%);
+  }
+
+  .player-card.inactive .player-name-modal {
+    color: #888;
+  }
+
+  .player-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .player-avatar-modal {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 2px solid #fff;
+  }
+
+  .player-name-modal {
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60px;
+  }
+
+  .player-stats-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+  }
+
+  .stat-label {
+    color: #ccc;
+    font-size: 9px;
+  }
+
+  .stat-value {
+    color: white;
+    font-weight: bold;
+    font-size: 9px;
+  }
+
+  .turn-badge {
+    background: #ffaa00;
+    color: black;
+    padding: 1px 4px;
+    border-radius: 6px;
+    font-size: 8px;
+    font-weight: bold;
+    margin-left: auto;
+  }
+
   /* Responsive adjustments for small screens */
   @media (max-width: 768px) {
+    .player-info-panel {
+      left: calc(1vw + 100px);
+      bottom: 3vh;
+    }
+    
+    .player-grid {
+      max-width: calc(100vw - 150px);
+      gap: 6px;
+    }
+    
+    .player-card {
+      padding: 6px;
+      min-width: 100px;
+    }
+    
+    .player-avatar-modal {
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+    }
+    
+    .player-name-modal {
+      font-size: 10px;
+      max-width: 50px;
+    }
+    
+    .stat-label, .stat-value {
+      font-size: 8px;
+    }
+    
+    .turn-badge {
+      font-size: 7px;
+      padding: 1px 3px;
+    }
+    
     .turn-indicator {
       bottom: 3vh;
       left: 1vw;
@@ -556,7 +1063,34 @@
 </style>
 </head>
 <body>
-  <div class="game-hud">
+  <!-- Login Screen -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-container">
+      <div class="login-header">
+        <p>Entre com seu nome para começar</p>
+      </div>
+      
+      <form class="login-form" id="login-form">
+        <div class="input-group">
+          <label for="username">Nome do Jogador</label>
+          <input type="text" id="username" name="username" placeholder="Digite seu nome..." required>
+        </div>
+        
+        <button type="submit" class="login-button">
+          <span>🚀</span>
+          <span>ENTRAR NO JOGO</span>
+        </button>
+      </form>
+      
+      <div class="login-footer">
+        <p>Conecte-se e domine o mundo!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Container (initially hidden) -->
+  <div class="game-container" id="game-container" style="display: none;">
+    <div class="game-hud">
     <!-- Top HUD Bar -->
     <div class="hud-top">
       <div class="player-info">
@@ -588,14 +1122,22 @@
     </div>
   </div>
 
-  <!-- Turn Indicator - Bottom Left -->
-  <div class="turn-indicator">
+  <!-- Turn Indicator - Bottom Left (Clickable) -->
+  <div class="turn-indicator" id="turn-indicator">
     <div class="turn-circle">
       <div class="turn-marks" id="turn-marks">
         <!-- Turn marks will be added dynamically -->
       </div>
       <div class="turn-pointer" id="turn-pointer"></div>
       <div id="turn-text">Aguardando...</div>
+    </div>
+  </div>
+
+  <!-- Player Info Panel - Bottom -->
+  <div class="player-info-panel" id="player-info-panel">
+    <div class="panel-body" id="panel-body">
+      <!-- Player info will be added dynamically -->
+    </div>
     </div>
   </div>
 </body>
