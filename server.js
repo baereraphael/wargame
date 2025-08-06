@@ -116,26 +116,7 @@ let cartasTerritorio = {}; // { jogador: [cartas] }
 const simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
 let numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
 
-// Mapeamento de territórios para símbolos de cartas
-const mapeamentoTerritorioSimbolo = {
-  // Thaloria (▲ - Triângulo)
-  'Redwyn': '▲', 'Stormfen': '▲', 'Highmoor': '▲', 'Cragstone': '▲', 'Hollowspire': '▲', 'Westreach': '▲', 'Barrowfell': '▲',
-  
-  // Zarandis (■ - Quadrado)
-  'Emberlyn': '■', 'Ravenspire': '■', 'Stonevale': '■', 'Duskwatch': '■', 'Stormhall': '■',
-  
-  // Elyndra (● - Círculo)
-  'Frosthollow': '●', 'Eldoria': '●', 'Greymoor': '●', 'Thalengarde': '●', 'Duskmere': '●', 'Ironreach': '●', 'Frosthelm': '●', 'Blackmere': '●',
-  
-  // Kharune (★ - Coringa)
-  'Zul\'Marak': '★', 'Emberwaste': '★', 'Sunjara': '★', 'Tharkuun': '★', 'Bareshi': '★', 'Oru\'Kai': '★',
-  
-  // Xanthera (▲ - Triângulo)
-  'Kaer\'Tai': '▲', 'Shōrenji': '▲', 'Nihadara': '▲', 'Xin\'Qari': '▲', 'Vol\'Zareth': '▲', 'Omradan': '▲', 'Sa\'Torran': '▲', 'Qumaran': '▲', 'Tzun\'Rakai': '▲', 'Mei\'Zhara': '▲',
-  
-  // Mythara (■ - Quadrado)
-  'Darakai': '■', 'Ish\'Tanor': '■', 'Winterholde': '■', 'Aetheris': '■', 'Dawnwatch': '■', 'Mistveil': '■'
-};
+
 
 // Tipos de objetivos
 const tiposObjetivos = [
@@ -178,12 +159,28 @@ io.on('connection', (socket) => {
     const estadoInicial = getEstado(socket.id);
     console.log('📊 Estado inicial:', estadoInicial);
     socket.emit('estadoAtualizado', estadoInicial);
+    
+    // Se este é o primeiro jogador a conectar, reiniciar o jogo automaticamente
+    const jogadoresConectados = jogadores.filter(j => j.socketId !== null).length;
+    if (jogadoresConectados === 1 && !vitoria && !derrota) {
+      console.log('🎮 Primeiro jogador conectado - reiniciando jogo automaticamente');
+      setTimeout(() => {
+        inicializarJogo();
+        io.emit('mostrarMensagem', '🎮 Jogo iniciado! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
+      }, 500);
+    }
   }, 100); // 100ms delay
 
 
   socket.on('transferirTropasConquista', (dados) => {
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
+    
+    // Verificar se está na fase de remanejamento (não pode transferir tropas de conquista)
+    if (faseRemanejamento) {
+      io.emit('mostrarMensagem', `❌ ${turno} não pode transferir tropas durante a fase de remanejamento!`);
+      return;
+    }
 
     const territorioAtacante = paises.find(p => p.nome === dados.territorioAtacante);
     const territorioConquistado = paises.find(p => p.nome === dados.territorioConquistado);
@@ -227,6 +224,12 @@ io.on('connection', (socket) => {
   socket.on('colocarReforco', (nomePais) => {
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
+    
+    // Verificar se está na fase de remanejamento (não pode colocar reforços)
+    if (faseRemanejamento) {
+      io.emit('mostrarMensagem', `❌ ${turno} não pode colocar reforços durante a fase de remanejamento!`);
+      return;
+    }
 
     const pais = paises.find(p => p.nome === nomePais);
     if (!pais || pais.dono !== turno) return;
@@ -328,6 +331,13 @@ io.on('connection', (socket) => {
     socket.on('atacar', ({ de, para }) => {
     const jogador = jogadores.find(j => j.socketId === socket.id);
     if (jogador.nome !== turno || vitoria || derrota) return;
+    
+    // Verificar se está na fase de remanejamento (não pode atacar)
+    if (faseRemanejamento) {
+      io.emit('mostrarMensagem', `❌ ${turno} não pode atacar durante a fase de remanejamento!`);
+      return;
+    }
+    
     const atacantePais = paises.find(p => p.nome === de);
     const defensorPais = paises.find(p => p.nome === para);
 
@@ -522,6 +532,12 @@ io.on('connection', (socket) => {
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Não é sua vez!' });
       return;
     }
+    
+    // Verificar se está na fase de remanejamento (não pode trocar cartas)
+    if (faseRemanejamento) {
+      socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: '❌ Não é possível trocar cartas durante a fase de remanejamento!' });
+      return;
+    }
 
     const cartas = cartasTerritorio[jogador.nome] || [];
     
@@ -586,6 +602,24 @@ io.on('connection', (socket) => {
     // Atualizar o deck do jogador
     cartasTerritorio[jogador.nome] = cartas;
 
+    // Verificar se o jogador possui algum dos territórios das cartas trocadas e adicionar 2 tropas
+    let territoriosReforcados = [];
+    cartasSelecionadas.forEach(territorioNome => {
+      const territorio = paises.find(p => p.nome === territorioNome);
+      if (territorio && territorio.dono === jogador.nome) {
+        territorio.tropas += 2;
+        territoriosReforcados.push(territorioNome);
+        console.log(`🎯 ${jogador.nome} recebeu 2 tropas em ${territorioNome} por possuir o território da carta trocada`);
+        
+        // Emitir efeito visual de reforço para o território
+        io.emit('mostrarEfeitoReforco', {
+          territorio: territorioNome,
+          jogador: jogador.nome,
+          tipo: 'carta'
+        });
+      }
+    });
+
     // Calcular bônus progressivo para troca de cartas
     numeroTrocasRealizadas++;
     const bonusTroca = 2 + (numeroTrocasRealizadas * 2); // 4, 6, 8, 10, ...
@@ -600,10 +634,23 @@ io.on('connection', (socket) => {
       tipoTroca = simbolosUnicos.length === 1 ? 'mesmo símbolo' : 'símbolos diferentes';
     }
     
-    io.emit('mostrarMensagem', `🎴 ${jogador.nome} trocou 3 cartas de ${tipoTroca} (${cartasSelecionadas.join(', ')}) e recebeu ${bonusTroca} exércitos bônus!`);
+    // Criar mensagem detalhada sobre a troca
+    let mensagemTroca = `🎴 ${jogador.nome} trocou 3 cartas de ${tipoTroca} (${cartasSelecionadas.join(', ')}) e recebeu ${bonusTroca} exércitos bônus!`;
+    
+    if (territoriosReforcados.length > 0) {
+      mensagemTroca += `\n🎯 +2 tropas em: ${territoriosReforcados.join(', ')} (territórios possuídos)`;
+    }
+    
+    io.emit('mostrarMensagem', mensagemTroca);
     io.emit('tocarSomTakeCard');
     
-    socket.emit('resultadoTrocaCartas', { sucesso: true, mensagem: `Cartas trocadas com sucesso! Você recebeu ${bonusTroca} exércitos bônus!` });
+    // Mensagem para o jogador que fez a troca
+    let mensagemJogador = `Cartas trocadas com sucesso! Você recebeu ${bonusTroca} exércitos bônus!`;
+    if (territoriosReforcados.length > 0) {
+      mensagemJogador += `\n🎯 +2 tropas adicionais em: ${territoriosReforcados.join(', ')}`;
+    }
+    
+    socket.emit('resultadoTrocaCartas', { sucesso: true, mensagem: mensagemJogador });
     
     // Se era uma troca obrigatória, continuar o turno
     const cartasRestantes = cartasTerritorio[jogador.nome] || [];
@@ -1189,6 +1236,24 @@ function executarTurnoCPU(jogadorCPU) {
         );
         cartasTerritorio[jogadorCPU.nome] = cartasRestantes;
         
+        // Verificar se a CPU possui algum dos territórios das cartas trocadas e adicionar 2 tropas
+        let territoriosReforcados = [];
+        cartasParaTrocar.forEach(territorioNome => {
+          const territorio = paises.find(p => p.nome === territorioNome);
+          if (territorio && territorio.dono === jogadorCPU.nome) {
+            territorio.tropas += 2;
+            territoriosReforcados.push(territorioNome);
+            console.log(`🎯 CPU ${jogadorCPU.nome} recebeu 2 tropas em ${territorioNome} por possuir o território da carta trocada`);
+            
+            // Emitir efeito visual de reforço para o território
+            io.emit('mostrarEfeitoReforco', {
+              territorio: territorioNome,
+              jogador: jogadorCPU.nome,
+              tipo: 'carta'
+            });
+          }
+        });
+        
         // Calcular bônus baseado no tipo de troca
         const bonusTroca = calcularBonusTrocaCartas(cartasParaTrocar);
         const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
@@ -1209,8 +1274,15 @@ function executarTurnoCPU(jogadorCPU) {
           }
         }
         
-        io.emit('mostrarMensagem', `🤖 CPU ${jogadorCPU.nome} trocou 3 cartas território e recebeu ${bonusTroca} tropas extras!`);
-        io.emit('adicionarAoHistorico', `🃏 CPU ${jogadorCPU.nome} trocou 3 cartas território (+${bonusTroca} tropas)`);
+        // Criar mensagem detalhada sobre a troca da CPU
+        let mensagemTroca = `🤖 CPU ${jogadorCPU.nome} trocou 3 cartas território e recebeu ${bonusTroca} tropas extras!`;
+        
+        if (territoriosReforcados.length > 0) {
+          mensagemTroca += `\n🎯 +2 tropas em: ${territoriosReforcados.join(', ')} (territórios possuídos)`;
+        }
+        
+        io.emit('mostrarMensagem', mensagemTroca);
+        io.emit('adicionarAoHistorico', `🃏 CPU ${jogadorCPU.nome} trocou 3 cartas território (+${bonusTroca} tropas${territoriosReforcados.length > 0 ? `, +2 em ${territoriosReforcados.join(', ')}` : ''})`);
         io.emit('tocarSomTakeCard');
         
         // Continuar com o turno normal da CPU
@@ -1247,149 +1319,209 @@ function continuarTurnoCPU(jogadorCPU) {
   executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, 0);
 }
 
-// Função para executar reforços sequencialmente
+// Função para executar reforços sequencialmente - ESTRATÉGIA DE CAMPEÃO MUNDIAL
 function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, index) {
   if (vitoria || derrota) return;
   
-  // Converter tropas de bônus em array para processamento sequencial
-  const tropasBonusArray = [];
-  Object.entries(tropasBonusCPU).forEach(([continente, quantidade]) => {
-    for (let i = 0; i < quantidade; i++) {
-      tropasBonusArray.push({ continente, tipo: 'bonus' });
+  // ESTRATÉGIA DE CAMPEÃO: Concentrar TODAS as tropas em UM SÓ lugar estratégico
+  const totalTropas = tropasReforcoCPU + Object.values(tropasBonusCPU).reduce((sum, qty) => sum + qty, 0);
+  
+  if (totalTropas > 0) {
+    // Encontrar o território MAIS estratégico para concentrar todas as tropas
+    const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
+    let melhorTerritorio = null;
+    let melhorPontuacao = -1;
+    
+    territoriosDoJogador.forEach(territorio => {
+      const pais = paises.find(p => p.nome === territorio.nome);
+      let pontuacao = 0;
+      
+      // 1. FRONTEIRAS COM INIMIGOS (mais importante)
+      const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+      });
+      pontuacao += vizinhosInimigos.length * 50; // Muito mais peso
+      
+      // 2. VULNERABILIDADE ATUAL
+      if (pais.tropas <= 1) pontuacao += 100; // Prioridade máxima
+      else if (pais.tropas <= 2) pontuacao += 80;
+      else if (pais.tropas <= 3) pontuacao += 60;
+      
+      // 3. OBJETIVO ESTRATÉGICO
+      if (objetivo?.tipo === 'conquistar3Continentes') {
+        const continente = Object.keys(continentes).find(cont => 
+          continentes[cont].territorios.includes(territorio.nome)
+        );
+        if (continente === objetivo.continente1 || continente === objetivo.continente2) {
+          pontuacao += 200; // Prioridade absoluta
+        }
+      }
+      
+      // 4. POSIÇÃO CENTRAL (muitos vizinhos próprios para defesa)
+      const vizinhosProprios = pais.vizinhos.filter(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
+      });
+      pontuacao += vizinhosProprios.length * 20;
+      
+      // 5. OPORTUNIDADES DE ATAQUE
+      vizinhosInimigos.forEach(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        if (paisVizinho.tropas <= 2) pontuacao += 30; // Alvos fracos próximos
+      });
+      
+      if (pontuacao > melhorPontuacao) {
+        melhorPontuacao = pontuacao;
+        melhorTerritorio = territorio;
+      }
+    });
+    
+    // Fallback: território com menos tropas
+    if (!melhorTerritorio) {
+      melhorTerritorio = territoriosDoJogador.reduce((min, atual) => 
+        atual.tropas < min.tropas ? atual : min
+      );
+    }
+    
+    // CONCENTRAR TODAS AS TROPAS NO TERRITÓRIO ESCOLHIDO
+    const pais = paises.find(p => p.nome === melhorTerritorio.nome);
+    pais.tropas += totalTropas;
+    
+    console.log(`🏆 CPU ${jogadorCPU.nome} CONCENTROU ${totalTropas} tropas em ${melhorTerritorio.nome} (pontuação estratégica: ${melhorPontuacao})`);
+    io.emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} CONCENTROU ${totalTropas} tropas em ${melhorTerritorio.nome}`);
+    io.emit('tocarSomMovimento');
+    
+    // Mostrar efeito visual de reforço
+    io.emit('mostrarEfeitoReforco', {
+      territorio: melhorTerritorio.nome,
+      jogador: jogadorCPU.nome,
+      tipo: 'reforco'
+    });
+    
+    // Atualizar estado para todos os jogadores
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+  }
+  
+  // Iniciar ataques imediatamente após concentrar tropas
+  setTimeout(() => {
+    if (vitoria || derrota) return;
+    executarAtaquesSequenciais(jogadorCPU, objetivo);
+  }, 1000);
+}
+
+// Função para executar remanejamento inteligente da CPU
+function executarRemanejamentoCPU(jogadorCPU, objetivo) {
+  if (vitoria || derrota) return;
+  
+  console.log(`🔄 CPU ${jogadorCPU.nome} executando remanejamento estratégico...`);
+  io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} executando remanejamento estratégico...`);
+  
+  const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
+  const movimentos = [];
+  
+  // ESTRATÉGIA: Identificar territórios que precisam de reforço
+  territoriosDoJogador.forEach(territorio => {
+    const pais = paises.find(p => p.nome === territorio.nome);
+    const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
+      const paisVizinho = paises.find(p => p.nome === vizinho);
+      return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+    });
+    
+    // Se tem muitos inimigos e poucas tropas, precisa de reforço
+    if (vizinhosInimigos.length > 0 && pais.tropas <= 2) {
+      // Procurar territórios seguros para mover tropas
+      const vizinhosProprios = pais.vizinhos.filter(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
+      });
+      
+      vizinhosProprios.forEach(vizinho => {
+        const paisVizinho = paises.find(p => p.nome === vizinho);
+        const vizinhosInimigosVizinho = paisVizinho.vizinhos.filter(v => {
+          const paisV = paises.find(p => p.nome === v);
+          return paisV && paisV.dono !== jogadorCPU.nome;
+        });
+        
+        // Se o vizinho tem menos inimigos e mais tropas, pode doar tropas
+        if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 3) {
+          const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2); // Deixar pelo menos 2 tropas
+          
+          if (tropasParaMover > 0) {
+            movimentos.push({
+              origem: paisVizinho,
+              destino: pais,
+              quantidade: tropasParaMover,
+              prioridade: vizinhosInimigos.length * 10 + (3 - pais.tropas) * 5
+            });
+          }
+        }
+      });
     }
   });
   
-  // Adicionar tropas base ao array
-  for (let i = 0; i < tropasReforcoCPU; i++) {
-    tropasBonusArray.push({ tipo: 'base' });
-  }
+  // Ordenar movimentos por prioridade
+  movimentos.sort((a, b) => b.prioridade - a.prioridade);
   
-  // Se ainda há reforços para processar
-  if (index < tropasBonusArray.length) {
-    const reforco = tropasBonusArray[index];
-    
-    if (reforco.tipo === 'bonus') {
-      // Processar tropa de bônus
-      const territoriosDoContinente = continentes[reforco.continente].territorios;
-      const territoriosDoJogador = territoriosDoContinente.filter(territorio => {
-        const pais = paises.find(p => p.nome === territorio);
-        return pais && pais.dono === jogadorCPU.nome;
-      });
-      
-      if (territoriosDoJogador.length > 0) {
-        let territorioPrioritario;
-        
-        if (objetivo?.tipo === 'conquistar3Continentes') {
-          territorioPrioritario = territoriosDoJogador.find(territorio => {
-            const pais = paises.find(p => p.nome === territorio);
-            return pais && (pais.nome === objetivo.continente1 || pais.nome === objetivo.continente2);
-          });
-        }
-        
-        if (!territorioPrioritario) {
-          territorioPrioritario = territoriosDoJogador.reduce((min, territorio) => {
-            const pais = paises.find(p => p.nome === territorio);
-            const paisMin = paises.find(p => p.nome === min);
-            return pais.tropas < paisMin.tropas ? territorio : min;
-          });
-        }
-        
-        const pais = paises.find(p => p.nome === territorioPrioritario);
-        pais.tropas++;
-        
-        console.log(`🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario} (continente ${reforco.continente})`);
-        io.emit('adicionarAoHistorico', `🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario} (continente ${reforco.continente})`);
-        io.emit('tocarSomMovimento');
-        
-        // Mostrar efeito visual de reforço
-        io.emit('mostrarEfeitoReforco', {
-          territorio: territorioPrioritario,
-          jogador: jogadorCPU.nome,
-          tipo: 'reforco'
-        });
-        
-        // Atualizar estado para todos os jogadores
-        io.sockets.sockets.forEach((s) => {
-          s.emit('estadoAtualizado', getEstado(s.id));
-        });
-      }
-    } else {
-      // Processar tropa base
-      const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
-      if (territoriosDoJogador.length > 0) {
-        let territorioPrioritario;
-        
-        if (objetivo?.tipo === 'dominar24Territorios' || objetivo?.tipo === 'dominar16TerritoriosCom2Tropas') {
-          territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
-            atual.tropas < min.tropas ? atual : min
-          );
-        } else if (objetivo?.tipo === 'conquistar3Continentes') {
-          territorioPrioritario = territoriosDoJogador.find(territorio => {
-            const vizinhos = territorio.vizinhos.filter(vizinho => {
-              const paisVizinho = paises.find(p => p.nome === vizinho);
-              return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
-            });
-            return vizinhos.length > 0;
-          });
-          
-          if (!territorioPrioritario) {
-            territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
-              atual.tropas < min.tropas ? atual : min
-            );
-          }
-        } else {
-          territorioPrioritario = territoriosDoJogador.reduce((min, atual) => 
-            atual.tropas < min.tropas ? atual : min
-          );
-        }
-        
-        territorioPrioritario.tropas++;
-        
-        console.log(`🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario.nome} (estratégico)`);
-        io.emit('adicionarAoHistorico', `🛡️ CPU ${jogadorCPU.nome} reforçou ${territorioPrioritario.nome} (estratégico)`);
-        io.emit('tocarSomMovimento');
-        
-        // Mostrar efeito visual de reforço
-        io.emit('mostrarEfeitoReforco', {
-          territorio: territorioPrioritario.nome,
-          jogador: jogadorCPU.nome,
-          tipo: 'reforco'
-        });
-        
-        // Atualizar estado para todos os jogadores
-        io.sockets.sockets.forEach((s) => {
-          s.emit('estadoAtualizado', getEstado(s.id));
-        });
-      }
-    }
-    
-    // Processar próximo reforço após delay
-    setTimeout(() => {
-      executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, index + 1);
-    }, 800); // 800ms entre cada reforço
-    
-  } else {
-    // Todos os reforços foram processados, iniciar ataques
-    setTimeout(() => {
-      if (vitoria || derrota) return;
-      executarAtaquesSequenciais(jogadorCPU, objetivo);
-    }, 1000);
-  }
+  // Executar movimentos sequencialmente
+  executarMovimentoRemanejamento(jogadorCPU, movimentos, 0, objetivo);
 }
 
-// Função para executar ataques sequencialmente
+// Função para executar movimentos de remanejamento
+function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo) {
+  if (vitoria || derrota) return;
+  
+  if (index >= movimentos.length) {
+    // Finalizar turno da CPU
+    console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno após remanejamento...`);
+    io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+    
+    // Processar cartas da CPU ANTES de passar o turno
+    processarCartasJogador(jogadorCPU.nome);
+    
+    passarTurno();
+    return;
+  }
+  
+  const movimento = movimentos[index];
+  
+  // Verificar se ainda é válido
+  if (movimento.origem.tropas > movimento.quantidade && movimento.origem.dono === jogadorCPU.nome) {
+    // Executar movimento
+    movimento.origem.tropas -= movimento.quantidade;
+    movimento.destino.tropas += movimento.quantidade;
+    
+    console.log(`🔄 CPU ${jogadorCPU.nome} moveu ${movimento.quantidade} tropas de ${movimento.origem.nome} para ${movimento.destino.nome}`);
+    io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} moveu ${movimento.quantidade} tropas de ${movimento.origem.nome} para ${movimento.destino.nome}`);
+    io.emit('tocarSomMovimento');
+    
+    // Atualizar estado para todos os jogadores
+    io.sockets.sockets.forEach((s) => {
+      s.emit('estadoAtualizado', getEstado(s.id));
+    });
+  }
+  
+  // Processar próximo movimento após delay
+  setTimeout(() => {
+    executarMovimentoRemanejamento(jogadorCPU, movimentos, index + 1, objetivo);
+  }, 500);
+}
+
+// Função para executar ataques sequencialmente - ESTRATÉGIA DE CAMPEÃO MUNDIAL
 function executarAtaquesSequenciais(jogadorCPU, objetivo) {
   if (vitoria || derrota) return;
   
-  console.log(`⚔️ CPU ${jogadorCPU.nome} planejando ataques...`);
-  io.emit('adicionarAoHistorico', `⚔️ CPU ${jogadorCPU.nome} planejando ataques...`);
+  console.log(`⚔️ CPU ${jogadorCPU.nome} executando ATAQUE ESMAGADOR...`);
+  io.emit('adicionarAoHistorico', `⚔️ CPU ${jogadorCPU.nome} executando ATAQUE ESMAGADOR...`);
   
   const territoriosDoJogador = paises.filter(p => p.dono === jogadorCPU.nome);
-  const oportunidadesAtaque = [];
+  const ataques = [];
   
-  // Analisar oportunidades de ataque
+  // ESTRATÉGIA DE CAMPEÃO: ATAQUE ESMAGADOR - Só atacar com vantagem esmagadora
   territoriosDoJogador.forEach(territorio => {
-    if (territorio.tropas > 1) {
+    if (territorio.tropas >= 4) { // Só atacar com 4+ tropas
       const vizinhosInimigos = territorio.vizinhos.filter(vizinho => {
         const paisVizinho = paises.find(p => p.nome === vizinho);
         return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
@@ -1399,35 +1531,43 @@ function executarAtaquesSequenciais(jogadorCPU, objetivo) {
         const paisVizinho = paises.find(p => p.nome === vizinho);
         const vantagemNumerica = territorio.tropas - paisVizinho.tropas;
         
-        let pontuacao = 0;
-        
-        if (vantagemNumerica >= 2) pontuacao += 50;
-        else if (vantagemNumerica >= 1) pontuacao += 30;
-        else if (vantagemNumerica >= 0) pontuacao += 10;
-        else pontuacao -= 50;
-        
-        if (objetivo?.tipo === 'conquistar3Continentes') {
-          const continenteVizinho = Object.keys(continentes).find(cont => 
-            continentes[cont].territorios.includes(vizinho)
-          );
-          if (continenteVizinho === objetivo.continente1 || continenteVizinho === objetivo.continente2) {
-            pontuacao += 40;
+        // SÓ ATACAR COM VANTAGEM ESMAGADORA (3+ tropas de diferença)
+        if (vantagemNumerica >= 3) {
+          let pontuacao = 0;
+          
+          // 1. VANTAGEM NUMÉRICA (CRÍTICA)
+          pontuacao += vantagemNumerica * 50; // Cada tropa de vantagem vale 50 pontos
+          
+          // 2. OBJETIVO ESTRATÉGICO (PRIORIDADE ABSOLUTA)
+          if (objetivo?.tipo === 'conquistar3Continentes') {
+            const continenteVizinho = Object.keys(continentes).find(cont => 
+              continentes[cont].territorios.includes(vizinho)
+            );
+            if (continenteVizinho === objetivo.continente1 || continenteVizinho === objetivo.continente2) {
+              pontuacao += 500; // Prioridade ABSOLUTA
+            }
           }
-        }
-        
-        if (objetivo?.tipo === 'dominar24Territorios' || objetivo?.tipo === 'dominar16TerritoriosCom2Tropas') {
-          pontuacao += 20;
-        }
-        
-        const vizinhosDoVizinho = paisVizinho.vizinhos.filter(v => {
-          const paisV = paises.find(p => p.nome === v);
-          return paisV && paisV.dono !== jogadorCPU.nome;
-        });
-        if (vizinhosDoVizinho.length > 0) pontuacao += 15;
-        
-        // Só adicionar se tiver vantagem numérica
-        if (vantagemNumerica >= 1) {
-          oportunidadesAtaque.push({
+          
+          // 3. ELIMINAÇÃO DE JOGADOR (PRIORIDADE ABSOLUTA)
+          if (objetivo?.tipo === 'eliminarJogador') {
+            const jogadorAlvo = objetivo.jogadorAlvo;
+            if (paisVizinho.dono === jogadorAlvo) {
+              pontuacao += 1000; // Prioridade ABSOLUTA
+            }
+          }
+          
+          // 4. ALVOS FRACOS (FÁCEIS DE CONQUISTAR)
+          if (paisVizinho.tropas <= 1) pontuacao += 200;
+          else if (paisVizinho.tropas <= 2) pontuacao += 150;
+          
+          // 5. EXPANSÃO ESTRATÉGICA (mais vizinhos inimigos = mais oportunidades)
+          const vizinhosDoVizinho = paisVizinho.vizinhos.filter(v => {
+            const paisV = paises.find(p => p.nome === v);
+            return paisV && paisV.dono !== jogadorCPU.nome;
+          });
+          pontuacao += vizinhosDoVizinho.length * 100;
+          
+          ataques.push({
             origem: territorio,
             destino: paisVizinho,
             pontuacao: pontuacao,
@@ -1438,11 +1578,16 @@ function executarAtaquesSequenciais(jogadorCPU, objetivo) {
     }
   });
   
-  // Ordenar oportunidades por pontuação
-  oportunidadesAtaque.sort((a, b) => b.pontuacao - a.pontuacao);
+  // Ordenar ataques por pontuação (maior pontuação primeiro)
+  ataques.sort((a, b) => b.pontuacao - a.pontuacao);
+  
+  console.log(`🏆 CPU ${jogadorCPU.nome} preparou ${ataques.length} ataques esmagadores`);
+  if (ataques.length > 0) {
+    console.log(`⚔️ Melhor ataque: ${ataques[0].origem.nome} (${ataques[0].origem.tropas} tropas) → ${ataques[0].destino.nome} (${ataques[0].destino.tropas} tropas) - Vantagem: +${ataques[0].vantagemNumerica} - Pontuação: ${ataques[0].pontuacao}`);
+  }
   
   // Executar ataques sequencialmente
-  executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, 0, objetivo);
+  executarAtaqueIndividual(jogadorCPU, ataques, 0, objetivo);
 }
 
 // Função para executar um ataque individual
@@ -1451,16 +1596,19 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
   
   // Finalizar turno se não há mais oportunidades de ataque
   if (index >= oportunidadesAtaque.length) {
-    // Finalizar turno da CPU
-      if (vitoria || derrota) return;
-      console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno...`);
-      console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
-      io.emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
-      
-      // Processar cartas da CPU ANTES de passar o turno
-      processarCartasJogador(jogadorCPU.nome);
-      
-      passarTurno(); // Reduzido de 1000ms para 300ms para finalização mais rápida
+    // ESTRATÉGIA DE CAMPEÃO: Finalizar turno após ataques esmagadores
+    if (vitoria || derrota) return;
+    console.log(`🏆 CPU ${jogadorCPU.nome} finalizando turno após ataques esmagadores...`);
+    console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
+    io.emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} finalizando turno após ataques esmagadores`);
+    
+    // Processar cartas da CPU ANTES de passar o turno
+    processarCartasJogador(jogadorCPU.nome);
+    
+    // Finalizar turno imediatamente
+    setTimeout(() => {
+      passarTurno();
+    }, 500);
     return;
   }
   
@@ -1876,21 +2024,23 @@ function processarCartasJogador(nomeJogador) {
       io.emit('mostrarMensagem', `⚠️ ${nomeJogador} não pode receber mais cartas território (máximo 5)!`);
       console.log(`⚠️ ${nomeJogador} já tem ${cartasTerritorio[nomeJogador].length} cartas (máximo 5)`);
     } else {
-      // Escolher um território aleatório dos conquistados para gerar a carta
-      const territoriosConquistados = territoriosConquistadosNoTurno[nomeJogador];
-      const territorioAleatorio = territoriosConquistados[Math.floor(Math.random() * territoriosConquistados.length)];
-      const simbolo = mapeamentoTerritorioSimbolo[territorioAleatorio] || simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
+      // Escolher um território aleatório de TODOS os territórios disponíveis
+      const todosTerritorios = paises.map(p => p.nome);
+      const territorioAleatorio = todosTerritorios[Math.floor(Math.random() * todosTerritorios.length)];
       
-      // Criar carta com nome do território e símbolo
+      // Escolher um símbolo aleatório independente do território
+      const simboloAleatorio = simbolosCartas[Math.floor(Math.random() * simbolosCartas.length)];
+      
+      // Criar carta com território aleatório e símbolo aleatório
       const carta = {
         territorio: territorioAleatorio,
-        simbolo: simbolo
+        simbolo: simboloAleatorio
       };
       
       cartasTerritorio[nomeJogador].push(carta);
       
-      console.log(`🎴 ${nomeJogador} ganhou carta: ${territorioAleatorio} (${simbolo}) - Total: ${cartasTerritorio[nomeJogador].length} cartas`);
-      io.emit('mostrarMensagem', `🎴 ${nomeJogador} ganhou uma carta território de ${territorioAleatorio} (${simbolo}) por conquistar territórios neste turno!`);
+      console.log(`🎴 ${nomeJogador} ganhou carta: ${territorioAleatorio} (${simboloAleatorio}) - Total: ${cartasTerritorio[nomeJogador].length} cartas`);
+      io.emit('mostrarMensagem', `🎴 ${nomeJogador} ganhou uma carta território de ${territorioAleatorio} (${simboloAleatorio}) por conquistar territórios neste turno!`);
     }
   } else {
     console.log(`🎴 ${nomeJogador} não conquistou territórios neste turno`);
@@ -1945,6 +2095,24 @@ function passarTurno() {
         );
         cartasTerritorio[turno] = cartasRestantes;
         
+        // Verificar se a CPU possui algum dos territórios das cartas trocadas e adicionar 2 tropas
+        let territoriosReforcados = [];
+        cartasParaTrocar.forEach(territorioNome => {
+          const territorio = paises.find(p => p.nome === territorioNome);
+          if (territorio && territorio.dono === turno) {
+            territorio.tropas += 2;
+            territoriosReforcados.push(territorioNome);
+            console.log(`🎯 CPU ${turno} recebeu 2 tropas em ${territorioNome} por possuir o território da carta trocada`);
+            
+            // Emitir efeito visual de reforço para o território
+            io.emit('mostrarEfeitoReforco', {
+              territorio: territorioNome,
+              jogador: turno,
+              tipo: 'carta'
+            });
+          }
+        });
+        
         // Calcular bônus
         const bonusTroca = calcularBonusTrocaCartas(cartasParaTrocar);
         const territoriosDoJogador = paises.filter(p => p.dono === turno);
@@ -1965,9 +2133,16 @@ function passarTurno() {
           }
         }
         
+        // Criar mensagem detalhada sobre a troca obrigatória da CPU
+        let mensagemTroca = `🤖 CPU ${turno} trocou 3 cartas território obrigatoriamente e recebeu ${bonusTroca} tropas extras!`;
+        
+        if (territoriosReforcados.length > 0) {
+          mensagemTroca += `\n🎯 +2 tropas em: ${territoriosReforcados.join(', ')} (territórios possuídos)`;
+        }
+        
         console.log(`✅ CPU ${turno} trocou cartas obrigatoriamente e recebeu ${bonusTroca} tropas`);
-        io.emit('mostrarMensagem', `🤖 CPU ${turno} trocou 3 cartas território obrigatoriamente e recebeu ${bonusTroca} tropas extras!`);
-        io.emit('adicionarAoHistorico', `🃏 CPU ${turno} trocou 3 cartas território obrigatoriamente (+${bonusTroca} tropas)`);
+        io.emit('mostrarMensagem', mensagemTroca);
+        io.emit('adicionarAoHistorico', `🃏 CPU ${turno} trocou 3 cartas território obrigatoriamente (+${bonusTroca} tropas${territoriosReforcados.length > 0 ? `, +2 em ${territoriosReforcados.join(', ')}` : ''})`);
         io.emit('tocarSomTakeCard');
         
         // Continuar com o turno
@@ -2007,6 +2182,6 @@ function passarTurno() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-  // Inicializar o jogo quando o servidor iniciar
-  inicializarJogo();
+  // Não inicializar o jogo automaticamente - aguardar primeiro jogador
+  console.log('🎮 Servidor aguardando jogadores para iniciar o jogo...');
 });

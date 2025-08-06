@@ -920,6 +920,12 @@ function atualizarPaises(novosPaises, scene) {
          const temTropasParaColocar = tropasReforco > 0 || totalBonus > 0;
          
          if (temTropasParaColocar && obj.dono === turno && turno === meuNome) {
+           // Verificar se está na fase de remanejamento (não pode colocar reforços)
+           if (faseRemanejamento) {
+             mostrarMensagem("❌ Não é possível colocar reforços durante a fase de remanejamento!");
+             return;
+           }
+           
            // Verificar se há tropas de bônus que precisam ser colocadas
            if (totalBonus > 0) {
              // Verificar se este país pertence ao continente prioritário
@@ -994,6 +1000,12 @@ function atualizarPaises(novosPaises, scene) {
           selecionado = null;
           mostrarMensagem('Seleção cancelada');
         } else {
+          // Verificar se está na fase de remanejamento (não pode atacar)
+          if (faseRemanejamento) {
+            mostrarMensagem("❌ Não é possível atacar durante a fase de remanejamento!");
+            return;
+          }
+          
           if (!selecionado.vizinhos.includes(obj.nome)) {
             mostrarMensagem(`${obj.nome} não é vizinho de ${selecionado.nome}.`);
             return;
@@ -2474,23 +2486,15 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
       cartasClicaveis.push(cartaContainer);
     });
     
-    // Legenda dos símbolos
-    const legenda = scene.add.text(0, 80, '▲ = Thaloria/Xanthera  ■ = Zarandis/Mythara  ● = Elyndra  ★ = Kharune', {
-      fontSize: '12px',
-      fill: '#cccccc',
-      align: 'center',
-      stroke: '#000000',
-      strokeThickness: 1
-    }).setOrigin(0.5).setDepth(2);
-    contentContainer.add(legenda);
+
     
     // Botão de trocar com estilo moderno
-    const botaoTrocarBg = scene.add.rectangle(0, 120, 250, 50, 0x0077cc, 0.9);
+    const botaoTrocarBg = scene.add.rectangle(0, 80, 250, 50, 0x0077cc, 0.9);
     botaoTrocarBg.setStrokeStyle(2, 0x005fa3);
     botaoTrocarBg.setDepth(1);
     container.add(botaoTrocarBg);
     
-    const botaoTrocar = scene.add.text(0, 120, '🔄 Trocar Cartas', {
+    const botaoTrocar = scene.add.text(0, 80, '🔄 Trocar Cartas', {
       fontSize: '18px',
       fill: '#ffffff',
       fontStyle: 'bold',
@@ -2522,12 +2526,12 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   
   // Botão de fechar com estilo moderno (só se não for troca obrigatória)
   if (!forcarTroca) {
-    const botaoFecharBg = scene.add.rectangle(0, 200, 200, 50, 0x0077cc, 0.9);
+    const botaoFecharBg = scene.add.rectangle(0, 160, 200, 50, 0x0077cc, 0.9);
     botaoFecharBg.setStrokeStyle(2, 0x005fa3);
     botaoFecharBg.setDepth(1);
     container.add(botaoFecharBg);
     
-    const botaoFechar = scene.add.text(0, 200, '✅ Entendi', {
+    const botaoFechar = scene.add.text(0, 160, '✅ Entendi', {
       fontSize: '18px',
       fill: '#ffffff',
       fontStyle: 'bold',
