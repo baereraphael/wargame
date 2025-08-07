@@ -19,14 +19,14 @@ class GameRoom {
     
     // Players
     this.jogadores = [
-      { nome: 'Azul', ativo: true, socketId: null, isCPU: false },
-      { nome: 'Vermelho', ativo: true, socketId: null, isCPU: false },
-      { nome: 'Verde', ativo: true, socketId: null, isCPU: false },
-      { nome: 'Amarelo', ativo: true, socketId: null, isCPU: false },
-      { nome: 'Preto', ativo: true, socketId: null, isCPU: false },
-      { nome: 'Roxo', ativo: true, socketId: null, isCPU: false }
-    ];
-    
+  { nome: 'Azul', ativo: true, socketId: null, isCPU: false },
+  { nome: 'Vermelho', ativo: true, socketId: null, isCPU: false },
+  { nome: 'Verde', ativo: true, socketId: null, isCPU: false },
+  { nome: 'Amarelo', ativo: true, socketId: null, isCPU: false },
+  { nome: 'Preto', ativo: true, socketId: null, isCPU: false },
+  { nome: 'Roxo', ativo: true, socketId: null, isCPU: false }
+];
+
     // Game state
     this.indiceTurno = 0;
     this.turno = this.jogadores[this.indiceTurno].nome;
@@ -40,108 +40,108 @@ class GameRoom {
   initializeGameData() {
     // Continents definition
     this.continentes = {
-      'Thaloria': {
-        nome: 'Thaloria',
-        bonus: 5,
-        territorios: ['Redwyn', 'Stormfen', 'Cragstone', 'Hollowspire', 'Westreach', 'Barrowfell', 'Highmoor', 'Frosthollow']
-      },
-      'Zarandis': {
-        nome: 'Zarandis',
-        bonus: 3,
-        territorios: ['Stonevale', 'Emberlyn', 'Duskwatch', 'Ravenspire', 'Stormhall']
-      },
-      'Elyndra': {
-        nome: 'Elyndra',
-        bonus: 5,
-        territorios: ['Frosthelm', 'Eldoria', 'Ironreach', 'Greymoor', 'Blackmere', 'Duskmere', 'Thalengarde']
-      },
-      'Kharune': {
-        nome: 'Kharune',
-        bonus: 4,
-        territorios: ['Zul\'Marak', 'Emberwaste', 'Sunjara', 'Tharkuun', 'Bareshi', 'Oru\'Kai']
-      },
-      'Xanthera': {
-        nome: 'Xanthera',
-        bonus: 7,
-        territorios: ['Nihadara', 'Shōrenji', 'Kaer\'Tai', 'Xin\'Qari', 'Vol\'Zareth', 'Sa\'Torran', 'Omradan', 'Mei\'Zhara', 'Qumaran', 'Darakai', 'Ish\'Tanor', 'Tzun\'Rakai']
-      },
-      'Mythara': {
-        nome: 'Mythara',
-        bonus: 2,
-        territorios: ['Mistveil', 'Dawnwatch', 'Aetheris', 'Winterholde']
-      }
-    };
-    
+  'Thaloria': {
+    nome: 'Thaloria',
+    bonus: 5,
+    territorios: ['Redwyn', 'Stormfen', 'Cragstone', 'Hollowspire', 'Westreach', 'Barrowfell', 'Highmoor', 'Frosthollow']
+  },
+  'Zarandis': {
+    nome: 'Zarandis',
+    bonus: 3,
+    territorios: ['Stonevale', 'Emberlyn', 'Duskwatch', 'Ravenspire', 'Stormhall']
+  },
+  'Elyndra': {
+    nome: 'Elyndra',
+    bonus: 5,
+    territorios: ['Frosthelm', 'Eldoria', 'Ironreach', 'Greymoor', 'Blackmere', 'Duskmere', 'Thalengarde']
+  },
+  'Kharune': {
+    nome: 'Kharune',
+    bonus: 4,
+    territorios: ['Zul\'Marak', 'Emberwaste', 'Sunjara', 'Tharkuun', 'Bareshi', 'Oru\'Kai']
+  },
+  'Xanthera': {
+    nome: 'Xanthera',
+    bonus: 7,
+    territorios: ['Nihadara', 'Shōrenji', 'Kaer\'Tai', 'Xin\'Qari', 'Vol\'Zareth', 'Sa\'Torran', 'Omradan', 'Mei\'Zhara', 'Qumaran', 'Darakai', 'Ish\'Tanor', 'Tzun\'Rakai']
+  },
+  'Mythara': {
+    nome: 'Mythara',
+    bonus: 2,
+    territorios: ['Mistveil', 'Dawnwatch', 'Aetheris', 'Winterholde']
+  }
+};
+
     // Countries definition
     this.paises = [
-      { nome: 'Emberlyn', x: 402, y: 396, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
-      { nome: 'Ravenspire', x: 463, y: 450, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
-      { nome: 'Stonevale', x: 356, y: 404, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
-      { nome: 'Duskwatch', x: 293, y: 454, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
-      { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
-      { nome: 'Redwyn', x: 111, y: 194, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
-      { nome: 'Stormfen', x: 111, y: 194, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
-      { nome: 'Highmoor', x: 305, y: 165, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
-      { nome: 'Cragstone', x: 127, y: 264, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
-      { nome: 'Hollowspire', x: 253, y: 222, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
-      { nome: 'Westreach', x: 160, y: 340, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
-      { nome: 'Barrowfell', x: 161, y: 343, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
-      { nome: 'Zul\'Marak', x: 527, y: 367, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
-      { nome: 'Emberwaste', x: 663, y: 354, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
-      { nome: 'Sunjara', x: 783, y: 341, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
-      { nome: 'Tharkuun', x: 625, y: 466, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
-      { nome: 'Bareshi', x: 706, y: 456, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
-      { nome: 'Oru\'Kai', x: 809, y: 494, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
-      { nome: 'Frosthollow', x: 310, y: 112, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
-      { nome: 'Eldoria', x: 508, y: 130, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
-      { nome: 'Greymoor', x: 525, y: 193, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
-      { nome: 'Thalengarde', x: 487, y: 262, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
-      { nome: 'Duskmere', x: 555, y: 246, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
-      { nome: 'Ironreach', x: 533, y: 163, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
-      { nome: 'Frosthelm', x: 630, y: 113, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
-      { nome: 'Blackmere', x: 592, y: 145, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
-      { nome: 'Kaer\'Tai', x: 711, y: 237, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
-      { nome: 'Shōrenji', x: 823, y: 269, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
-      { nome: 'Nihadara', x: 715, y: 135, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
-      { nome: 'Xin\'Qari', x: 826, y: 117, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
-      { nome: 'Vol\'Zareth', x: 1048, y: 124, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
-      { nome: 'Omradan', x: 1050, y: 124, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
-      { nome: 'Sa\'Torran', x: 897, y: 218, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
-      { nome: 'Qumaran', x: 1060, y: 247, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
-      { nome: 'Tzun\'Rakai', x: 1122, y: 274, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
-      { nome: 'Mei\'Zhara', x: 866, y: 220, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
-      { nome: 'Darakai', x: 961, y: 352, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
-      { nome: 'Ish\'Tanor', x: 963, y: 349, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
-      { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
-      { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
-      { nome: 'Dawnwatch', x: 1113, y: 475, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
-      { nome: 'Mistveil', x: 1078, y: 511, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
-    ];
-    
+  { nome: 'Emberlyn', x: 402, y: 396, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
+  { nome: 'Ravenspire', x: 463, y: 450, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
+  { nome: 'Stonevale', x: 356, y: 404, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
+  { nome: 'Duskwatch', x: 293, y: 454, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
+  { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
+  { nome: 'Redwyn', x: 111, y: 194, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
+  { nome: 'Stormfen', x: 111, y: 194, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
+  { nome: 'Highmoor', x: 305, y: 165, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
+  { nome: 'Cragstone', x: 127, y: 264, dono: 'Verde', tropas: 5, vizinhos: ['Stormfen', 'Highmoor','Hollowspire'] },
+  { nome: 'Hollowspire', x: 253, y: 222, dono: 'Preto', tropas: 5, vizinhos: ['Cragstone', 'Westreach'] },
+  { nome: 'Westreach', x: 160, y: 340, dono: 'Roxo', tropas: 5, vizinhos: ['Hollowspire', 'Barrowfell','Highmoor'] },
+  { nome: 'Barrowfell', x: 161, y: 343, dono: 'Azul', tropas: 5, vizinhos: ['Hollowspire', 'Westreach','Stonevale'] },
+  { nome: 'Zul\'Marak', x: 527, y: 367, dono: 'Azul', tropas: 5, vizinhos: ['Emberwaste', 'Ravenspire', 'Duskmere','Thalengarde'] },
+  { nome: 'Emberwaste', x: 663, y: 354, dono: 'Vermelho', tropas: 5, vizinhos: ['Zul\'Marak', 'Sunjara', 'Tharkuun','Duskmere','Kaer\'Tai'] },
+  { nome: 'Sunjara', x: 783, y: 341, dono: 'Verde', tropas: 5, vizinhos: ['Emberwaste', 'Bareshi', 'Oru\'Kai', 'Kaer\'Tai','Tharkuun'] },
+  { nome: 'Tharkuun', x: 625, y: 466, dono: 'Amarelo', tropas: 5, vizinhos: ['Sunjara', 'Emberwaste', 'Bareshi'] },
+  { nome: 'Bareshi', x: 706, y: 456, dono: 'Preto', tropas: 5, vizinhos: ['Sunjara', 'Tharkuun', 'Oru\'Kai'] },
+  { nome: 'Oru\'Kai', x: 809, y: 494, dono: 'Roxo', tropas: 5, vizinhos: ['Sunjara', 'Bareshi'] },
+  { nome: 'Frosthollow', x: 310, y: 112, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Stormfen','Highmoor'] },
+  { nome: 'Eldoria', x: 508, y: 130, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthollow', 'Greymoor', 'Ironreach','Frosthelm'] },
+  { nome: 'Greymoor', x: 525, y: 193, dono: 'Verde', tropas: 5, vizinhos: ['Eldoria', 'Thalengarde', 'Duskmere','Ironreach'] },
+  { nome: 'Thalengarde', x: 487, y: 262, dono: 'Amarelo', tropas: 5, vizinhos: ['Greymoor', 'Duskmere', 'Zul\'Marak'] },
+  { nome: 'Duskmere', x: 555, y: 246, dono: 'Preto', tropas: 5, vizinhos: ['Greymoor', 'Thalengarde', 'Ironreach', 'Blackmere', 'Zul\'Marak','Emberwaste','Kaer\'Tai','Shōrenji'] },
+  { nome: 'Ironreach', x: 533, y: 163, dono: 'Roxo', tropas: 5, vizinhos: ['Eldoria', 'Blackmere', 'Duskmere', 'Frosthelm','Greymoor'] },
+  { nome: 'Frosthelm', x: 630, y: 113, dono: 'Azul', tropas: 5, vizinhos: ['Eldoria', 'Ironreach', 'Blackmere'] },
+  { nome: 'Blackmere', x: 592, y: 145, dono: 'Vermelho', tropas: 5, vizinhos: ['Frosthelm', 'Duskmere','Ironreach','Nihadara','Shōrenji'] },
+  { nome: 'Kaer\'Tai', x: 711, y: 237, dono: 'Azul', tropas: 5, vizinhos: ['Shōrenji', 'Duksmere', 'Sunjara','Emberwaste','Qumaran','Darakai'] },
+  { nome: 'Shōrenji', x: 823, y: 269, dono: 'Vermelho', tropas: 5, vizinhos: ['Kaer\'Tai', 'Nihadara', 'Xin\'Qari','Qumaran','Duskmere','Blackmere'] },
+  { nome: 'Nihadara', x: 715, y: 135, dono: 'Verde', tropas: 5, vizinhos: ['Blackmere', 'Shōrenji', 'Xin\'Qari'] },
+  { nome: 'Xin\'Qari', x: 826, y: 117, dono: 'Amarelo', tropas: 5, vizinhos: ['Shōrenji', 'Nihadara', 'Vol\'Zareth', 'Sa\'Torran','Mei\'Zhara'] },
+  { nome: 'Vol\'Zareth', x: 1048, y: 124, dono: 'Preto', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan','Sa\'Torran'] },
+  { nome: 'Omradan', x: 1050, y: 124, dono: 'Roxo', tropas: 5, vizinhos: ['Vol\'Zareth', 'Sa\'Torran', 'Qumaran','Tzun\'Rakai'] },
+  { nome: 'Sa\'Torran', x: 897, y: 218, dono: 'Azul', tropas: 5, vizinhos: ['Xin\'Qari', 'Omradan', 'Qumaran', 'Mei\'Zhara','Vol\'Zareth'] },
+  { nome: 'Qumaran', x: 1060, y: 247, dono: 'Vermelho', tropas: 5, vizinhos: ['Omradan', 'Sa\'Torran', 'Tzun\'Rakai', 'Darakai', 'Shōrenji','Kaer\'Tai','Ish\'Tanor'] },
+  { nome: 'Tzun\'Rakai', x: 1122, y: 274, dono: 'Verde', tropas: 5, vizinhos: ['Qumaran', 'Omradan'] },
+  { nome: 'Mei\'Zhara', x: 866, y: 220, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
+  { nome: 'Darakai', x: 961, y: 352, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
+  { nome: 'Ish\'Tanor', x: 963, y: 349, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
+  { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
+  { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
+  { nome: 'Dawnwatch', x: 1113, y: 475, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
+  { nome: 'Mistveil', x: 1078, y: 511, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
+];
+
     // Game state variables
     this.tropasReforco = 0;
     this.tropasBonusContinente = {}; // Track bonus troops by continent
     this.faseRemanejamento = false; // Controla se está na fase de remanejamento
-    
-    // Sistema de objetivos
+
+// Sistema de objetivos
     this.objetivos = {}; // { jogador: objetivo }
-    
-    // Sistema de controle de movimentação de tropas durante remanejamento
+
+// Sistema de controle de movimentação de tropas durante remanejamento
     this.movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
-    
-    // Sistema de cartas território
+
+// Sistema de cartas território
     this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
     this.cartasTerritorio = {}; // { jogador: [cartas] }
     this.simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
     this.numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
-    
-    // Tipos de objetivos
+
+// Tipos de objetivos
     this.tiposObjetivos = [
-      'conquistar3Continentes',
-      'eliminarJogador', 
-      'dominar24Territorios',
-      'dominar16TerritoriosCom2Tropas'
-    ];
+  'conquistar3Continentes',
+  'eliminarJogador', 
+  'dominar24Territorios',
+  'dominar16TerritoriosCom2Tropas'
+];
   }
 }
 
@@ -180,11 +180,16 @@ function startGlobalLobby() {
     globalLobby.timeLeft--;
     
     // Send update to all players in global lobby
-    io.emit('globalLobbyUpdate', {
-      players: globalLobby.players,
-      timeLeft: globalLobby.timeLeft,
-      connectedPlayers: globalLobby.players.length,
-      totalPlayers: 6
+    globalLobby.players.forEach(player => {
+      const socket = io.sockets.sockets.get(player.socketId);
+      if (socket) {
+        socket.emit('globalLobbyUpdate', {
+          players: globalLobby.players,
+          timeLeft: globalLobby.timeLeft,
+          connectedPlayers: globalLobby.players.length,
+          totalPlayers: 6
+        });
+      }
     });
     
     // Check if timer expired
@@ -193,54 +198,77 @@ function startGlobalLobby() {
       createRoomFromGlobalLobby();
       return;
     }
+    
+    // Debug log every 5 seconds
+    if (globalLobby.timeLeft % 5 === 0) {
+      console.log(`⏰ Lobby global: ${globalLobby.timeLeft}s restantes, ${globalLobby.players.length} jogadores`);
+    }
   }, 1000);
 }
 
 function createRoomFromGlobalLobby() {
+  console.log('🔧 DEBUG: createRoomFromGlobalLobby() iniciada');
+  
   if (globalLobby.timer) {
     clearInterval(globalLobby.timer);
     globalLobby.timer = null;
+    console.log('🔧 DEBUG: Timer do lobby global limpo');
   }
   
   globalLobby.active = false;
+  console.log('🔧 DEBUG: Lobby global desativado');
   
   // Create a new room
   const roomId = nextRoomId.toString();
   nextRoomId++;
+  console.log(`🔧 DEBUG: Criando sala com ID: ${roomId}`);
   
   const room = getOrCreateRoom(roomId);
+  console.log(`🔧 DEBUG: Sala ${roomId} obtida/criada`);
   
   // Assign players to the room
+  console.log(`🔧 DEBUG: Atribuindo ${globalLobby.players.length} jogadores à sala`);
   globalLobby.players.forEach((player, index) => {
     if (index < 6) { // Maximum 6 players
       const jogador = room.jogadores[index];
       jogador.socketId = player.socketId;
       jogador.isCPU = false;
       
+      console.log(`🔧 DEBUG: Jogador ${player.username} atribuído a ${jogador.nome} (socket: ${player.socketId})`);
+      
       // Join the player to the room
       const socket = io.sockets.sockets.get(player.socketId);
       if (socket) {
         socket.join(roomId);
+        console.log(`🔧 DEBUG: Socket ${player.socketId} entrou na sala ${roomId}`);
+      } else {
+        console.log(`🔧 DEBUG: ERRO - Socket ${player.socketId} não encontrado!`);
       }
     }
   });
   
   // Fill remaining slots with CPUs
+  const cpuSlots = 6 - globalLobby.players.length;
+  console.log(`🔧 DEBUG: Preenchendo ${cpuSlots} slots com CPUs`);
   for (let i = globalLobby.players.length; i < 6; i++) {
     room.jogadores[i].isCPU = true;
     room.jogadores[i].socketId = null;
+    console.log(`🔧 DEBUG: CPU ativada para ${room.jogadores[i].nome}`);
   }
   
   console.log(`🎮 Sala ${roomId} criada com ${globalLobby.players.length} jogadores reais e ${6 - globalLobby.players.length} CPUs`);
   
   // Notify all players that game is starting
+  console.log(`🔧 DEBUG: Emitindo gameStarting para sala ${roomId}`);
   io.to(roomId).emit('gameStarting', { roomId: roomId });
   
   // Start the game
+  console.log(`🔧 DEBUG: Chamando startGame(${roomId})`);
   startGame(roomId);
   
   // Clear global lobby
   globalLobby.players = [];
+  console.log('🔧 DEBUG: Lobby global limpo');
 }
 
 function addPlayerToGlobalLobby(socketId, username) {
@@ -261,12 +289,17 @@ function addPlayerToGlobalLobby(socketId, username) {
     startGlobalLobby();
   }
   
-  // Send update to all players
-  io.emit('globalLobbyUpdate', {
-    players: globalLobby.players,
-    timeLeft: globalLobby.timeLeft,
-    connectedPlayers: globalLobby.players.length,
-    totalPlayers: 6
+  // Send update to all players in global lobby
+  globalLobby.players.forEach(player => {
+    const socket = io.sockets.sockets.get(player.socketId);
+    if (socket) {
+      socket.emit('globalLobbyUpdate', {
+        players: globalLobby.players,
+        timeLeft: globalLobby.timeLeft,
+        connectedPlayers: globalLobby.players.length,
+        totalPlayers: 6
+      });
+    }
   });
 }
 
@@ -277,12 +310,17 @@ function removePlayerFromGlobalLobby(socketId) {
     console.log(`👤 ${player.username} removido do lobby global`);
     globalLobby.players.splice(index, 1);
     
-    // Send update to all players
-    io.emit('globalLobbyUpdate', {
-      players: globalLobby.players,
-      timeLeft: globalLobby.timeLeft,
-      connectedPlayers: globalLobby.players.length,
-      totalPlayers: 6
+    // Send update to all players in global lobby
+    globalLobby.players.forEach(player => {
+      const socket = io.sockets.sockets.get(player.socketId);
+      if (socket) {
+        socket.emit('globalLobbyUpdate', {
+          players: globalLobby.players,
+          timeLeft: globalLobby.timeLeft,
+          connectedPlayers: globalLobby.players.length,
+          totalPlayers: 6
+        });
+      }
     });
   }
 }
@@ -294,6 +332,11 @@ function removePlayerFromGlobalLobby(socketId) {
 
 
 app.use(express.static('public')); // coloque seu index.html e assets na pasta public
+
+// Handle favicon.ico requests to prevent 404 errors
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content - prevents 404 error
+});
 
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado');
@@ -359,7 +402,7 @@ io.on('connection', (socket) => {
     
     if (!territorioAtacante || !territorioConquistado) return;
     if (territorioAtacante.dono !== playerRoom.turno || territorioConquistado.dono !== playerRoom.turno) return;
-    if (dados.quantidade < 1 || dados.quantidade > 3) return; // Mínimo 1 (automática), máximo 3 (1 automática + 2 adicionais)
+            if (dados.quantidade < 1 || dados.quantidade > 3) return; // Mínimo 1 (automática), máximo 3 (1 automática + 2 adicionais)
     if (territorioAtacante.tropas - (dados.quantidade - 1) < 1) return; // Garantir pelo menos 1 tropa no atacante (descontando a automática)
 
     // Transferir tropas (1 já foi automaticamente transferida)
@@ -653,7 +696,7 @@ io.on('connection', (socket) => {
 
     });
 
-    socket.on('passarTurno', () => {
+  socket.on('passarTurno', () => {
     // Find which room this socket belongs to
     let playerRoom = null;
     for (const [roomId, room] of gameRooms) {
@@ -1221,13 +1264,21 @@ io.on('connection', (socket) => {
 });
 
 function getEstado(socketId = null, room = null) {
+  console.log(`🔧 DEBUG: getEstado(socketId: ${socketId}, room: ${room ? room.roomId : 'null'})`);
+  
   let meuNome = null;
   if (socketId && room) {
     const jogador = room.jogadores.find(j => j.socketId === socketId);
-    if (jogador) meuNome = jogador.nome;
+    if (jogador) {
+      meuNome = jogador.nome;
+      console.log(`🔧 DEBUG: Jogador encontrado para socket ${socketId}: ${meuNome}`);
+    } else {
+      console.log(`🔧 DEBUG: Jogador não encontrado para socket ${socketId}`);
+    }
   }
 
   // Calcular controle dos continentes por jogador
+  console.log(`🔧 DEBUG: Calculando controle dos continentes`);
   const controleContinentes = {};
   Object.values(room.continentes).forEach(continente => {
     const territoriosDoContinente = continente.territorios;
@@ -1255,7 +1306,7 @@ function getEstado(socketId = null, room = null) {
   // Calcular continente com prioridade para reforço
   const continentePrioritario = calcularContinentePrioritario(room);
 
-  return {
+  const estado = {
     jogadores: room.jogadores,
     turno: room.turno,
     paises: room.paises,
@@ -1270,6 +1321,18 @@ function getEstado(socketId = null, room = null) {
     faseRemanejamento: room.faseRemanejamento,
     cartasTerritorio: room.cartasTerritorio
   };
+  
+  console.log(`🔧 DEBUG: Estado gerado:`, {
+    meuNome: estado.meuNome,
+    turno: estado.turno,
+    paisesCount: estado.paises ? estado.paises.length : 0,
+    jogadoresCount: estado.jogadores ? estado.jogadores.length : 0,
+    tropasReforco: estado.tropasReforco,
+    vitoria: estado.vitoria,
+    derrota: estado.derrota
+  });
+  
+  return estado;
 }
 
 function rolarDado() {
@@ -1354,9 +1417,9 @@ function checarEliminacao(room) {
       }
       room.jogadores.forEach(j => {
         if (j.nome === jogador.nome && j.socketId) {
-          io.to(j.socketId).emit('derrota');
+            io.to(j.socketId).emit('derrota');
         }
-      });
+        });
       io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
     }
   });
@@ -1489,9 +1552,11 @@ function checarVitoria(room) {
 
 // Inicializar o jogo
 function inicializarJogo(room) {
+  console.log(`🔧 DEBUG: inicializarJogo(room) iniciada para sala ${room.roomId}`);
   console.log(`🎮 Inicializando jogo na sala ${room.roomId}...`);
   
   // Distribuir territórios aleatoriamente
+  console.log(`🔧 DEBUG: Distribuindo ${room.paises.length} territórios entre ${room.jogadores.length} jogadores`);
   const territoriosDisponiveis = [...room.paises];
   let indiceJogador = 0;
   
@@ -1502,13 +1567,17 @@ function inicializarJogo(room) {
     territorio.tropas = 1;
     indiceJogador = (indiceJogador + 1) % room.jogadores.length;
   }
+  console.log(`🔧 DEBUG: Distribuição de territórios concluída`);
 
   // Colocar tropas extras
+  console.log(`🔧 DEBUG: Ajustando tropas extras`);
   room.paises.forEach(pais => {
     pais.tropas += 0; // Changed from 2 to 0 to start with 1 troop
   });
+  console.log(`🔧 DEBUG: Tropas extras ajustadas`);
 
   // Gerar objetivos para cada jogador
+  console.log(`🔧 DEBUG: Gerando objetivos para jogadores`);
   room.jogadores.forEach(jogador => {
     room.objetivos[jogador.nome] = gerarObjetivoAleatorio(jogador.nome, room);
     console.log(`🎯 Objetivo de ${jogador.nome}: ${room.objetivos[jogador.nome].descricao}`);
@@ -1518,20 +1587,36 @@ function inicializarJogo(room) {
   room.turno = room.jogadores[room.indiceTurno].nome;
   room.vitoria = false;
   room.derrota = false;
+  console.log(`🔧 DEBUG: Estado inicial definido - turno: ${room.turno}, indiceTurno: ${room.indiceTurno}`);
   
   // Limpar cartas território e territórios conquistados
   room.cartasTerritorio = {};
   room.territoriosConquistadosNoTurno = {};
   room.numeroTrocasRealizadas = 0; // Resetar contador de trocas
+  console.log(`🔧 DEBUG: Cartas e territórios conquistados limpos`);
   
   console.log(`🎮 Jogo inicializado na sala ${room.roomId} - turno: ${room.turno}`);
   
+  console.log(`🔧 DEBUG: Calculando reforços para ${room.turno}`);
   const resultadoReforco = calcularReforco(room.turno, room);
   room.tropasReforco = resultadoReforco.base;
   room.tropasBonusContinente = resultadoReforco.bonus;
+  console.log(`🔧 DEBUG: Reforços calculados - base: ${room.tropasReforco}, bonus:`, room.tropasBonusContinente);
 
+  console.log(`🔧 DEBUG: Enviando mensagem de início para sala ${room.roomId}`);
   io.to(room.roomId).emit('mostrarMensagem', `🎮 Jogo iniciado! Turno de ${room.turno}. Reforços: ${room.tropasReforco} base + ${Object.values(room.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
-  io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+  
+  console.log(`🔧 DEBUG: Enviando estadoAtualizado para sala ${room.roomId}`);
+  const estadoGlobal = getEstado(null, room);
+  console.log(`🔧 DEBUG: Estado global gerado:`, {
+    turno: estadoGlobal.turno,
+    paisesCount: estadoGlobal.paises ? estadoGlobal.paises.length : 0,
+    jogadoresCount: estadoGlobal.jogadores ? estadoGlobal.jogadores.length : 0,
+    tropasReforco: estadoGlobal.tropasReforco
+  });
+  io.to(room.roomId).emit('estadoAtualizado', estadoGlobal);
+  
+  console.log(`🔧 DEBUG: inicializarJogo(room) concluída`);
 }
 
 // ===== SISTEMA DE CPU =====
@@ -2573,35 +2658,57 @@ function sendLobbyUpdate(roomId) {
 }
 
 function startGame(roomId) {
+  console.log(`🔧 DEBUG: startGame(${roomId}) iniciada`);
+  
   const room = gameRooms.get(roomId);
-  if (!room) return;
+  if (!room) {
+    console.log(`🔧 DEBUG: ERRO - Sala ${roomId} não encontrada!`);
+    return;
+  }
   
   console.log(`🎮 Iniciando jogo com jogadores reais na sala ${roomId}...`);
   room.gameStarted = true;
   room.lobbyActive = false;
+  console.log(`🔧 DEBUG: Estado da sala atualizado - gameStarted: ${room.gameStarted}, lobbyActive: ${room.lobbyActive}`);
   
   if (room.lobbyTimer) {
     clearInterval(room.lobbyTimer);
     room.lobbyTimer = null;
+    console.log(`🔧 DEBUG: Timer do lobby da sala ${roomId} limpo`);
   }
   
   // Initialize the game
+  console.log(`🔧 DEBUG: Chamando inicializarJogo(room)`);
   inicializarJogo(room);
+  console.log(`🔧 DEBUG: inicializarJogo(room) concluída`);
   
   // Notify all clients that game is starting
-  io.to(roomId).emit('gameStarting');
+  console.log(`🔧 DEBUG: Enviando mensagem de início para sala ${roomId}`);
   io.to(roomId).emit('mostrarMensagem', '🎮 Jogo iniciado! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
   
   // Send initial state to all clients in the room
+  console.log(`🔧 DEBUG: Enviando estado inicial para todos os clientes na sala ${roomId}`);
+  let clientesEncontrados = 0;
   io.sockets.sockets.forEach((s) => {
     if (s.rooms.has(roomId)) {
-      s.emit('estadoAtualizado', getEstado(s.id, room));
+      console.log(`🔧 DEBUG: Enviando estadoAtualizado para socket ${s.id}`);
+      const estado = getEstado(s.id, room);
+      console.log(`🔧 DEBUG: Estado gerado para socket ${s.id}:`, {
+        meuNome: estado.meuNome,
+        turno: estado.turno,
+        paisesCount: estado.paises ? estado.paises.length : 0,
+        jogadoresCount: estado.jogadores ? estado.jogadores.length : 0
+      });
+      s.emit('estadoAtualizado', estado);
+      clientesEncontrados++;
     }
   });
+  console.log(`🔧 DEBUG: ${clientesEncontrados} clientes receberam estadoAtualizado`);
   
   // Verificar se é turno de CPU no início do jogo
   console.log(`🎮 Verificando turno inicial na sala ${roomId}...`);
   verificarTurnoCPU(room);
+  console.log(`🔧 DEBUG: startGame(${roomId}) concluída`);
 }
 
 function startGameWithCPUs(roomId) {
@@ -2624,7 +2731,6 @@ function startGameWithCPUs(roomId) {
   inicializarJogo(room);
   
   // Notify all clients that game is starting
-  io.to(roomId).emit('gameStarting');
   io.to(roomId).emit('mostrarMensagem', '🎮 Jogo iniciado com CPUs! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
   
   // Send initial state to all clients in the room
