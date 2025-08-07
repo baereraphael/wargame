@@ -322,11 +322,11 @@ function initializeGame() {
   });
 
   socket.on('mostrarEfeitoAtaque', (dados) => {
-    mostrarEfeitoAtaque(dados.origem, dados.destino, this, dados.sucesso);
+    mostrarEfeitoAtaque(dados.origem, dados.destino, currentScene, dados.sucesso);
   });
 
   socket.on('mostrarEfeitoReforco', (dados) => {
-    mostrarEfeitoReforco(dados.territorio, dados.jogador, this);
+    mostrarEfeitoReforco(dados.territorio, dados.jogador, currentScene);
   });
 
   socket.on('vitoria', (nomeJogador) => {
@@ -1890,11 +1890,26 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
   const gameState = getGameState();
   if (!gameState) return;
   
+  // Verificar se a scene está pronta
+  if (!scene || !scene.add || !scene.add.circle) {
+    console.log('⏳ Scene não pronta para mostrar efeito de ataque');
+    return;
+  }
+  
   // Encontrar os territórios no mapa
   const territorioOrigem = gameState.paises.find(p => p.nome === origem);
   const territorioDestino = gameState.paises.find(p => p.nome === destino);
   
-  if (!territorioOrigem || !territorioDestino) return;
+  if (!territorioOrigem || !territorioDestino) {
+    console.log('❌ Territórios não encontrados para efeito de ataque');
+    return;
+  }
+  
+  // Verificar se os territórios têm as propriedades necessárias
+  if (!territorioOrigem.text || !territorioDestino.text) {
+    console.log('❌ Territórios não têm propriedades text para efeito de ataque');
+    return;
+  }
   
   // Calcular posições centrais dos territórios
   const origemX = territorioOrigem.text.x;
@@ -2057,9 +2072,24 @@ function mostrarEfeitoReforco(territorio, jogador, scene) {
   const gameState = getGameState();
   if (!gameState) return;
   
+  // Verificar se a scene está pronta
+  if (!scene || !scene.add || !scene.add.circle) {
+    console.log('⏳ Scene não pronta para mostrar efeito de reforço');
+    return;
+  }
+  
   // Encontrar o território no array de países
   const pais = gameState.paises.find(p => p.nome === territorio);
-  if (!pais) return;
+  if (!pais) {
+    console.log('❌ Território não encontrado para efeito de reforço');
+    return;
+  }
+
+  // Verificar se o território tem a propriedade text
+  if (!pais.text) {
+    console.log('❌ Território não tem propriedade text para efeito de reforço');
+    return;
+  }
 
   // Usar as mesmas coordenadas que o efeito de ataque (texto do território)
   const posX = pais.text.x;
