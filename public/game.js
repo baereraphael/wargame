@@ -1266,6 +1266,15 @@ function processarEstadoPendente() {
     desbloquearJogo();
   }
   
+  // Verificar se é o primeiro turno do jogador e mostrar indicação
+  if (gameState.meuNome === gameState.turno && currentScene) {
+    console.log('🎯 Primeiro turno detectado - mostrando indicação de início de turno para:', gameState.meuNome);
+    // Usar setTimeout para garantir que a scene esteja totalmente pronta
+    setTimeout(() => {
+      mostrarIndicacaoInicioTurno(gameState.meuNome, currentScene);
+    }, 500);
+  }
+  
   // Limpar estado pendente
   pendingGameState = null;
   console.log('✅ Estado pendente processado com sucesso!');
@@ -2134,8 +2143,16 @@ function atualizarPaises(novosPaises, scene) {
       }
     }
     
-    // Aplicar cor e borda baseada na prioridade
-    if (pertenceAoContinentePrioritario) {
+    // Verificar se a indicação de início de turno está ativa
+    const indicacaoAtiva = window.indicacaoInicioTurno && window.indicacaoInicioTurno.container;
+    const pertenceAoJogadorAtual = gameState.paises[i].dono === gameState.meuNome && gameState.meuNome === gameState.turno;
+    
+    // Aplicar cor e borda baseada na prioridade e indicação de turno
+    if (indicacaoAtiva && pertenceAoJogadorAtual) {
+      // Manter borda branca da indicação de início de turno
+      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+      gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca da indicação de turno
+    } else if (pertenceAoContinentePrioritario) {
       gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
       gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
       
@@ -3062,40 +3079,58 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   botoesContainer.setDepth(2);
   interfaceReforco.add(botoesContainer);
   
+  // Detectar se é dispositivo móvel
+  const isMobile = window.innerWidth <= 768;
+  const buttonWidth = isMobile ? 140 : 120;
+  const buttonHeight = isMobile ? 45 : 35;
+  const buttonFontSize = isMobile ? '16px' : '12px';
+  
   // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(-70, 0, 120, 35, 0x33cc33, 0.9);
+  const botaoConfirmarBg = scene.add.rectangle(-70, 0, buttonWidth, buttonHeight, 0x33cc33, 0.9);
   botaoConfirmarBg.setStrokeStyle(2, 0x2a9e2a);
+  botaoConfirmarBg.setInteractive({ useHandCursor: true });
   botoesContainer.add(botaoConfirmarBg);
   
   const botaoConfirmar = scene.add.text(-70, 0, '✅ CONFIRMAR', {
-    fontSize: '12px',
+    fontSize: buttonFontSize,
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  botaoConfirmar.on('pointerdown', (pointer) => {
+  
+  // Função para confirmar reforço
+  const confirmarAcao = () => {
     tocarSomClick();
     confirmarReforco();
-  });
+  };
+  
+  botaoConfirmarBg.on('pointerdown', confirmarAcao);
+  botaoConfirmar.on('pointerdown', confirmarAcao);
   botoesContainer.add(botaoConfirmar);
   
   // Botão cancelar
-  const botaoCancelarBg = scene.add.rectangle(70, 0, 120, 35, 0x666666, 0.9);
+  const botaoCancelarBg = scene.add.rectangle(70, 0, buttonWidth, buttonHeight, 0x666666, 0.9);
   botaoCancelarBg.setStrokeStyle(2, 0x444444);
+  botaoCancelarBg.setInteractive({ useHandCursor: true });
   botoesContainer.add(botaoCancelarBg);
   
   const botaoCancelar = scene.add.text(70, 0, '❌ CANCELAR', {
-    fontSize: '12px',
+    fontSize: buttonFontSize,
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  botaoCancelar.on('pointerdown', (pointer) => {
+  
+  // Função para cancelar reforço
+  const cancelarAcao = () => {
     tocarSomClick();
     esconderInterfaceReforco();
-  });
+  };
+  
+  botaoCancelarBg.on('pointerdown', cancelarAcao);
+  botaoCancelar.on('pointerdown', cancelarAcao);
   botoesContainer.add(botaoCancelar);
   
   // Função para atualizar o texto da quantidade
@@ -3336,24 +3371,36 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   botoesContainer.setDepth(2);
   interfaceTransferenciaConquista.add(botoesContainer);
   
+  // Detectar se é dispositivo móvel
+  const isMobile = window.innerWidth <= 768;
+  const buttonWidth = isMobile ? 160 : 140;
+  const buttonHeight = isMobile ? 50 : 40;
+  const buttonFontSize = isMobile ? '18px' : '14px';
+  
   // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(0, 0, 140, 40, 0xcc6633, 0.9);
+  const botaoConfirmarBg = scene.add.rectangle(0, 0, buttonWidth, buttonHeight, 0xcc6633, 0.9);
   botaoConfirmarBg.setStrokeStyle(2, 0xa55229);
+  botaoConfirmarBg.setInteractive({ useHandCursor: true });
   botoesContainer.add(botaoConfirmarBg);
   
   const botaoConfirmar = scene.add.text(0, 0, '✅ CONFIRMAR', {
-    fontSize: '14px',
+    fontSize: buttonFontSize,
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  botaoConfirmar.on('pointerdown', (pointer) => {
+  
+  // Função para confirmar transferência
+  const confirmarTransferenciaAcao = () => {
     tocarSomClick();
     setTimeout(() => {
       confirmarTransferenciaConquista();
     }, 10);
-  });
+  };
+  
+  botaoConfirmarBg.on('pointerdown', confirmarTransferenciaAcao);
+  botaoConfirmar.on('pointerdown', confirmarTransferenciaAcao);
   botoesContainer.add(botaoConfirmar);
   
 
@@ -3568,19 +3615,28 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   botoesContainer.setDepth(2);
   interfaceRemanejamento.add(botoesContainer);
   
+  // Detectar se é dispositivo móvel
+  const isMobile = window.innerWidth <= 768;
+  const buttonWidth = isMobile ? 160 : 140;
+  const buttonHeight = isMobile ? 50 : 40;
+  const buttonFontSize = isMobile ? '18px' : '14px';
+  
   // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(-80, 0, 140, 40, 0x0077cc, 0.9);
+  const botaoConfirmarBg = scene.add.rectangle(-80, 0, buttonWidth, buttonHeight, 0x0077cc, 0.9);
   botaoConfirmarBg.setStrokeStyle(2, 0x005fa3);
+  botaoConfirmarBg.setInteractive({ useHandCursor: true });
   botoesContainer.add(botaoConfirmarBg);
   
   const botaoConfirmar = scene.add.text(-80, 0, '✅ CONFIRMAR', {
-    fontSize: '14px',
+    fontSize: buttonFontSize,
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  botaoConfirmar.on('pointerdown', (pointer) => {
+  
+  // Função para confirmar remanejamento
+  const confirmarRemanejamentoAcao = () => {
     tocarSomClick();
     console.log('🔧 DEBUG: Confirmando movimento de remanejamento');
     emitWithRoom('moverTropas', {
@@ -3592,29 +3648,38 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
     interfaceRemanejamento.destroy();
     interfaceRemanejamento = null;
     console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
-  });
+  };
+  
+  botaoConfirmarBg.on('pointerdown', confirmarRemanejamentoAcao);
+  botaoConfirmar.on('pointerdown', confirmarRemanejamentoAcao);
   botoesContainer.add(botaoConfirmar);
   
   // Botão cancelar
-  const botaoCancelarBg = scene.add.rectangle(80, 0, 140, 40, 0x666666, 0.9);
+  const botaoCancelarBg = scene.add.rectangle(80, 0, buttonWidth, buttonHeight, 0x666666, 0.9);
   botaoCancelarBg.setStrokeStyle(2, 0x444444);
+  botaoCancelarBg.setInteractive({ useHandCursor: true });
   botoesContainer.add(botaoCancelarBg);
   
   const botaoCancelar = scene.add.text(80, 0, '❌ CANCELAR', {
-    fontSize: '14px',
+    fontSize: buttonFontSize,
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  botaoCancelar.on('pointerdown', (pointer) => {
+  
+  // Função para cancelar remanejamento
+  const cancelarRemanejamentoAcao = () => {
     tocarSomClick();
     console.log('🔧 DEBUG: Cancelando movimento de remanejamento');
     limparSelecao();
     interfaceRemanejamento.destroy();
     interfaceRemanejamento = null;
     console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
-  });
+  };
+  
+  botaoCancelarBg.on('pointerdown', cancelarRemanejamentoAcao);
+  botaoCancelar.on('pointerdown', cancelarRemanejamentoAcao);
   botoesContainer.add(botaoCancelar);
   
   // Função para atualizar o texto da quantidade

@@ -1592,6 +1592,127 @@
       font-size: 14px;
     }
   }
+
+  /* Mobile Responsive Styles for HUD */
+  @media (max-width: 768px) {
+    /* Top HUD Bar - Mobile */
+    .hud-top {
+      height: 45px;
+      padding: 0 10px;
+    }
+
+    /* Player Info - Mobile */
+    .player-info {
+      gap: 8px;
+    }
+
+    .player-avatar {
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      border: 1px solid #fff;
+    }
+
+    .player-name {
+      font-size: 13px;
+    }
+
+    .player-stats {
+      font-size: 10px;
+    }
+
+    /* Action Buttons - Mobile */
+    .action-buttons {
+      gap: 6px;
+    }
+
+    .hud-button {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      gap: 3px;
+    }
+
+    .hud-button span:first-child {
+      font-size: 12px;
+    }
+
+    /* Timer Display - Mobile */
+    .timer-display {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    /* Game Info - Mobile */
+    .game-info {
+      gap: 12px;
+    }
+
+    .info-item {
+      font-size: 10px;
+      gap: 4px;
+    }
+
+    .info-icon {
+      font-size: 12px;
+    }
+  }
+
+  /* Extra Small Mobile Devices */
+  @media (max-width: 480px) {
+    .hud-top {
+      height: 40px;
+      padding: 0 8px;
+    }
+
+    .player-avatar {
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+    }
+
+    .player-name {
+      font-size: 11px;
+    }
+
+    .player-stats {
+      font-size: 9px;
+    }
+
+    .hud-button {
+      padding: 3px 6px;
+      font-size: 10px;
+    }
+
+    .hud-button span:first-child {
+      font-size: 11px;
+    }
+
+    .timer-display {
+      font-size: 12px;
+    }
+  }
+
+  /* Mobile Touch Targets for Game Interfaces */
+  @media (max-width: 768px) {
+    /* Increase touch targets for mobile devices */
+    .game-interface-button {
+      min-height: 44px;
+      min-width: 44px;
+      font-size: 16px;
+      padding: 8px 12px;
+    }
+  }
+
+  /* Extra Small Mobile Touch Targets */
+  @media (max-width: 480px) {
+    .game-interface-button {
+      min-height: 48px;
+      min-width: 48px;
+      font-size: 18px;
+      padding: 10px 14px;
+    }
+  }
 </style>
 </head>
 <body>
