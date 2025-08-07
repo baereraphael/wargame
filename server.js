@@ -681,9 +681,17 @@ io.on('connection', (socket) => {
         if (rolagemAtaque[i] > rolagemDefesa[i]) {
         defensorPais.tropas--;
         resultadoMensagem += `Defesa perdeu 1 tropa.\n`;
+        // Emitir efeito de explosão para tropas perdidas na defesa
+        io.to(playerRoom.roomId).emit('mostrarEfeitoExplosaoTropas', {
+          territorio: para
+        });
         } else {
         atacantePais.tropas--;
         resultadoMensagem += `Ataque perdeu 1 tropa.\n`;
+        // Emitir efeito de explosão para tropas perdidas no ataque
+        io.to(playerRoom.roomId).emit('mostrarEfeitoExplosaoTropas', {
+          territorio: de
+        });
         }
     }
 
@@ -703,16 +711,24 @@ io.on('connection', (socket) => {
         const tropasAdicionais = Math.min(atacantePais.tropas - 1, 2); // Máximo 2 tropas adicionais, mínimo 1 no atacante
         const tropasDisponiveis = tropasAdicionais + 1; // Incluir a tropa automática no total
         
+        // Sempre emitir evento de território conquistado para efeitos visuais
+        io.to(playerRoom.roomId).emit('territorioConquistado', {
+          territorioConquistado: para,
+          territorioAtacante: de,
+          tropasDisponiveis: tropasDisponiveis, // Total incluindo tropa automática
+          tropasAdicionais: tropasAdicionais, // Apenas tropas adicionais (sem a automática)
+          jogadorAtacante: playerRoom.turno
+        });
+        
+        // Emitir evento para mostrar explosão de conquista
+        io.to(playerRoom.roomId).emit('mostrarEfeitoExplosaoConquista', {
+          territorio: para,
+          jogador: playerRoom.turno
+        });
+        
         // Se há tropas adicionais disponíveis, mostrar interface de escolha
         if (tropasAdicionais > 0) {
-          // Emitir evento para mostrar interface de transferência de tropas
-          io.to(playerRoom.roomId).emit('territorioConquistado', {
-            territorioConquistado: para,
-            territorioAtacante: de,
-            tropasDisponiveis: tropasDisponiveis, // Total incluindo tropa automática
-            tropasAdicionais: tropasAdicionais, // Apenas tropas adicionais (sem a automática)
-            jogadorAtacante: playerRoom.turno
-          });
+          // Interface será mostrada pelo cliente quando receber o evento
         } else {
           // Apenas a tropa automática foi transferida, não há escolha a fazer
           resultadoMensagem += `Apenas a tropa automática foi transferida para ${para}.\n`;
@@ -2327,9 +2343,17 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
         if (rolagemAtaque[i] > rolagemDefesa[i]) {
         oportunidade.destino.tropas--;
         resultadoMensagem += `Defesa perdeu 1 tropa.\n`;
+        // Emitir efeito de explosão para tropas perdidas na defesa
+        io.to(room.roomId).emit('mostrarEfeitoExplosaoTropas', {
+          territorio: oportunidade.destino.nome
+        });
         } else {
         oportunidade.origem.tropas--;
         resultadoMensagem += `Ataque perdeu 1 tropa.\n`;
+        // Emitir efeito de explosão para tropas perdidas no ataque
+        io.to(room.roomId).emit('mostrarEfeitoExplosaoTropas', {
+          territorio: oportunidade.origem.nome
+        });
         }
     }
 
@@ -2363,6 +2387,21 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
         
         checarEliminacao(room);
         checarVitoria(room);
+        
+        // Emitir evento de território conquistado para verificar conquista de continente
+        io.to(room.roomId).emit('territorioConquistado', {
+          territorioConquistado: oportunidade.destino.nome,
+          territorioAtacante: oportunidade.origem.nome,
+          tropasDisponiveis: 1, // CPU sempre transfere apenas 1 tropa
+          tropasAdicionais: 0, // CPU não transfere tropas adicionais
+          jogadorAtacante: jogadorCPU.nome
+        });
+        
+        // Emitir evento para mostrar explosão de conquista
+        io.to(room.roomId).emit('mostrarEfeitoExplosaoConquista', {
+          territorio: oportunidade.destino.nome,
+          jogador: jogadorCPU.nome
+        });
         
         io.to(room.roomId).emit('mostrarMensagem', `⚔️ CPU ${jogadorCPU.nome} conquistou ${oportunidade.destino.nome} de ${oportunidade.origem.nome}!`);
         io.to(room.roomId).emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} conquistou ${oportunidade.destino.nome} de ${oportunidade.origem.nome}!`);
