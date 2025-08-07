@@ -132,6 +132,7 @@ class GameRoom {
 // Sistema de cartas território
     this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
     this.cartasTerritorio = {}; // { jogador: [cartas] }
+    this.monteCartas = []; // Monte de cartas território disponíveis
     this.simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
     this.numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
 
@@ -142,6 +143,62 @@ class GameRoom {
   'dominar24Territorios',
   'dominar16TerritoriosCom2Tropas'
 ];
+
+    // Inicializar o monte de cartas território
+    this.inicializarMonteCartas();
+  }
+
+  // Função para inicializar o monte de cartas território
+  inicializarMonteCartas() {
+    this.monteCartas = [];
+    
+    // Criar uma carta para cada território
+    this.paises.forEach(pais => {
+      // Escolher um símbolo aleatório para cada território
+      const simbolo = this.simbolosCartas[Math.floor(Math.random() * this.simbolosCartas.length)];
+      
+      const carta = {
+        territorio: pais.nome,
+        simbolo: simbolo
+      };
+      
+      this.monteCartas.push(carta);
+    });
+    
+    // Embaralhar o monte
+    this.embaralharMonte();
+    
+    console.log(`🎴 Monte de cartas inicializado com ${this.monteCartas.length} cartas`);
+  }
+
+  // Função para embaralhar o monte de cartas
+  embaralharMonte() {
+    for (let i = this.monteCartas.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.monteCartas[i], this.monteCartas[j]] = [this.monteCartas[j], this.monteCartas[i]];
+    }
+  }
+
+  // Função para pegar uma carta do monte
+  pegarCartaDoMonte() {
+    if (this.monteCartas.length === 0) {
+      console.log('⚠️ Monte de cartas vazio!');
+      return null;
+    }
+    
+    return this.monteCartas.pop();
+  }
+
+    // Função para devolver cartas ao monte
+  devolverCartasAoMonte(cartas) {
+    cartas.forEach(carta => {
+      this.monteCartas.push(carta);
+    });
+    
+    // Embaralhar o monte após devolver as cartas
+    this.embaralharMonte();
+    
+    console.log(`🎴 ${cartas.length} cartas devolvidas ao monte. Monte agora tem ${this.monteCartas.length} cartas`);
   }
 }
 
@@ -1039,7 +1096,12 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Remover as cartas trocadas
+    // Extrair as cartas que serão trocadas
+    const cartasParaTrocar = cartasSelecionadas.map(territorio => 
+      cartas.find(carta => carta.territorio === territorio)
+    );
+    
+    // Remover as cartas trocadas do jogador
     cartasSelecionadas.forEach(territorio => {
       const index = cartas.findIndex(carta => carta.territorio === territorio);
       if (index > -1) {
@@ -1049,6 +1111,9 @@ io.on('connection', (socket) => {
 
     // Atualizar o deck do jogador
     playerRoom.cartasTerritorio[jogador.nome] = cartas;
+    
+    // Devolver as cartas trocadas ao monte
+    playerRoom.devolverCartasAoMonte(cartasParaTrocar);
 
     // Verificar se o jogador possui algum dos territórios das cartas trocadas e adicionar 2 tropas
     let territoriosReforcados = [];
@@ -1121,6 +1186,7 @@ io.on('connection', (socket) => {
 
   socket.on('verificarMovimentoRemanejamento', (dados) => {
     console.log('🔧 DEBUG: verificarMovimentoRemanejamento recebido:', dados);
+    console.log('🔧 DEBUG: Socket ID:', socket.id);
     
     // Find which room this socket belongs to
     let playerRoom = null;
@@ -1144,6 +1210,9 @@ io.on('connection', (socket) => {
     
     if (jogador.nome !== playerRoom.turno || playerRoom.vitoria || playerRoom.derrota || !playerRoom.faseRemanejamento) {
       console.log('🔧 DEBUG: Verificação falhou - não é sua vez ou não está na fase de remanejamento');
+      console.log('🔧 DEBUG: jogador.nome:', jogador.nome);
+      console.log('🔧 DEBUG: playerRoom.turno:', playerRoom.turno);
+      console.log('🔧 DEBUG: playerRoom.faseRemanejamento:', playerRoom.faseRemanejamento);
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Não é sua vez ou não está na fase de remanejamento' });
       return;
     }
@@ -1180,17 +1249,14 @@ io.on('connection', (socket) => {
     if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem] = {};
     if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino] = {};
 
-    // Quantas tropas já vieram de destino para origem neste turno?
-    const tropasQueVieram = playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino][dados.origem] || 0;
-    // Quantas tropas "originais" existem no origem?
-    const tropasOriginais = territorioOrigem.tropas - tropasQueVieram;
-    const quantidadeMaxima = Math.min(tropasOriginais, territorioOrigem.tropas - 1); // Deixar pelo menos 1 tropa
+    // Verificar se há tropas suficientes para mover (deixar pelo menos 1)
+    const quantidadeMaxima = territorioOrigem.tropas - 1; // Deixar pelo menos 1 tropa
 
     if (quantidadeMaxima <= 0) {
       socket.emit('resultadoVerificacaoMovimento', { 
         podeMover: false, 
         quantidadeMaxima: 0, 
-        motivo: `Não é possível mover tropas de ${dados.origem} para ${dados.destino} pois ${tropasQueVieram} tropas vieram de ${dados.destino} para ${dados.origem} neste turno.` 
+        motivo: `Não é possível mover tropas de ${dados.origem} - precisa deixar pelo menos 1 tropa.` 
       });
       return;
     }
@@ -1207,6 +1273,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('moverTropas', (dados) => {
+    console.log('🔧 DEBUG: moverTropas recebido:', dados);
+    console.log('🔧 DEBUG: Socket ID:', socket.id);
+    
     // Find which room this socket belongs to
     let playerRoom = null;
     for (const [roomId, room] of gameRooms) {
@@ -1235,12 +1304,9 @@ io.on('connection', (socket) => {
     if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem] = {};
     if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino] = {};
 
-    // Quantas tropas já vieram de destino para origem neste turno?
-    const tropasQueVieram = playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino][dados.origem] || 0;
-    // Quantas tropas "originais" existem no origem?
-    const tropasOriginais = territorioOrigem.tropas - tropasQueVieram;
-    if (dados.quantidade > tropasOriginais) {
-      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} para ${dados.destino} pois ${tropasQueVieram} tropas vieram de ${dados.destino} para ${dados.origem} neste turno.`;
+    // Verificar se a quantidade é válida (deixar pelo menos 1 tropa)
+    if (dados.quantidade > territorioOrigem.tropas - 1) {
+      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} - precisa deixar pelo menos 1 tropa.`;
       socket.emit('mostrarMensagem', mensagemErro);
       return;
     }
@@ -1288,6 +1354,7 @@ io.on('connection', (socket) => {
     playerRoom.movimentosRemanejamento = {}; // Resetar controle de movimentos
     playerRoom.numeroTrocasRealizadas = 0; // Resetar contador de trocas
     playerRoom.cartasTerritorio = {}; // Resetar cartas território
+    playerRoom.inicializarMonteCartas(); // Reinicializar monte de cartas
     playerRoom.territoriosConquistadosNoTurno = {}; // Resetar territórios conquistados
 
     playerRoom.paises = [
@@ -1399,7 +1466,8 @@ function getEstado(socketId = null, room = null) {
     objetivos: room.objetivos,
     continentePrioritario,
     faseRemanejamento: room.faseRemanejamento,
-    cartasTerritorio: room.cartasTerritorio
+    cartasTerritorio: room.cartasTerritorio,
+    cartasNoMonte: room.monteCartas.length
   };
   
   console.log(`🔧 DEBUG: Estado gerado:`, {
@@ -1685,7 +1753,8 @@ function inicializarJogo(room) {
   room.cartasTerritorio = {};
   room.territoriosConquistadosNoTurno = {};
   room.numeroTrocasRealizadas = 0; // Resetar contador de trocas
-  console.log(`🔧 DEBUG: Cartas e territórios conquistados limpos`);
+  room.inicializarMonteCartas(); // Inicializar monte de cartas
+  console.log(`🔧 DEBUG: Cartas e territórios conquistados limpos, monte inicializado`);
   
   console.log(`🎮 Jogo inicializado na sala ${room.roomId} - turno: ${room.turno}`);
   
@@ -1761,11 +1830,19 @@ function executarTurnoCPU(jogadorCPU, room) {
     if (cartasParaTrocar.length === 3) {
       // Simular troca de cartas da CPU
       setTimeout(() => {
-        // Remover as 3 cartas trocadas
-        const cartasRestantes = cartasCPU.filter(carta => 
-          !cartasParaTrocar.includes(carta.territorio)
-        );
-        room.cartasTerritorio[jogadorCPU.nome] = cartasRestantes;
+              // Extrair as cartas que serão trocadas
+      const cartasParaTrocarObjetos = cartasCPU.filter(carta => 
+        cartasParaTrocar.includes(carta.territorio)
+      );
+      
+      // Remover as 3 cartas trocadas
+      const cartasRestantes = cartasCPU.filter(carta => 
+        !cartasParaTrocar.includes(carta.territorio)
+      );
+      room.cartasTerritorio[jogadorCPU.nome] = cartasRestantes;
+      
+      // Devolver as cartas trocadas ao monte
+      room.devolverCartasAoMonte(cartasParaTrocarObjetos);
         
         // Verificar se a CPU possui algum dos territórios das cartas trocadas e adicionar 2 tropas
         let territoriosReforcados = [];
@@ -2622,23 +2699,19 @@ function processarCartasJogador(nomeJogador, room) {
       io.to(room.roomId).emit('mostrarMensagem', `⚠️ ${nomeJogador} não pode receber mais cartas território (máximo 5)!`);
       console.log(`⚠️ ${nomeJogador} já tem ${room.cartasTerritorio[nomeJogador].length} cartas (máximo 5)`);
     } else {
-      // Escolher um território aleatório de TODOS os territórios disponíveis
-      const todosTerritorios = room.paises.map(p => p.nome);
-      const territorioAleatorio = todosTerritorios[Math.floor(Math.random() * todosTerritorios.length)];
+      // Pegar uma carta do monte
+      const carta = room.pegarCartaDoMonte();
       
-      // Escolher um símbolo aleatório independente do território
-      const simboloAleatorio = room.simbolosCartas[Math.floor(Math.random() * room.simbolosCartas.length)];
-      
-      // Criar carta com território aleatório e símbolo aleatório
-      const carta = {
-        territorio: territorioAleatorio,
-        simbolo: simboloAleatorio
-      };
-      
-      room.cartasTerritorio[nomeJogador].push(carta);
-      
-      console.log(`🎴 ${nomeJogador} ganhou carta: ${territorioAleatorio} (${simboloAleatorio}) - Total: ${room.cartasTerritorio[nomeJogador].length} cartas`);
-      io.to(room.roomId).emit('mostrarMensagem', `🎴 ${nomeJogador} ganhou uma carta território de ${territorioAleatorio} (${simboloAleatorio}) por conquistar territórios neste turno!`);
+      if (carta) {
+        room.cartasTerritorio[nomeJogador].push(carta);
+        
+        console.log(`🎴 ${nomeJogador} ganhou carta: ${carta.territorio} (${carta.simbolo}) - Total: ${room.cartasTerritorio[nomeJogador].length} cartas`);
+        console.log(`🎴 Cartas restantes no monte: ${room.monteCartas.length}`);
+        io.to(room.roomId).emit('mostrarMensagem', `🎴 ${nomeJogador} ganhou uma carta território de ${carta.territorio} (${carta.simbolo}) por conquistar territórios neste turno!`);
+      } else {
+        console.log(`⚠️ ${nomeJogador} não pode receber carta - monte vazio`);
+        io.to(room.roomId).emit('mostrarMensagem', `⚠️ ${nomeJogador} não pode receber carta território - monte vazio!`);
+      }
     }
   } else {
     console.log(`🎴 ${nomeJogador} não conquistou territórios neste turno`);
@@ -2687,11 +2760,19 @@ function passarTurno(room) {
       const cartasParaTrocar = selecionarCartasInteligentesParaTroca(cartasJogador);
       
       if (cartasParaTrocar.length === 3) {
+        // Extrair as cartas que serão trocadas
+        const cartasParaTrocarObjetos = cartasJogador.filter(carta => 
+          cartasParaTrocar.includes(carta.territorio)
+        );
+        
         // Remover as 3 cartas trocadas
         const cartasRestantes = cartasJogador.filter(carta => 
           !cartasParaTrocar.includes(carta.territorio)
         );
         room.cartasTerritorio[room.turno] = cartasRestantes;
+        
+        // Devolver as cartas trocadas ao monte
+        room.devolverCartasAoMonte(cartasParaTrocarObjetos);
         
         // Verificar se a CPU possui algum dos territórios das cartas trocadas e adicionar 2 tropas
         let territoriosReforcados = [];

@@ -21,6 +21,8 @@ let turnConfirmationTimeLeft = 30; // 30 seconds to confirm turn
 let turnConfirmationInterval = null;
 let forcedTurnCount = 0; // Count of forced turns for this player
 let maxForcedTurns = 2; // Maximum allowed forced turns before disconnect
+let lastTurnForPlayer = null; // Track the last turn that was this player's turn
+let lastProcessedTurn = null; // Track the last turn that was processed for popup
 
 // Debug function to log forced turn count
 function logForcedTurnCount() {
@@ -354,7 +356,11 @@ function confirmTurn() {
   console.log('✅ Current forcedTurnCount before reset:', forcedTurnCount);
   
   forcedTurnCount = 0; // Reset forced turn count on successful confirmation
+  lastTurnForPlayer = null; // Reset turn tracker on successful confirmation
+  lastProcessedTurn = null; // Reset processed turn tracker on successful confirmation
   console.log('✅ forcedTurnCount reset to 0');
+  console.log('✅ lastTurnForPlayer reset to null');
+  console.log('✅ lastProcessedTurn reset to null');
   
   hideTurnConfirmationPopup();
   
@@ -422,6 +428,8 @@ function forceTurnPass() {
   
   // Reset the turn confirmation flag to prevent immediate popup
   isPlayerTurn = false;
+  lastTurnForPlayer = null; // Reset turn tracker when turn is forced to pass
+  lastProcessedTurn = null; // Reset processed turn tracker when turn is forced to pass
 }
 
 function endTurnByTimeout() {
@@ -568,6 +576,8 @@ function initializeGame() {
       if (gameState.meuNome !== gameState.turno) {
         console.log('🔄 Turn changed to different player - resetting forced turn count from', forcedTurnCount, 'to 0');
         forcedTurnCount = 0;
+        lastTurnForPlayer = null; // Reset turn tracker when turn changes to different player
+        lastProcessedTurn = null; // Reset processed turn tracker when turn changes to different player
         logForcedTurnCount();
       } else {
         // Keep the forced turn count when it's still the same player's turn
@@ -1891,6 +1901,7 @@ function atualizarPaises(novosPaises, scene) {
            console.log('🔧 DEBUG: Território clicado:', obj.nome);
            console.log('🔧 DEBUG: Território selecionado:', gameState.selecionado ? gameState.selecionado.nome : 'nenhum');
            console.log('🔧 DEBUG: Vizinhos do selecionado:', gameState.selecionado ? gameState.selecionado.vizinhos : 'nenhum');
+           console.log('🔧 DEBUG: Interface remanejamento ativa:', !!interfaceRemanejamento);
            
            if (!gameState.selecionado) {
              // Selecionar território de origem
@@ -2052,14 +2063,9 @@ function atualizarTextoBotaoTurno() {
 }
 
 function limparSelecao() {
+  console.log('🔧 DEBUG: limparSelecao chamada');
   const gameState = getGameState();
   if (!gameState) return;
-  
-  // Não limpar seleção durante a fase de remanejamento se o jogador estiver no turno
-  if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno && gameState.selecionado) {
-    console.log('🔧 DEBUG: Não limpando seleção durante fase de remanejamento');
-    return;
-  }
   
   // Limpar todas as bordas especiais e restaurar as bordas normais
   gameState.paises.forEach(p => {
@@ -3347,6 +3353,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoConfirmar.on('pointerdown', (pointer) => {
     tocarSomClick();
+    console.log('🔧 DEBUG: Confirmando movimento de remanejamento');
     emitWithRoom('moverTropas', {
       origem: origem.nome,
       destino: destino.nome,
@@ -3354,6 +3361,8 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
     });
     limparSelecao();
     interfaceRemanejamento.destroy();
+    interfaceRemanejamento = null;
+    console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
   });
   botoesContainer.add(botaoConfirmar);
   
@@ -3371,8 +3380,11 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoCancelar.on('pointerdown', (pointer) => {
     tocarSomClick();
+    console.log('🔧 DEBUG: Cancelando movimento de remanejamento');
     limparSelecao();
     interfaceRemanejamento.destroy();
+    interfaceRemanejamento = null;
+    console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
   });
   botoesContainer.add(botaoCancelar);
   
@@ -3944,22 +3956,10 @@ function updateCSSHUD() {
         // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
-        // Show turn confirmation popup if it's our turn and not already running
+        // Start turn timer when it's the player's turn and not already running
         if (gameState.meuNome === gameState.turno && !isPlayerTurn) {
-          console.log('🎮 Player turn detected - forcedTurnCount:', forcedTurnCount);
-          console.log('🎮 isPlayerTurn:', isPlayerTurn);
-          console.log('🎮 gameState.meuNome:', gameState.meuNome);
-          console.log('🎮 gameState.turno:', gameState.turno);
-          console.log('🎮 turnConfirmationPopup exists:', !!turnConfirmationPopup);
-          
-          if (forcedTurnCount === 0) {
-            console.log('🚀 Showing turn confirmation popup for player:', gameState.meuNome);
-            showTurnConfirmationPopup(currentScene);
-          } else {
-            console.log('⏸️ Skipping popup - player has forced turn count:', forcedTurnCount);
-            // Start timer directly without popup for players with forced turn history
-            startTurnTimer();
-          }
+          console.log('🎮 Starting turn timer for player:', gameState.meuNome);
+          startTurnTimer();
         }
       } else {
         // Hide timer if it's CPU turn or game is over
