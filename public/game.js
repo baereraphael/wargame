@@ -165,172 +165,28 @@ function handleLogin() {
   playerUsername = username;
   playerLoggedIn = true;
   
-  // Hide login screen and show room selection screen
+  // Hide login screen and show lobby screen
   const loginScreen = document.getElementById('login-screen');
-  const roomSelectionScreen = document.getElementById('room-selection-screen');
+  const lobbyScreen = document.getElementById('lobby-screen');
   
   if (loginScreen) {
     loginScreen.style.display = 'none';
     console.log('✅ Tela de login ocultada');
   }
-  if (roomSelectionScreen) {
-    roomSelectionScreen.style.display = 'flex';
-    console.log('✅ Tela de seleção de sala exibida');
+  if (lobbyScreen) {
+    lobbyScreen.style.display = 'flex';
+    console.log('✅ Lobby global exibido');
   } else {
-    console.log('❌ Tela de seleção de sala não encontrada!');
+    console.log('❌ Tela de lobby não encontrada!');
   }
   
-  // Initialize room selection system
-  initializeRoomSelection();
+  // Initialize lobby system
+  initializeLobby();
 }
 
-function initializeRoomSelection() {
-  console.log('🏠 Inicializando sistema de seleção de sala...');
-  
-  // Get room selection elements
-  const joinRoomBtn = document.getElementById('btn-join-room');
-  const createRoomBtn = document.getElementById('btn-create-room');
-  const roomIdInput = document.getElementById('room-id');
-  const copyRoomIdBtn = document.getElementById('btn-copy-room-id');
-  
 
-  
-  // Add event listeners
-  if (joinRoomBtn) {
-    joinRoomBtn.addEventListener('click', () => {
-      const roomId = roomIdInput.value.trim();
-      if (roomId) {
-        joinRoom(roomId);
-      } else {
-        alert('Por favor, digite o ID da sala.');
-      }
-    });
-  }
-  
-  if (createRoomBtn) {
-    createRoomBtn.addEventListener('click', () => {
-      createRoom();
-    });
-  }
-  
-  if (copyRoomIdBtn) {
-    copyRoomIdBtn.addEventListener('click', () => {
-      copyRoomId();
-    });
-  }
-  
-  // Allow Enter key to join room
-  if (roomIdInput) {
-    roomIdInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const roomId = roomIdInput.value.trim();
-        if (roomId) {
-          joinRoom(roomId);
-        }
-      }
-    });
-  }
-  
-  // Add click handlers for room options
-  const roomOptionJoin = document.getElementById('room-option-join');
-  const roomOptionCreate = document.getElementById('room-option-create');
-  const roomJoinSection = document.getElementById('room-join-section');
-  const roomCreateSection = document.getElementById('room-create-section');
-  
-  if (roomOptionJoin) {
-    roomOptionJoin.addEventListener('click', () => {
-      console.log('🔗 Opção "Entrar em Sala" selecionada');
-      // Show join section, hide create section
-      if (roomJoinSection) roomJoinSection.style.display = 'block';
-      if (roomCreateSection) roomCreateSection.style.display = 'none';
-      // Update visual selection
-      roomOptionJoin.classList.add('selected');
-      roomOptionCreate.classList.remove('selected');
-    });
-  }
-  
-  if (roomOptionCreate) {
-    roomOptionCreate.addEventListener('click', () => {
-      console.log('➕ Opção "Criar Nova Sala" selecionada');
-      // Show create section, hide join section
-      if (roomCreateSection) roomCreateSection.style.display = 'block';
-      if (roomJoinSection) roomJoinSection.style.display = 'none';
-      // Update visual selection
-      roomOptionCreate.classList.add('selected');
-      roomOptionJoin.classList.remove('selected');
-    });
-  }
-  
-  // Add back button handler
-  const backButton = document.getElementById('btn-back-to-login');
-  if (backButton) {
-    backButton.addEventListener('click', () => {
-      console.log('⬅️ Voltando para tela de login');
-      // Show login screen, hide room selection screen
-      const loginScreen = document.getElementById('login-screen');
-      const roomSelectionScreen = document.getElementById('room-selection-screen');
-      if (loginScreen) loginScreen.style.display = 'flex';
-      if (roomSelectionScreen) roomSelectionScreen.style.display = 'none';
-    });
-  }
-}
 
-function createRoom() {
-  console.log('🏠 Criando nova sala...');
-  
-  // Connect to socket if not already connected
-  const socket = getSocket() || io();
-  window.socket = socket;
-  
-  // Emit create room event
-  socket.emit('createRoom', { username: playerUsername });
-  
-  // Listen for room created response
-  socket.once('roomCreated', (data) => {
-    currentRoomId = data.roomId;
-    console.log(`✅ Sala criada com ID: ${currentRoomId}`);
-    
-    // Show room selection screen and update with room ID
-    const roomSelectionScreen = document.getElementById('room-selection-screen');
-    if (roomSelectionScreen) {
-      roomSelectionScreen.style.display = 'none';
-    }
-    
-    // Initialize lobby with room ID
-    initializeLobby();
-  });
-}
 
-function joinRoom(roomId) {
-  console.log(`🏠 Tentando entrar na sala: ${roomId}`);
-  
-  // Connect to socket if not already connected
-  const socket = getSocket() || io();
-  window.socket = socket;
-  
-  // Emit join room event
-  socket.emit('joinRoom', { roomId: roomId, username: playerUsername });
-  
-  // Listen for join room response
-  socket.once('roomJoined', (data) => {
-    currentRoomId = data.roomId;
-    console.log(`✅ Entrou na sala: ${currentRoomId}`);
-    
-    // Show room selection screen and update with room ID
-    const roomSelectionScreen = document.getElementById('room-selection-screen');
-    if (roomSelectionScreen) {
-      roomSelectionScreen.style.display = 'none';
-    }
-    
-    // Initialize lobby with room ID
-    initializeLobby();
-  });
-  
-  // Listen for join room error
-  socket.once('roomJoinError', (error) => {
-    alert(`Erro ao entrar na sala: ${error.message}`);
-  });
-}
 
 function initializeGame() {
   // Create Phaser game only after login
@@ -359,10 +215,10 @@ function initializeGame() {
   }
   
   // Initialize Phaser game
-  console.log('🎮 Criando instância do Phaser...');
-  const game = new Phaser.Game(config);
-  window.game = game; // Make game globally available
-  console.log('✅ Phaser criado com sucesso!');
+    console.log('🎮 Criando instância do Phaser...');
+    const game = new Phaser.Game(config);
+    window.game = game; // Make game globally available
+    console.log('✅ Phaser criado com sucesso!');
   
   // Chat message listener
   socket.on('chatMessage', (dados) => {
@@ -377,30 +233,23 @@ function initializeGame() {
 }
 
 function initializeLobby() {
-  console.log(`🎮 Inicializando lobby para sala: ${currentRoomId}`);
+  console.log('🎮 Inicializando lobby global...');
   
   // Show lobby screen
   const lobbyScreen = document.getElementById('lobby-screen');
   if (lobbyScreen) lobbyScreen.style.display = 'flex';
   
-  // Update lobby room ID display
-  const lobbyRoomId = document.getElementById('lobby-room-id');
-  if (lobbyRoomId) lobbyRoomId.textContent = currentRoomId;
-  
-  const socket = getSocket();
-  if (!socket) {
-    console.error('Socket não encontrado!');
-    return;
-  }
+  // Connect to socket if not already connected
+  const socket = getSocket() || io();
+  window.socket = socket;
   
   // Check if socket is already connected
   if (socket.connected) {
-    console.log('Socket já conectado, iniciando lobby...');
+    console.log('Socket já conectado, iniciando lobby global...');
     
-    // Emit player joined event with room ID
-    socket.emit('playerJoinedLobby', { 
-      username: playerUsername, 
-      roomId: currentRoomId 
+    // Emit player joined global lobby event
+    socket.emit('playerJoinedGlobalLobby', { 
+      username: playerUsername
     });
     
     // Start lobby timer
@@ -408,12 +257,11 @@ function initializeLobby() {
   } else {
     // Wait for socket connection before starting lobby
     socket.on('connect', () => {
-      console.log('Socket conectado, iniciando lobby...');
+      console.log('Socket conectado, iniciando lobby global...');
       
-      // Emit player joined event with room ID
-      socket.emit('playerJoinedLobby', { 
-        username: playerUsername, 
-        roomId: currentRoomId 
+      // Emit player joined global lobby event
+      socket.emit('playerJoinedGlobalLobby', { 
+        username: playerUsername
       });
       
       // Start lobby timer
@@ -428,12 +276,13 @@ function initializeLobby() {
   });
   
   // Lobby events
-  socket.on('lobbyUpdate', (data) => {
+  socket.on('globalLobbyUpdate', (data) => {
     updateLobbyDisplay(data);
   });
   
-  socket.on('gameStarting', () => {
+  socket.on('gameStarting', (data) => {
     console.log('🎮 Recebido evento gameStarting do servidor!');
+    currentRoomId = data.roomId; // Set the room ID assigned by server
     startGame();
   });
   
@@ -495,24 +344,16 @@ function updateLobbyDisplay(data) {
     
     const avatar = document.createElement('div');
     avatar.className = 'lobby-player-avatar';
-    avatar.textContent = getPlayerAvatar(player.nome);
+    avatar.textContent = '👤';
     
     const name = document.createElement('div');
     name.className = 'lobby-player-name';
-    name.textContent = player.nome;
+    name.textContent = player.username;
     
     const status = document.createElement('div');
     status.className = 'lobby-player-status';
-    if (player.socketId) {
-      status.textContent = 'Conectado';
-      status.classList.add('connected');
-    } else if (player.isCPU) {
-      status.textContent = 'CPU';
-      status.classList.add('cpu');
-    } else {
-      status.textContent = 'Conectando...';
-      status.classList.add('connecting');
-    }
+    status.textContent = 'Conectado';
+    status.classList.add('connected');
     
     playerElement.appendChild(avatar);
     playerElement.appendChild(name);
@@ -520,14 +361,41 @@ function updateLobbyDisplay(data) {
     playersList.appendChild(playerElement);
   });
   
-  // Update status text with room information
-  const connectedPlayers = data.players.filter(p => p.socketId).length;
-  const totalPlayers = data.players.length;
+  // Add placeholder players for remaining slots
+  const remainingSlots = data.totalPlayers - data.players.length;
+  for (let i = 0; i < remainingSlots; i++) {
+    const playerElement = document.createElement('div');
+    playerElement.className = 'lobby-player';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'lobby-player-avatar';
+    avatar.textContent = '🤖';
+    
+    const name = document.createElement('div');
+    name.className = 'lobby-player-name';
+    name.textContent = `CPU ${i + 1}`;
+    
+    const status = document.createElement('div');
+    status.className = 'lobby-player-status';
+    status.textContent = 'CPU';
+    status.classList.add('cpu');
+    
+    playerElement.appendChild(avatar);
+    playerElement.appendChild(name);
+    playerElement.appendChild(status);
+    playersList.appendChild(playerElement);
+  }
   
-  if (connectedPlayers === totalPlayers) {
-    statusText.textContent = `Sala ${currentRoomId}: Todos os jogadores conectados! Iniciando jogo...`;
+  // Update status text
+  const connectedPlayers = data.players.length;
+  const totalPlayers = data.totalPlayers;
+  
+  if (data.timeLeft <= 0) {
+    statusText.textContent = 'Criando sala e iniciando jogo...';
+  } else if (connectedPlayers === totalPlayers) {
+    statusText.textContent = 'Todos os jogadores conectados! Iniciando jogo...';
   } else {
-    statusText.textContent = `Sala ${currentRoomId}: ${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
+    statusText.textContent = `${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
   }
 }
 
@@ -552,29 +420,10 @@ function startGame() {
   initializeGame();
 }
 
-function copyRoomId() {
-  if (currentRoomId) {
-    navigator.clipboard.writeText(currentRoomId).then(() => {
-      const copyBtn = document.getElementById('btn-copy-room-id');
-      if (copyBtn) {
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'Copiado!';
-        copyBtn.classList.add('success');
-        
-        setTimeout(() => {
-          copyBtn.textContent = originalText;
-          copyBtn.classList.remove('success');
-        }, 2000);
-      }
-    }).catch(err => {
-      console.error('Erro ao copiar ID da sala:', err);
-      alert('Erro ao copiar ID da sala. Tente copiar manualmente: ' + currentRoomId);
-    });
-  }
-}
+
 
 // Lobby variables
-let lobbyTimeLeft = 5; // 5 seconds
+let lobbyTimeLeft = 30; // 30 seconds
 let lobbyTimerInterval = null;
 let lobbyPlayers = [];
 let gameStarted = false;
@@ -611,7 +460,10 @@ function getGameState() {
       currentTab: 'chat', // Track current active tab
       unreadMessages: 0, // Track unread messages
       vitoria: false,
-      derrota: false
+      derrota: false,
+      // Variáveis para interface de reforço (específicas por sala)
+      tropasParaColocar: 0,
+      territorioSelecionadoParaReforco: null
     });
   }
   
@@ -635,7 +487,17 @@ function getSocket() {
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
   if (socket && currentRoomId) {
-    socket.emit(event, { ...data, roomId: currentRoomId });
+    // Handle different data types
+    if (typeof data === 'string') {
+      // If data is a string (like country name), send it directly
+      socket.emit(event, data);
+    } else if (Array.isArray(data)) {
+      // If data is an array, send it directly (don't add roomId to arrays)
+      socket.emit(event, data);
+    } else {
+      // If data is an object, spread it and add roomId
+      socket.emit(event, { ...data, roomId: currentRoomId });
+    }
   } else {
     console.error('Socket ou roomId não disponível para emitir evento:', event);
   }
@@ -668,8 +530,6 @@ let somHuh;
 
 // Variáveis para interface de reforço
 let interfaceReforco = null;
-let tropasParaColocar = 0;
-let territorioSelecionadoParaReforco = null;
 
 // Variáveis para interface de transferência após conquista
 let interfaceTransferenciaConquista = null;
@@ -935,6 +795,8 @@ function create() {
     console.log('🔄 Estado atualizado recebido!');
     console.log('🎯 CurrentScene:', currentScene);
     console.log('🗺️ Países recebidos:', estado.paises ? estado.paises.length : 'undefined');
+    console.log('🎮 Turno atual:', estado.turno);
+    console.log('👤 Meu nome:', estado.meuNome);
     console.log('📊 Estado completo:', estado);
     
     const gameState = getGameState();
@@ -1086,7 +948,10 @@ function create() {
   });
 
   getSocket().on('resultadoTrocaCartas', (resultado) => {
+    console.log('🔧 resultadoTrocaCartas recebido:', resultado);
+    
     if (resultado.sucesso) {
+      console.log('✅ Troca de cartas bem-sucedida');
       mostrarMensagem(resultado.mensagem);
       // Fechar modal e continuar o turno
       modalCartasTerritorioAberto = false;
@@ -1096,6 +961,7 @@ function create() {
       if (overlay) overlay.destroy();
       if (container) container.destroy();
     } else {
+      console.log('❌ Troca de cartas falhou:', resultado.mensagem);
       mostrarMensagem(`❌ ${resultado.mensagem}`);
     }
   });
@@ -2108,8 +1974,8 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   }
   
   // Inicializar com 1 tropa
-  tropasParaColocar = 1;
-  territorioSelecionadoParaReforco = territorio;
+  gameState.tropasParaColocar = 1;
+  gameState.territorioSelecionadoParaReforco = territorio;
   
   // Criar container para a interface
   interfaceReforco = scene.add.container(pointer.x, pointer.y);
@@ -2135,8 +2001,8 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Título
   let tituloTexto = 'REFORÇAR TERRITÓRIO';
-  if (totalBonus > 0 && continentePrioritario) {
-    tituloTexto = `BÔNUS ${continentePrioritario.nome.toUpperCase()}`;
+  if (totalBonus > 0 && gameState.continentePrioritario) {
+    tituloTexto = `BÔNUS ${gameState.continentePrioritario.nome.toUpperCase()}`;
   }
   
   const titulo = scene.add.text(-120, -80, tituloTexto, {
@@ -2203,7 +2069,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   }).setOrigin(0.5).setDepth(2);
   controlesContainer.add(controlesTitulo);
   
-  // Botão menos
+  // Botão menos com decremento progressivo
   const botaoMenos = scene.add.text(-70, 8, '-', {
     fontSize: '18px',
     fill: '#ffffff',
@@ -2211,17 +2077,80 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
     padding: { x: 8, y: 4 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Variáveis para controle do decremento progressivo
+  window.decrementoInterval = null;
+  let decrementoDelay = 150; // Delay inicial em ms
+  let decrementoStep = 1; // Quantidade inicial a decrementar
+  
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
-    if (tropasParaColocar > 1) {
-      tropasParaColocar--;
+    // Decremento imediato
+    if (gameState.tropasParaColocar > 1) {
+      gameState.tropasParaColocar--;
       atualizarTextoQuantidade();
     }
+    
+    // Iniciar decremento progressivo
+    decrementoProgressivo();
   });
+  
+  botaoMenos.on('pointerup', () => {
+    // Parar decremento progressivo
+    pararDecrementoProgressivo();
+  });
+  
+  botaoMenos.on('pointerout', () => {
+    // Parar decremento progressivo quando o mouse sai do botão
+    pararDecrementoProgressivo();
+  });
+  
+  // Função para decremento progressivo
+  function decrementoProgressivo() {
+    if (window.decrementoInterval) return; // Já está rodando
+    
+    window.decrementoInterval = setInterval(() => {
+      if (gameState.tropasParaColocar > 1) {
+        // Calcular quantidade a decrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.decrementoInterval.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          decrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          decrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          decrementoStep = 2;
+        }
+        
+        // Decrementar
+        const decrementoReal = Math.min(decrementoStep, gameState.tropasParaColocar - 1);
+        gameState.tropasParaColocar -= decrementoReal;
+        atualizarTextoQuantidade();
+        
+        // Tocar som a cada 5 decrementos para feedback
+        if (gameState.tropasParaColocar % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararDecrementoProgressivo();
+      }
+    }, decrementoDelay);
+    
+    window.decrementoInterval.startTime = Date.now();
+  }
+  
+  // Função para parar decremento progressivo
+  function pararDecrementoProgressivo() {
+    if (window.decrementoInterval) {
+      clearInterval(window.decrementoInterval);
+      window.decrementoInterval = null;
+      decrementoStep = 1; // Resetar para próximo uso
+    }
+  }
   controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 8, `${tropasParaColocar}/${tropasDisponiveis}`, {
+  const textoQuantidade = scene.add.text(0, 8, `${gameState.tropasParaColocar}/${tropasDisponiveis}`, {
     fontSize: '18px',
     fill: '#ffffff',
     align: 'center',
@@ -2231,7 +2160,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   }).setOrigin(0.5).setDepth(2);
   controlesContainer.add(textoQuantidade);
   
-  // Botão mais
+  // Botão mais com incremento progressivo
   const botaoMais = scene.add.text(70, 8, '+', {
     fontSize: '18px',
     fill: '#ffffff',
@@ -2239,13 +2168,76 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
     padding: { x: 8, y: 4 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Variáveis para controle do incremento progressivo
+  window.incrementoInterval = null;
+  let incrementoDelay = 150; // Delay inicial em ms
+  let incrementoStep = 1; // Quantidade inicial a incrementar
+  
   botaoMais.on('pointerdown', (pointer) => {
     tocarSomClick();
-    if (tropasParaColocar < tropasDisponiveis) {
-      tropasParaColocar++;
+    // Incremento imediato
+    if (gameState.tropasParaColocar < tropasDisponiveis) {
+      gameState.tropasParaColocar++;
       atualizarTextoQuantidade();
     }
+    
+    // Iniciar incremento progressivo
+    incrementoProgressivo();
   });
+  
+  botaoMais.on('pointerup', () => {
+    // Parar incremento progressivo
+    pararIncrementoProgressivo();
+  });
+  
+  botaoMais.on('pointerout', () => {
+    // Parar incremento progressivo quando o mouse sai do botão
+    pararIncrementoProgressivo();
+  });
+  
+  // Função para incremento progressivo
+  function incrementoProgressivo() {
+    if (window.incrementoInterval) return; // Já está rodando
+    
+    window.incrementoInterval = setInterval(() => {
+      if (gameState.tropasParaColocar < tropasDisponiveis) {
+        // Calcular quantidade a incrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.incrementoInterval.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          incrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          incrementoStep = 2;
+        }
+        
+        // Incrementar
+        const incrementoReal = Math.min(incrementoStep, tropasDisponiveis - gameState.tropasParaColocar);
+        gameState.tropasParaColocar += incrementoReal;
+        atualizarTextoQuantidade();
+        
+        // Tocar som a cada 5 incrementos para feedback
+        if (gameState.tropasParaColocar % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararIncrementoProgressivo();
+      }
+    }, incrementoDelay);
+    
+    window.incrementoInterval.startTime = Date.now();
+  }
+  
+  // Função para parar incremento progressivo
+  function pararIncrementoProgressivo() {
+    if (window.incrementoInterval) {
+      clearInterval(window.incrementoInterval);
+      window.incrementoInterval = null;
+      incrementoStep = 1; // Resetar para próximo uso
+    }
+  }
   controlesContainer.add(botaoMais);
   
   // Container para botões de ação
@@ -2291,7 +2283,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Função para atualizar o texto da quantidade
   function atualizarTextoQuantidade() {
-    textoQuantidade.setText(`${tropasParaColocar}/${tropasDisponiveis}`);
+    textoQuantidade.setText(`${gameState.tropasParaColocar}/${tropasDisponiveis}`);
   }
   
   // Posicionar interface para não sair da tela
@@ -2307,20 +2299,40 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
 
 function esconderInterfaceReforco() {
   if (interfaceReforco) {
+    // Limpar intervalos de incremento/decremento se existirem
+    if (window.incrementoInterval) {
+      clearInterval(window.incrementoInterval);
+      window.incrementoInterval = null;
+    }
+    if (window.decrementoInterval) {
+      clearInterval(window.decrementoInterval);
+      window.decrementoInterval = null;
+    }
+    
     interfaceReforco.destroy();
     interfaceReforco = null;
   }
-  tropasParaColocar = 0;
-  territorioSelecionadoParaReforco = null;
+  const gameState = getGameState();
+  if (gameState) {
+    gameState.tropasParaColocar = 0;
+    gameState.territorioSelecionadoParaReforco = null;
+  }
 }
 
 function confirmarReforco() {
-  if (territorioSelecionadoParaReforco && tropasParaColocar > 0) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  if (gameState.territorioSelecionadoParaReforco && gameState.tropasParaColocar > 0) {
+    console.log(`🔧 Enviando ${gameState.tropasParaColocar} reforços para ${gameState.territorioSelecionadoParaReforco.nome}`);
+    
     // Enviar múltiplas vezes para colocar as tropas
-    for (let i = 0; i < tropasParaColocar; i++) {
-      emitWithRoom('colocarReforco', territorioSelecionadoParaReforco.nome);
+    for (let i = 0; i < gameState.tropasParaColocar; i++) {
+      emitWithRoom('colocarReforco', gameState.territorioSelecionadoParaReforco.nome);
     }
     esconderInterfaceReforco();
+  } else {
+    console.log('❌ Não foi possível confirmar reforço - dados inválidos');
   }
 }
 
@@ -3102,10 +3114,16 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     
     botaoTrocar.on('pointerdown', () => {
       tocarSomClick();
+      console.log('🔧 Botão trocar cartas clicado - cartas selecionadas:', cartasSelecionadas.length);
+      
       if (cartasSelecionadas.length === 3) {
         // Mapear os containers de carta de volta para os nomes dos territórios
         const territoriosSelecionados = cartasSelecionadas.map(cartaContainer => cartaContainer.getData('carta').territorio);
+        console.log('🔧 Enviando troca de cartas:', territoriosSelecionados);
+        console.log('🔧 Tipo dos dados:', Array.isArray(territoriosSelecionados) ? 'Array' : 'Outro tipo');
         emitWithRoom('trocarCartasTerritorio', territoriosSelecionados);
+      } else {
+        console.log('❌ Não há 3 cartas selecionadas para trocar');
       }
     });
   }

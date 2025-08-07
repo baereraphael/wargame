@@ -149,6 +149,14 @@ class GameRoom {
 const gameRooms = new Map();
 let nextRoomId = 1;
 
+// Global Lobby Management
+const globalLobby = {
+  players: [],
+  timer: null,
+  timeLeft: 30, // 30 seconds
+  active: false
+};
+
 // Helper function to get or create a room
 function getOrCreateRoom(roomId) {
   if (!gameRooms.has(roomId)) {
@@ -157,6 +165,126 @@ function getOrCreateRoom(roomId) {
     gameRooms.set(roomId, room);
   }
   return gameRooms.get(roomId);
+}
+
+// Global Lobby Functions
+function startGlobalLobby() {
+  if (globalLobby.active) return;
+  
+  console.log('🌍 Iniciando lobby global...');
+  globalLobby.active = true;
+  globalLobby.timeLeft = 30;
+  
+  // Start global lobby timer
+  globalLobby.timer = setInterval(() => {
+    globalLobby.timeLeft--;
+    
+    // Send update to all players in global lobby
+    io.emit('globalLobbyUpdate', {
+      players: globalLobby.players,
+      timeLeft: globalLobby.timeLeft,
+      connectedPlayers: globalLobby.players.length,
+      totalPlayers: 6
+    });
+    
+    // Check if timer expired
+    if (globalLobby.timeLeft <= 0) {
+      console.log('⏰ Timer do lobby global expirou! Criando sala...');
+      createRoomFromGlobalLobby();
+      return;
+    }
+  }, 1000);
+}
+
+function createRoomFromGlobalLobby() {
+  if (globalLobby.timer) {
+    clearInterval(globalLobby.timer);
+    globalLobby.timer = null;
+  }
+  
+  globalLobby.active = false;
+  
+  // Create a new room
+  const roomId = nextRoomId.toString();
+  nextRoomId++;
+  
+  const room = getOrCreateRoom(roomId);
+  
+  // Assign players to the room
+  globalLobby.players.forEach((player, index) => {
+    if (index < 6) { // Maximum 6 players
+      const jogador = room.jogadores[index];
+      jogador.socketId = player.socketId;
+      jogador.isCPU = false;
+      
+      // Join the player to the room
+      const socket = io.sockets.sockets.get(player.socketId);
+      if (socket) {
+        socket.join(roomId);
+      }
+    }
+  });
+  
+  // Fill remaining slots with CPUs
+  for (let i = globalLobby.players.length; i < 6; i++) {
+    room.jogadores[i].isCPU = true;
+    room.jogadores[i].socketId = null;
+  }
+  
+  console.log(`🎮 Sala ${roomId} criada com ${globalLobby.players.length} jogadores reais e ${6 - globalLobby.players.length} CPUs`);
+  
+  // Notify all players that game is starting
+  io.to(roomId).emit('gameStarting', { roomId: roomId });
+  
+  // Start the game
+  startGame(roomId);
+  
+  // Clear global lobby
+  globalLobby.players = [];
+}
+
+function addPlayerToGlobalLobby(socketId, username) {
+  // Check if player is already in lobby
+  const existingPlayer = globalLobby.players.find(p => p.socketId === socketId);
+  if (existingPlayer) return;
+  
+  // Add player to global lobby
+  globalLobby.players.push({
+    socketId: socketId,
+    username: username
+  });
+  
+  console.log(`👤 ${username} adicionado ao lobby global (${globalLobby.players.length}/6)`);
+  
+  // Start global lobby if this is the first player
+  if (globalLobby.players.length === 1 && !globalLobby.active) {
+    startGlobalLobby();
+  }
+  
+  // Send update to all players
+  io.emit('globalLobbyUpdate', {
+    players: globalLobby.players,
+    timeLeft: globalLobby.timeLeft,
+    connectedPlayers: globalLobby.players.length,
+    totalPlayers: 6
+  });
+}
+
+function removePlayerFromGlobalLobby(socketId) {
+  const index = globalLobby.players.findIndex(p => p.socketId === socketId);
+  if (index !== -1) {
+    const player = globalLobby.players[index];
+    console.log(`👤 ${player.username} removido do lobby global`);
+    globalLobby.players.splice(index, 1);
+    
+    // Send update to all players
+    io.emit('globalLobbyUpdate', {
+      players: globalLobby.players,
+      timeLeft: globalLobby.timeLeft,
+      connectedPlayers: globalLobby.players.length,
+      totalPlayers: 6
+    });
+  }
 }
 
 // All game state is now encapsulated in GameRoom instances
@@ -170,86 +298,20 @@ app.use(express.static('public')); // coloque seu index.html e assets na pasta p
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado');
 
-  // Handle room creation
-  socket.on('createRoom', (data) => {
-    console.log(`🏠 Criando nova sala para ${data.username}...`);
+  // Handle player joining global lobby
+  socket.on('playerJoinedGlobalLobby', (data) => {
+    console.log(`🌍 ${data.username} entrou no lobby global`);
     
-    // Generate a new room ID
-    const roomId = nextRoomId.toString();
-    nextRoomId++;
-    
-    // Create the room
-    const room = getOrCreateRoom(roomId);
-    
-    // Join the socket to the room
-    socket.join(roomId);
-    
-    // Send room created response
-    socket.emit('roomCreated', { roomId: roomId });
-    
-    console.log(`✅ Sala ${roomId} criada com sucesso`);
-  });
-
-  // Handle room joining
-  socket.on('joinRoom', (data) => {
-    console.log(`🏠 ${data.username} tentando entrar na sala ${data.roomId}...`);
-    
-    // Check if room exists
-    if (!gameRooms.has(data.roomId)) {
-      socket.emit('roomJoinError', { message: 'Sala não encontrada' });
-      return;
-    }
-    
-    // Get the room
-    const room = gameRooms.get(data.roomId);
-    
-    // Join the socket to the room
-    socket.join(data.roomId);
-    
-    // Send room joined response
-    socket.emit('roomJoined', { roomId: data.roomId });
-    
-    console.log(`✅ ${data.username} entrou na sala ${data.roomId}`);
-  });
-
-  // Handle player joining lobby
-  socket.on('playerJoinedLobby', (data) => {
-    console.log(`🎮 ${data.username} entrou no lobby da sala ${data.roomId}`);
-    
-    // Get or create the room
-    const room = getOrCreateRoom(data.roomId);
-    
-    // Join the socket to the room
-    socket.join(data.roomId);
-    
-    // Assign player to available slot in this room
-    const jogadorDisponivel = room.jogadores.find(j => j.socketId === null);
-    if (jogadorDisponivel) {
-      jogadorDisponivel.socketId = socket.id;
-      
-      // Se o jogador era uma CPU, desativar
-      if (jogadorDisponivel.isCPU) {
-        jogadorDisponivel.isCPU = false;
-        console.log(`🤖 CPU desativada para ${jogadorDisponivel.nome} na sala ${data.roomId} (jogador conectou)`);
-      }
-      
-      console.log(`Jogador ${jogadorDisponivel.nome} atribuído ao socket ${socket.id} na sala ${data.roomId}`);
-    } else {
-      console.log('Não há jogadores disponíveis para atribuir a este socket na sala', data.roomId);
-    }
-    
-    // Start lobby if not already active
-    if (!room.lobbyActive) {
-      startLobby(data.roomId);
-    }
-    
-    // Send lobby update to all clients in this room
-    sendLobbyUpdate(data.roomId);
+    // Add player to global lobby
+    addPlayerToGlobalLobby(socket.id, data.username);
   });
 
   // Handle disconnect
   socket.on('disconnect', () => {
     console.log('Jogador desconectado:', socket.id);
+    
+    // Remove from global lobby first
+    removePlayerFromGlobalLobby(socket.id);
     
     // Find which room this socket belongs to
     let playerRoom = null;
@@ -340,6 +402,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('colocarReforco', (nomePais) => {
+    console.log(`🔧 colocarReforco recebido: ${nomePais} do socket ${socket.id}`);
+    
     // Find which room this socket belongs to
     let playerRoom = null;
     for (const [roomId, room] of gameRooms) {
@@ -350,19 +414,31 @@ io.on('connection', (socket) => {
       }
     }
     
-    if (!playerRoom || !playerRoom.gameStarted) return;
+    if (!playerRoom || !playerRoom.gameStarted) {
+      console.log(`❌ Sala não encontrada ou jogo não iniciado`);
+      return;
+    }
     
     const jogador = playerRoom.jogadores.find(j => j.socketId === socket.id);
-    if (jogador.nome !== playerRoom.turno || playerRoom.vitoria || playerRoom.derrota) return;
+    
+    if (jogador.nome !== playerRoom.turno || playerRoom.vitoria || playerRoom.derrota) {
+      console.log(`❌ Não é o turno do jogador ou jogo terminado`);
+      return;
+    }
     
     // Verificar se está na fase de remanejamento (não pode colocar reforços)
     if (playerRoom.faseRemanejamento) {
+      console.log(`❌ Jogador tentou colocar reforço durante fase de remanejamento`);
       io.to(playerRoom.roomId).emit('mostrarMensagem', `❌ ${playerRoom.turno} não pode colocar reforços durante a fase de remanejamento!`);
       return;
     }
 
     const pais = playerRoom.paises.find(p => p.nome === nomePais);
-    if (!pais || pais.dono !== playerRoom.turno) return;
+    
+    if (!pais || pais.dono !== playerRoom.turno) {
+      console.log(`❌ País não encontrado ou não pertence ao jogador atual`);
+      return;
+    }
 
     // Verificar se há tropas de bônus de continente para colocar
     let podeColocar = false;
@@ -428,6 +504,7 @@ io.on('connection', (socket) => {
     }
 
     if (podeColocar) {
+      console.log(`✅ Reforço aplicado em ${nomePais}`);
       pais.tropas += 1;
       
       // Só decrementar tropasReforco se não foi uma tropa de bônus
@@ -454,6 +531,8 @@ io.on('connection', (socket) => {
       
       // Verificar vitória após colocar reforço
       checarVitoria(playerRoom);
+    } else {
+      console.log(`❌ Não foi possível colocar reforço: ${mensagemErro}`);
     }
   });
 
@@ -769,6 +848,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('trocarCartasTerritorio', (cartasSelecionadas) => {
+    console.log(`🔧 trocarCartasTerritorio recebido:`, cartasSelecionadas);
+    console.log(`🔧 Tipo dos dados recebidos:`, Array.isArray(cartasSelecionadas) ? 'Array' : 'Outro tipo');
+    console.log(`🔧 Length dos dados:`, cartasSelecionadas ? cartasSelecionadas.length : 'undefined');
+    
     // Find which room this socket belongs to
     let playerRoom = null;
     for (const [roomId, room] of gameRooms) {
@@ -779,16 +862,23 @@ io.on('connection', (socket) => {
       }
     }
     
-    if (!playerRoom || !playerRoom.gameStarted) return;
+    if (!playerRoom || !playerRoom.gameStarted) {
+      console.log(`❌ Sala não encontrada ou jogo não iniciado`);
+      return;
+    }
     
     const jogador = playerRoom.jogadores.find(j => j.socketId === socket.id);
+    console.log(`🔧 Jogador: ${jogador?.nome}, Turno atual: ${playerRoom.turno}`);
+    
     if (!jogador || jogador.nome !== playerRoom.turno) {
+      console.log(`❌ Não é o turno do jogador`);
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Não é sua vez!' });
       return;
     }
     
     // Verificar se está na fase de remanejamento (não pode trocar cartas)
     if (playerRoom.faseRemanejamento) {
+      console.log(`❌ Jogador tentou trocar cartas durante fase de remanejamento`);
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: '❌ Não é possível trocar cartas durante a fase de remanejamento!' });
       return;
     }
@@ -797,13 +887,16 @@ io.on('connection', (socket) => {
     
     // Verificar se tem exatamente 3 cartas selecionadas
     if (cartasSelecionadas.length !== 3) {
+      console.log(`❌ Número incorreto de cartas selecionadas: ${cartasSelecionadas.length}`);
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Você deve selecionar exatamente 3 cartas para trocar!' });
       return;
     }
 
     // Verificar se todas as cartas selecionadas existem no deck do jogador
     const cartasValidas = cartasSelecionadas.every(territorio => cartas.some(carta => carta.territorio === territorio));
+    
     if (!cartasValidas) {
+      console.log(`❌ Cartas inválidas selecionadas`);
       socket.emit('resultadoTrocaCartas', { sucesso: false, mensagem: 'Cartas inválidas selecionadas!' });
       return;
     }
@@ -904,6 +997,7 @@ io.on('connection', (socket) => {
       mensagemJogador += `\n🎯 +2 tropas adicionais em: ${territoriosReforcados.join(', ')}`;
     }
     
+    console.log(`✅ Troca de cartas realizada com sucesso`);
     socket.emit('resultadoTrocaCartas', { sucesso: true, mensagem: mensagemJogador });
     
     // Se era uma troca obrigatória, continuar o turno
@@ -1430,7 +1524,7 @@ function inicializarJogo(room) {
   room.territoriosConquistadosNoTurno = {};
   room.numeroTrocasRealizadas = 0; // Resetar contador de trocas
   
-  console.log(`🎮 Jogo inicializado na sala ${room.roomId} - turno: ${room.turno}, cartas: ${Object.keys(room.cartasTerritorio).length} jogadores com cartas`);
+  console.log(`🎮 Jogo inicializado na sala ${room.roomId} - turno: ${room.turno}`);
   
   const resultadoReforco = calcularReforco(room.turno, room);
   room.tropasReforco = resultadoReforco.base;
@@ -2310,7 +2404,7 @@ function verificarTurnoCPU(room) {
     console.log(`🤖 Iniciando turno da CPU ${jogadorAtual.nome} na sala ${room.roomId}`);
     executarTurnoCPU(jogadorAtual, room);
   } else {
-    console.log(`👤 Turno de jogador humano: ${jogadorAtual.nome} na sala ${room.roomId}`);
+    console.log(`👤 Turno de jogador humano: ${jogadorAtual.nome} na sala ${room.roomId} - aguardando ação do jogador`);
   }
 }
 
@@ -2504,6 +2598,10 @@ function startGame(roomId) {
       s.emit('estadoAtualizado', getEstado(s.id, room));
     }
   });
+  
+  // Verificar se é turno de CPU no início do jogo
+  console.log(`🎮 Verificando turno inicial na sala ${roomId}...`);
+  verificarTurnoCPU(room);
 }
 
 function startGameWithCPUs(roomId) {
