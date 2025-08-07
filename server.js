@@ -415,18 +415,51 @@ io.on('connection', (socket) => {
     
     // Find which room this socket belongs to
     let playerRoom = null;
+    let disconnectedPlayer = null;
     for (const [roomId, room] of gameRooms) {
       const jogador = room.jogadores.find(j => j.socketId === socket.id);
       if (jogador) {
         playerRoom = room;
+        disconnectedPlayer = jogador;
         jogador.socketId = null;
         console.log(`Socket ${socket.id} removido de ${jogador.nome} na sala ${roomId}`);
         break;
       }
     }
     
-    // Send lobby update to the room if found
-    if (playerRoom) {
+    // Handle disconnection during game
+    if (playerRoom && playerRoom.gameStarted && disconnectedPlayer) {
+      console.log(`🔄 Jogador ${disconnectedPlayer.nome} desconectou durante o jogo na sala ${playerRoom.roomId}`);
+      
+      // Notify all players about the disconnection
+      io.to(playerRoom.roomId).emit('mostrarMensagem', `⚠️ ${disconnectedPlayer.nome} desconectou! CPU assumirá o controle.`);
+      io.to(playerRoom.roomId).emit('adicionarAoHistorico', `⚠️ ${disconnectedPlayer.nome} desconectou - CPU assumindo controle`);
+      
+      // If it's the disconnected player's turn, pass the turn immediately
+      if (playerRoom.turno === disconnectedPlayer.nome) {
+        console.log(`🔄 Turno de ${disconnectedPlayer.nome} será passado automaticamente`);
+        io.to(playerRoom.roomId).emit('mostrarMensagem', `🔄 Turno de ${disconnectedPlayer.nome} passado automaticamente devido à desconexão.`);
+        
+        // Pass the turn immediately
+        passarTurno(playerRoom);
+      }
+      
+      // Activate CPU for the disconnected player
+      if (!disconnectedPlayer.isCPU) {
+        disconnectedPlayer.isCPU = true;
+        console.log(`🤖 CPU ativada para ${disconnectedPlayer.nome}`);
+        io.to(playerRoom.roomId).emit('mostrarMensagem', `🤖 CPU ativada para ${disconnectedPlayer.nome}`);
+        
+        // Check if it's now a CPU turn
+        verificarTurnoCPU(playerRoom);
+      }
+      
+      // Send updated state to all remaining clients
+      enviarEstadoParaTodos(playerRoom);
+    }
+    
+    // Send lobby update to the room if found (for lobby phase)
+    if (playerRoom && !playerRoom.gameStarted) {
       sendLobbyUpdate(playerRoom.roomId);
     }
   });

@@ -1396,7 +1396,7 @@ function create() {
     console.log('🎨 Canvas left:', canvasInDOM.style.left);
   }
 
-  const mapaImage = this.add.image(0, 40, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+  const mapaImage = this.add.image(0, 18, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
   console.log('🗺️ Imagem do mapa adicionada!');
   console.log('🗺️ Mapa image object:', mapaImage);
   console.log('🗺️ Mapa visible:', mapaImage.visible);
@@ -1899,7 +1899,7 @@ function atualizarPaises(novosPaises, scene) {
     }
     
          // Criar o polígono na posição (minX, minY + 40) com pontos relativos para alinhar com o mapa
-     obj.polygon = scene.add.polygon(minX, minY + 40, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
+     obj.polygon = scene.add.polygon(minX, minY + 18, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
      obj.polygon.setOrigin(0, 0);
      obj.polygon.setStrokeStyle(4, 0x000000, 1); // Add black border for visibility
      obj.polygon.setInteractive({ 
@@ -1911,7 +1911,7 @@ function atualizarPaises(novosPaises, scene) {
      // Debug logs for first few territories
      if (gameState.paises.length < 5) {
        console.log(`🗺️ Território criado: ${pais.nome}`);
-       console.log(`🗺️ Posição: (${minX}, ${minY + 40})`);
+       console.log(`🗺️ Posição: (${minX}, ${minY + 18})`);
        console.log(`🗺️ Cor: ${coresDosDonos[pais.dono] || 0xffffff}`);
        console.log(`🗺️ Pontos: ${pontosRelativos.length} pontos`);
        console.log(`🗺️ Polygon object:`, obj.polygon);
@@ -2253,6 +2253,20 @@ function limparSelecao() {
   if (gameState.selecionado && gameState.selecionado.polygon && gameState.selecionado.polygon.scene) {
     removerElevacaoTerritorio(gameState.selecionado.nome, gameState.selecionado.polygon.scene);
   }
+  
+  // Limpar elevação de todos os territórios que possam ter sido elevados durante remanejamento
+  gameState.paises.forEach(pais => {
+    if (pais.polygon && pais.polygon.scene) {
+      // Verificar se o território tem borda branca (indicando que foi elevado durante remanejamento)
+      const strokeStyle = pais.polygon.strokeStyle;
+      if (strokeStyle && strokeStyle.color === 0xffffff && strokeStyle.width === 8) {
+        // Restaurar borda normal
+        pais.polygon.setStrokeStyle(4, 0x000000, 1);
+        // Remover elevação
+        removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
+      }
+    }
+  });
   
   gameState.selecionado = null;
 }
@@ -4269,7 +4283,7 @@ function adicionarIndicadoresContinentes(scene) {
 
   // Criar indicadores para cada continente
   indicadoresContinentes.forEach(indicador => {
-    const textoIndicador = scene.add.text(indicador.x, indicador.y + 40, indicador.texto, {
+    const textoIndicador = scene.add.text(indicador.x, indicador.y + 18, indicador.texto, {
       fontSize: '14px',
       fill: '#ffffff',
       stroke: '#000000',
@@ -4302,8 +4316,8 @@ function adicionarIndicadoresContinentes(scene) {
       const linha = scene.add.graphics();
       linha.lineStyle(2, 0xffffff, 0.7); // Linha branca semi-transparente
       linha.beginPath();
-      linha.moveTo(territorio.x, territorio.y + 40);
-      linha.lineTo(indicador.x, indicador.y + 40);
+      linha.moveTo(territorio.x, territorio.y + 18);
+      linha.lineTo(indicador.x, indicador.y + 18);
       linha.strokePath();
       linha.setDepth(2); // Colocar abaixo dos indicadores mas acima dos territórios
     } else {
@@ -5682,10 +5696,6 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   const largura = scene.sys.game.config.width;
   const altura = scene.sys.game.config.height;
   
-  // Criar overlay com blur effect
-  const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.3);
-  overlay.setDepth(30);
-  
   // Container principal - estilo similar ao chat
   const container = scene.add.container(largura/2, altura/2);
   container.setDepth(31);
@@ -5767,7 +5777,6 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   // Armazenar referência para poder fechar depois
   window.indicacaoInicioTurno = {
     container: container,
-    overlay: overlay,
     scene: scene
   };
 }
@@ -5778,17 +5787,25 @@ function fecharIndicacaoInicioTurno() {
     if (window.indicacaoInicioTurno.container) {
       window.indicacaoInicioTurno.container.destroy();
     }
-    if (window.indicacaoInicioTurno.overlay) {
-      window.indicacaoInicioTurno.overlay.destroy();
-    }
     
     // Remover destaque dos territórios
     const gameState = getGameState();
     if (gameState && gameState.paises) {
       gameState.paises.forEach(pais => {
         if (pais.polygon && pais.polygon.scene) {
-          // Restaurar borda normal
-          pais.polygon.setStrokeStyle(4, 0x000000, 1);
+          // Verificar se o território pertence ao continente prioritário
+          let pertenceAoContinentePrioritario = false;
+          if (gameState.continentePrioritario) {
+            const continente = gameState.continentes[gameState.continentePrioritario.nome];
+            if (continente && continente.territorios.includes(pais.nome)) {
+              pertenceAoContinentePrioritario = true;
+            }
+          }
+          
+          // Restaurar borda normal apenas se não for território prioritário
+          if (!pertenceAoContinentePrioritario) {
+            pais.polygon.setStrokeStyle(4, 0x000000, 1);
+          }
           // Remover elevação
           removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
         }
