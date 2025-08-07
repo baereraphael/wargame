@@ -8,11 +8,24 @@ let roomSelectionScreen = null;
 
 // Turn Timer System
 let turnTimer = null;
-let turnTimeLeft = 90; // 1 minute and 30 seconds in seconds
+let turnTimeLeft = 90; // 1:30 in seconds
 let turnTimerInterval = null;
 let isPlayerTurn = false;
-let isClockTickingPlaying = false; // Track if clock ticking sound is playing
+let isClockTickingPlaying = false;
 let timerJustExpired = false; // Prevent timer from restarting immediately after expiration
+
+// Turn Confirmation Popup System
+let turnConfirmationPopup = null;
+let turnConfirmationTimeout = null;
+let turnConfirmationTimeLeft = 30; // 30 seconds to confirm turn
+let turnConfirmationInterval = null;
+let forcedTurnCount = 0; // Count of forced turns for this player
+let maxForcedTurns = 2; // Maximum allowed forced turns before disconnect
+
+// Debug function to log forced turn count
+function logForcedTurnCount() {
+  console.log('🔍 DEBUG: forcedTurnCount =', forcedTurnCount, 'maxForcedTurns =', maxForcedTurns);
+}
 
 // Initialize login system
 document.addEventListener('DOMContentLoaded', function() {
@@ -124,6 +137,291 @@ function updateGlobalTimerDisplay() {
 // Legacy function for compatibility
 function updateTimerDisplay() {
   updateGlobalTimerDisplay();
+}
+
+// Turn Confirmation Popup Functions
+function showTurnConfirmationPopup(scene) {
+  console.log('🚀 showTurnConfirmationPopup called');
+  console.log('🚀 Scene:', scene);
+  console.log('🚀 Current forcedTurnCount:', forcedTurnCount);
+  console.log('🚀 Current isPlayerTurn:', isPlayerTurn);
+  console.log('🚀 Current turnConfirmationPopup:', turnConfirmationPopup);
+  
+  if (!scene || !scene.add) {
+    console.log('❌ Invalid scene in showTurnConfirmationPopup');
+    return;
+  }
+  
+  // Hide any existing popup
+  hideTurnConfirmationPopup();
+  
+  // Reset confirmation time
+  turnConfirmationTimeLeft = 30;
+  
+  // Get screen dimensions
+  const largura = scene.scale.width;
+  const altura = scene.scale.height;
+  
+  // Create popup container
+  turnConfirmationPopup = scene.add.container(largura/2, altura/2);
+  turnConfirmationPopup.setDepth(25);
+  
+  // Background overlay
+  const overlay = scene.add.rectangle(0, 0, largura, altura, 0x000000, 0.7);
+  overlay.setDepth(0);
+  turnConfirmationPopup.add(overlay);
+  
+  // Main popup background - smaller and more compact
+  const background = scene.add.rectangle(0, 0, 450, 280, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(2, 0x0077cc);
+  background.setDepth(1);
+  turnConfirmationPopup.add(background);
+  
+  // Header - smaller
+  const headerBg = scene.add.rectangle(0, -110, 450, 50, 0x0077cc, 0.9);
+  headerBg.setDepth(2);
+  turnConfirmationPopup.add(headerBg);
+  
+  // Turn icon - smaller
+  const turnIcon = scene.add.text(-180, -110, '⚔️', {
+    fontSize: '20px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(3);
+  turnConfirmationPopup.add(turnIcon);
+  
+  // Title - smaller and better positioned
+  const title = scene.add.text(-150, -110, 'SEU TURNO COMEÇOU!', {
+    fontSize: '16px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0, 0.5).setDepth(3);
+  turnConfirmationPopup.add(title);
+  
+  // Decorative line
+  const linhaDecorativa = scene.add.rectangle(0, -85, 400, 1, 0x444444, 0.8);
+  linhaDecorativa.setDepth(2);
+  turnConfirmationPopup.add(linhaDecorativa);
+  
+  // Content container
+  const contentContainer = scene.add.container(0, -20);
+  contentContainer.setDepth(3);
+  turnConfirmationPopup.add(contentContainer);
+  
+  // Warning icon - smaller
+  const warningIcon = scene.add.text(0, -30, '⚠️', {
+    fontSize: '28px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(3);
+  contentContainer.add(warningIcon);
+  
+  // Warning message - more compact
+  const warningText = scene.add.text(0, 10, `Se não confirmar, seu turno será passado automaticamente.\n\nApós ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.`, {
+    fontSize: '13px',
+    fill: '#ffffff',
+    align: 'center',
+    wordWrap: { width: 380 },
+    stroke: '#000000',
+    strokeThickness: 1,
+    lineSpacing: 5
+  }).setOrigin(0.5).setDepth(3);
+  contentContainer.add(warningText);
+  
+  // Timer container
+  const timerContainer = scene.add.container(0, 70);
+  timerContainer.setDepth(3);
+  turnConfirmationPopup.add(timerContainer);
+  
+  // Timer label - above the timer box
+  const timerLabel = scene.add.text(0, -20, 'Tempo Restante', {
+    fontSize: '11px',
+    fill: '#cccccc',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(3);
+  timerContainer.add(timerLabel);
+  
+  // Timer background - smaller
+  const timerBg = scene.add.rectangle(0, 5, 120, 35, 0x2a2a2a, 0.9);
+  timerBg.setStrokeStyle(1, 0x0077cc);
+  timerContainer.add(timerBg);
+  
+  // Timer display - smaller
+  const timerText = scene.add.text(0, 5, `${turnConfirmationTimeLeft}s`, {
+    fontSize: '14px',
+    fill: '#ffff00',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setDepth(3);
+  timerContainer.add(timerText);
+  
+  // Button container
+  const buttonContainer = scene.add.container(0, 130);
+  buttonContainer.setDepth(3);
+  turnConfirmationPopup.add(buttonContainer);
+  
+  // Confirm button - smaller
+  const confirmButton = scene.add.text(0, 0, 'CONFIRMAR TURNO', {
+    fontSize: '16px',
+    fill: '#ffffff',
+    backgroundColor: '#33cc33',
+    padding: { x: 20, y: 10 },
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(3);
+  
+  // Button hover effect
+  confirmButton.on('pointerover', () => {
+    confirmButton.setBackgroundColor('#44dd44');
+  });
+  
+  confirmButton.on('pointerout', () => {
+    confirmButton.setBackgroundColor('#33cc33');
+  });
+  
+  confirmButton.on('pointerdown', () => {
+    tocarSomClick();
+    confirmTurn();
+  });
+  
+  buttonContainer.add(confirmButton);
+  
+  // Start countdown
+  startTurnConfirmationCountdown(scene, timerText);
+  
+  // Animation
+  turnConfirmationPopup.setScale(0.8);
+  scene.tweens.add({
+    targets: turnConfirmationPopup,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 300,
+    ease: 'Back.easeOut'
+  });
+}
+
+function startTurnConfirmationCountdown(scene, timerText) {
+  console.log('⏰ startTurnConfirmationCountdown called');
+  console.log('⏰ Initial turnConfirmationTimeLeft:', turnConfirmationTimeLeft);
+  console.log('⏰ Timer text element:', timerText);
+  console.log('⏰ Current forcedTurnCount:', forcedTurnCount);
+  
+  turnConfirmationInterval = setInterval(() => {
+    turnConfirmationTimeLeft--;
+    console.log('⏰ Countdown tick - time left:', turnConfirmationTimeLeft);
+    
+    if (timerText) {
+      timerText.setText(`${turnConfirmationTimeLeft}s`);
+      
+      // Change color based on time remaining
+      if (turnConfirmationTimeLeft <= 10) {
+        timerText.setColor('#ff3333');
+      } else if (turnConfirmationTimeLeft <= 20) {
+        timerText.setColor('#ffaa00');
+      }
+    }
+    
+    if (turnConfirmationTimeLeft <= 0) {
+      console.log('⏰ Turn confirmation timeout - forcing turn pass');
+      console.log('⏰ Current forcedTurnCount before forceTurnPass:', forcedTurnCount);
+      forceTurnPass();
+    }
+  }, 1000);
+}
+
+function hideTurnConfirmationPopup() {
+  console.log('🚫 hideTurnConfirmationPopup called');
+  console.log('🚫 turnConfirmationInterval:', turnConfirmationInterval);
+  console.log('🚫 turnConfirmationPopup:', turnConfirmationPopup);
+  
+  if (turnConfirmationInterval) {
+    console.log('🚫 Clearing turnConfirmationInterval');
+    clearInterval(turnConfirmationInterval);
+    turnConfirmationInterval = null;
+  }
+  
+  if (turnConfirmationPopup) {
+    console.log('🚫 Destroying turnConfirmationPopup');
+    turnConfirmationPopup.destroy();
+    turnConfirmationPopup = null;
+  }
+}
+
+function confirmTurn() {
+  console.log('✅ confirmTurn called');
+  console.log('✅ Current forcedTurnCount before reset:', forcedTurnCount);
+  
+  forcedTurnCount = 0; // Reset forced turn count on successful confirmation
+  console.log('✅ forcedTurnCount reset to 0');
+  
+  hideTurnConfirmationPopup();
+  
+  // Start the normal turn timer
+  const gameState = getGameState();
+  console.log('✅ Game state in confirmTurn:', gameState);
+  if (gameState && gameState.meuNome === gameState.turno) {
+    console.log('✅ Starting normal turn timer');
+    startTurnTimer();
+  } else {
+    console.log('❌ Cannot start timer - not my turn or no game state');
+  }
+}
+
+function forceTurnPass() {
+  const gameState = getGameState();
+  if (!gameState) {
+    console.log('❌ No game state found in forceTurnPass');
+    return;
+  }
+  
+  console.log('🚀 forceTurnPass called for player:', gameState.meuNome);
+  console.log('🚀 Current turn:', gameState.turno);
+  console.log('🚀 Is my turn:', gameState.meuNome === gameState.turno);
+  console.log('🚀 Current forcedTurnCount before increment:', forcedTurnCount);
+  
+  forcedTurnCount++;
+  console.log(`⚠️ Turn forced to pass (${forcedTurnCount}/${maxForcedTurns})`);
+  logForcedTurnCount();
+  
+  hideTurnConfirmationPopup();
+  
+  // Check if we should disconnect the player
+  if (forcedTurnCount >= maxForcedTurns) {
+    // Disconnect player after max forced turns
+    console.log('🚫 Player exceeded max forced turns - disconnecting');
+    console.log('🚫 forcedTurnCount:', forcedTurnCount, 'maxForcedTurns:', maxForcedTurns);
+    mostrarMensagem('❌ Você foi desconectado por inatividade!');
+    
+    // Emit disconnect event immediately
+    console.log('📤 Emitting playerInactive event');
+    emitWithRoom('playerInactive', { playerName: gameState.meuNome });
+    
+    // Force disconnect after a short delay
+    setTimeout(() => {
+      console.log('🔄 Reloading page due to inactivity');
+      window.location.reload();
+    }, 2000);
+    
+    return; // Exit early to prevent further turn passing
+  }
+  
+  // If not disconnecting, force turn to pass
+  console.log('📤 Forcing turn to pass due to inactivity');
+  emitWithRoom('passarTurno');
+  
+  // Also emit forceTurnChange as backup
+  setTimeout(() => {
+    console.log('🔄 Backup: Emitting forceTurnChange');
+    emitWithRoom('forceTurnChange');
+  }, 500);
+  
+  // Show warning message
+  mostrarMensagem(`⚠️ Turno passado automaticamente! (${forcedTurnCount}/${maxForcedTurns})`);
+  
+  // Reset the turn confirmation flag to prevent immediate popup
+  isPlayerTurn = false;
 }
 
 function endTurnByTimeout() {
@@ -246,7 +544,39 @@ function initializeGame() {
     
     // Reset timer expiration flag when turn changes
     if (previousTurn !== gameState.turno) {
+      console.log('🔄 TURN CHANGE DETECTED!');
+      console.log('🔄 Previous turn:', previousTurn);
+      console.log('🔄 New turn:', gameState.turno);
+      console.log('🔄 My name:', gameState.meuNome);
+      console.log('🔄 Is my turn?', gameState.meuNome === gameState.turno);
+      console.log('🔄 Current forcedTurnCount before logic:', forcedTurnCount);
+      
       timerJustExpired = false;
+      console.log('🔄 Timer flag reset');
+      
+      // Stop any existing timer when turn changes
+      if (isPlayerTurn) {
+        console.log('🔄 Stopping existing timer');
+        stopTurnTimer();
+      }
+      
+      // Hide turn confirmation popup when turn changes
+      console.log('🔄 Hiding turn confirmation popup');
+      hideTurnConfirmationPopup();
+      
+      // Only reset forced turn count when turn changes to a different player
+      if (gameState.meuNome !== gameState.turno) {
+        console.log('🔄 Turn changed to different player - resetting forced turn count from', forcedTurnCount, 'to 0');
+        forcedTurnCount = 0;
+        logForcedTurnCount();
+      } else {
+        // Keep the forced turn count when it's still the same player's turn
+        console.log('🔄 Same player turn - keeping forced turn count:', forcedTurnCount);
+        logForcedTurnCount();
+      }
+    } else {
+      console.log('🔄 No turn change - same turn:', gameState.turno);
+      console.log('🔄 Current forcedTurnCount:', forcedTurnCount);
     }
     
     gameState.tropasReforco = estado.tropasReforco;
@@ -332,12 +662,12 @@ function initializeGame() {
   socket.on('vitoria', (nomeJogador) => {
     console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
     mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
-    bloquearJogo(`Jogador ${nomeJogador} venceu!`, this);
+    bloquearJogo(`Jogador ${nomeJogador} venceu!`, currentScene);
   });
 
   socket.on('derrota', () => {
     mostrarMensagem(`Você perdeu!`);
-    perdeuJogo(`Você perdeu!`, this);
+    perdeuJogo(`Você perdeu!`, currentScene);
   });
 
   socket.on('tocarSomTiro', () => {
@@ -359,20 +689,26 @@ function initializeGame() {
     
     // Só mostrar a interface para o jogador atacante
     if (dados.jogadorAtacante === gameState.meuNome) {
+      // Verificar se já existe uma interface aberta
+      if (interfaceTransferenciaConquista) {
+        console.log('🔧 DEBUG: Interface de transferência já está aberta, ignorando');
+        return;
+      }
+      
       dadosConquista = dados;
       console.log('DEBUG: dadosConquista definido como', dadosConquista);
-      mostrarInterfaceTransferenciaConquista(dados, this);
+      mostrarInterfaceTransferenciaConquista(dados, currentScene);
     }
   });
 
   socket.on('mostrarObjetivo', (objetivo) => {
-    mostrarObjetivo(objetivo, this);
+    mostrarObjetivo(objetivo, currentScene);
   });
 
   socket.on('mostrarCartasTerritorio', (cartas) => {
     // Não abrir se já estiver aberto
     if (modalCartasTerritorioAberto) return;
-    mostrarCartasTerritorio(cartas, this);
+    mostrarCartasTerritorio(cartas, currentScene);
   });
 
   socket.on('forcarTrocaCartas', (dados) => {
@@ -382,7 +718,7 @@ function initializeGame() {
     // Só mostrar para o jogador específico
     const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
-      mostrarCartasTerritorio(dados.cartas, this, true);
+      mostrarCartasTerritorio(dados.cartas, currentScene, true);
     }
   });
 
@@ -395,10 +731,12 @@ function initializeGame() {
       // Fechar modal e continuar o turno
       modalCartasTerritorioAberto = false;
       // Destruir elementos do modal se existirem
-      const overlay = this.children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
-      const container = this.children.list.find(child => child.type === 'Container' && child.depth === 21);
-      if (overlay) overlay.destroy();
-      if (container) container.destroy();
+      if (currentScene) {
+        const overlay = currentScene.children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
+        const container = currentScene.children.list.find(child => child.type === 'Container' && child.depth === 21);
+        if (overlay) overlay.destroy();
+        if (container) container.destroy();
+      }
     } else {
       console.log('❌ Troca de cartas falhou:', resultado.mensagem);
       mostrarMensagem(`❌ ${resultado.mensagem}`);
@@ -410,18 +748,33 @@ function initializeGame() {
   });
 
   socket.on('resultadoVerificacaoMovimento', (resultado) => {
+    console.log('🔧 DEBUG: resultadoVerificacaoMovimento recebido:', resultado);
+    
     const gameState = getGameState();
     if (!gameState) return;
     
     if (resultado.podeMover) {
+      console.log('🔧 DEBUG: Movimento aprovado, mostrando interface de remanejamento');
       // Encontrar os territórios selecionados
       const territorioOrigem = gameState.paises.find(p => p.nome === gameState.selecionado.nome);
       const territorioDestino = gameState.paises.find(p => p.nome === resultado.territorioDestino);
       
+      console.log('🔧 DEBUG: Território origem encontrado:', territorioOrigem ? territorioOrigem.nome : 'não encontrado');
+      console.log('🔧 DEBUG: Território destino encontrado:', territorioDestino ? territorioDestino.nome : 'não encontrado');
+      
       if (territorioOrigem && territorioDestino) {
-        mostrarInterfaceRemanejamento(territorioOrigem, territorioDestino, this, resultado.quantidadeMaxima);
+        // Verificar se já existe uma interface aberta
+        if (interfaceRemanejamento) {
+          console.log('🔧 DEBUG: Interface de remanejamento já está aberta, ignorando');
+          return;
+        }
+        
+        mostrarInterfaceRemanejamento(territorioOrigem, territorioDestino, currentScene, resultado.quantidadeMaxima);
+      } else {
+        console.log('🔧 DEBUG: Erro - territórios não encontrados no gameState');
       }
     } else {
+      console.log('🔧 DEBUG: Movimento negado:', resultado.motivo);
       mostrarMensagem(`❌ ${resultado.motivo}`);
       limparSelecao();
     }
@@ -792,20 +1145,29 @@ function getSocket() {
 // Helper function to emit events with room ID
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
+  console.log(`📤 emitWithRoom called for event: ${event}`);
+  console.log(`📤 Socket available:`, !!socket);
+  console.log(`📤 currentRoomId:`, currentRoomId);
+  console.log(`📤 Data:`, data);
+  
   if (socket && currentRoomId) {
     // Handle different data types
     if (typeof data === 'string') {
       // If data is a string (like country name), send it directly
+      console.log(`📤 Emitting string data: ${data}`);
       socket.emit(event, data);
     } else if (Array.isArray(data)) {
       // If data is an array, send it directly (don't add roomId to arrays)
+      console.log(`📤 Emitting array data:`, data);
       socket.emit(event, data);
     } else {
       // If data is an object, spread it and add roomId
-      socket.emit(event, { ...data, roomId: currentRoomId });
+      const eventData = { ...data, roomId: currentRoomId };
+      console.log(`📤 Emitting object data:`, eventData);
+      socket.emit(event, eventData);
     }
   } else {
-    console.error('Socket ou roomId não disponível para emitir evento:', event);
+    console.error('❌ Socket ou roomId não disponível para emitir evento:', event);
   }
 }
 
@@ -839,6 +1201,9 @@ let interfaceReforco = null;
 
 // Variáveis para interface de transferência após conquista
 let interfaceTransferenciaConquista = null;
+
+// Variáveis para interface de remanejamento
+let interfaceRemanejamento = null;
 let tropasParaTransferir = 0;
 let dadosConquista = null;
 let botaoObjetivo = null;
@@ -1086,6 +1451,22 @@ function create() {
           cliqueEmInterface = true;
           console.log('DEBUG: Clique detectado dentro da interface de transferência');
         }
+      }
+      
+      if (interfaceRemanejamento) {
+        const localX = pointer.x - interfaceRemanejamento.x;
+        const localY = pointer.y - interfaceRemanejamento.y;
+        // Aumentar a área de detecção para incluir todos os botões
+        if (localX >= -150 && localX <= 150 && localY >= -90 && localY <= 90) {
+          cliqueEmInterface = true;
+          console.log('DEBUG: Clique detectado dentro da interface de remanejamento');
+        }
+      }
+      
+      // Verificar se há modais abertos (objetivo ou cartas território)
+      if (modalObjetivoAberto || modalCartasTerritorioAberto) {
+        cliqueEmInterface = true;
+        console.log('DEBUG: Clique detectado dentro de modal aberto');
       }
       
       // Se clicou em uma interface, não fazer nada mais
@@ -1482,10 +1863,22 @@ function atualizarPaises(novosPaises, scene) {
                return;
              }
              
+             // Verificar se já existe uma interface aberta
+             if (interfaceReforco) {
+               console.log('🔧 DEBUG: Interface de reforço já está aberta, ignorando clique');
+               return;
+             }
+             
              // Pode colocar tropa de bônus neste país
              mostrarInterfaceReforco(obj, pointer, scene);
              return;
            } else {
+             // Verificar se já existe uma interface aberta
+             if (interfaceReforco) {
+               console.log('🔧 DEBUG: Interface de reforço já está aberta, ignorando clique');
+               return;
+             }
+             
              // Não há tropas de bônus, pode colocar tropas base
              mostrarInterfaceReforco(obj, pointer, scene);
              return;
@@ -1494,6 +1887,11 @@ function atualizarPaises(novosPaises, scene) {
 
          // Verificar se está na fase de remanejamento
          if (gameState.faseRemanejamento && obj.dono === gameState.turno && gameState.turno === gameState.meuNome) {
+           console.log('🔧 DEBUG: Clique em território durante fase de remanejamento');
+           console.log('🔧 DEBUG: Território clicado:', obj.nome);
+           console.log('🔧 DEBUG: Território selecionado:', gameState.selecionado ? gameState.selecionado.nome : 'nenhum');
+           console.log('🔧 DEBUG: Vizinhos do selecionado:', gameState.selecionado ? gameState.selecionado.vizinhos : 'nenhum');
+           
            if (!gameState.selecionado) {
              // Selecionar território de origem
              gameState.selecionado = obj;
@@ -1501,20 +1899,24 @@ function atualizarPaises(novosPaises, scene) {
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              mostrarMensagem(`Território de origem selecionado: ${obj.nome}. Clique em um território vizinho para mover tropas.`);
              tocarSomHuh();
+             console.log('🔧 DEBUG: Território de origem selecionado:', obj.nome);
            } else if (gameState.selecionado === obj) {
              // Deselecionar
              obj.polygon.setStrokeStyle(4, 0x000000, 1);
              gameState.selecionado = null;
              mostrarMensagem('Seleção cancelada');
+             console.log('🔧 DEBUG: Seleção cancelada');
            } else if (gameState.selecionado.vizinhos.includes(obj.nome) && obj.dono === gameState.turno) {
              // Destacar território de destino com borda branca grossa
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
+             console.log('🔧 DEBUG: Verificando movimento de', gameState.selecionado.nome, 'para', obj.nome);
              // Verificar se é possível mover tropas antes de mostrar a interface
              emitWithRoom('verificarMovimentoRemanejamento', {
                origem: gameState.selecionado.nome,
                destino: obj.nome
              });
            } else {
+             console.log('🔧 DEBUG: Movimento inválido - não é vizinho ou não é seu território');
              mostrarMensagem('❌ Só pode mover tropas para territórios vizinhos que você controla!');
            }
            return;
@@ -1581,7 +1983,7 @@ function atualizarPaises(novosPaises, scene) {
     let pertenceAoContinentePrioritario = false;
     const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
     
-    if (totalBonus > 0 && gameState.paises[i].dono === gameState.turno && gameState.continentePrioritario) {
+    if (totalBonus > 0 && gameState.paises[i].dono === gameState.turno && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
       const continente = gameState.continentes[gameState.continentePrioritario.nome];
       if (continente && continente.territorios.includes(gameState.paises[i].nome)) {
         pertenceAoContinentePrioritario = true;
@@ -1626,18 +2028,26 @@ function atualizarTextoBotaoTurno() {
   if (!gameState) return;
   
   // Verificar se o botão existe antes de tentar acessá-lo
-  const botaoTurno = document.getElementById('botao-turno');
+  const botaoTurno = document.getElementById('btn-turn');
   if (!botaoTurno) {
     console.log('⏳ Botão turno ainda não criado, aguardando...');
     return;
   }
   
+  console.log('🔧 DEBUG: Atualizando texto do botão turno');
+  console.log('🔧 DEBUG: faseRemanejamento:', gameState.faseRemanejamento);
+  console.log('🔧 DEBUG: meuNome:', gameState.meuNome);
+  console.log('🔧 DEBUG: turno:', gameState.turno);
+  
   if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = 'Encerrar Turno';
+    console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (fase remanejamento)');
   } else if (gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = 'Encerrar Ataque';
+    console.log('🔧 DEBUG: Botão definido como "Encerrar Ataque" (fase ataque)');
   } else {
     botaoTurno.textContent = 'Encerrar Turno';
+    console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (não é meu turno)');
   }
 }
 
@@ -1645,13 +2055,19 @@ function limparSelecao() {
   const gameState = getGameState();
   if (!gameState) return;
   
+  // Não limpar seleção durante a fase de remanejamento se o jogador estiver no turno
+  if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno && gameState.selecionado) {
+    console.log('🔧 DEBUG: Não limpando seleção durante fase de remanejamento');
+    return;
+  }
+  
   // Limpar todas as bordas especiais e restaurar as bordas normais
   gameState.paises.forEach(p => {
     // Verificar se este país pertence ao continente prioritário
     let pertenceAoContinentePrioritario = false;
     const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
     
-    if (totalBonus > 0 && p.dono === gameState.turno && gameState.continentePrioritario) {
+    if (totalBonus > 0 && p.dono === gameState.turno && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
       const continente = gameState.continentes[gameState.continentePrioritario.nome];
       if (continente && continente.territorios.includes(p.nome)) {
         pertenceAoContinentePrioritario = true;
@@ -1823,7 +2239,7 @@ function desbloquearJogo() {
   if (!gameState) return;
   
   // Verificar se o botão existe antes de tentar acessá-lo
-  const botaoTurno = document.getElementById('botao-turno');
+  const botaoTurno = document.getElementById('btn-turn');
   if (botaoTurno) {
     botaoTurno.disabled = false;
     botaoTurno.style.backgroundColor = '#0077cc';
@@ -1880,9 +2296,8 @@ function tocarSomTakeCard() {
 }
 
 function tocarSomClockTicking() {
-  if (somClockTicking) {
-    somClockTicking.play();
-  }
+  const som = game.sound.add('clockticking', { volume: 0.3 });
+  som.play();
 }
 
 // Função para mostrar efeito visual de ataque
@@ -2478,6 +2893,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   if (pointer.y + 60 > altura) {
     interfaceReforco.y = altura - 60;
   }
+  
+  // Tornar a interface arrastável
+  tornarInterfaceArrastavel(interfaceReforco, scene);
 }
 
 function esconderInterfaceReforco() {
@@ -2521,6 +2939,12 @@ function confirmarReforco() {
 
 // Funções para interface de transferência após conquista
 function mostrarInterfaceTransferenciaConquista(dados, scene) {
+  // Verificar se a scene é válida
+  if (!scene || !scene.add) {
+    console.error('❌ Scene inválida em mostrarInterfaceTransferenciaConquista:', scene);
+    return;
+  }
+  
   // Esconder interface anterior se existir
   esconderInterfaceTransferenciaConquista(true);
   
@@ -2703,6 +3127,9 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   function atualizarTextoQuantidadeTransferencia() {
     textoQuantidade.setText(`${tropasParaTransferir}/${dados.tropasDisponiveis}`);
   }
+  
+  // Tornar a interface arrastável
+  tornarInterfaceArrastavel(interfaceTransferenciaConquista, scene);
 }
 
 function esconderInterfaceTransferenciaConquista(manterDados = false) {
@@ -2740,12 +3167,24 @@ function confirmarTransferenciaConquista() {
 }
 
 function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima = null) {
+  console.log('🔧 DEBUG: mostrarInterfaceRemanejamento chamada');
+  console.log('🔧 DEBUG: Origem:', origem ? origem.nome : 'não definido');
+  console.log('🔧 DEBUG: Destino:', destino ? destino.nome : 'não definido');
+  console.log('🔧 DEBUG: Scene:', scene ? 'válida' : 'inválida');
+  console.log('🔧 DEBUG: Quantidade máxima:', quantidadeMaxima);
+  
+  // Verificar se a scene é válida
+  if (!scene || !scene.add) {
+    console.error('❌ Scene inválida em mostrarInterfaceRemanejamento:', scene);
+    return;
+  }
+  
   // Inicializar com 1 tropa
   let tropasParaMover = 1;
   const maxTropas = quantidadeMaxima || (origem.tropas - 1); // Usar quantidade máxima fornecida ou calcular
   
   // Criar container para a interface
-  const interfaceRemanejamento = scene.add.container(400, 300);
+  interfaceRemanejamento = scene.add.container(400, 300);
   interfaceRemanejamento.setDepth(20);
   
   // Background principal com gradiente
@@ -2941,9 +3380,18 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   function atualizarTextoQuantidadeRemanejamento() {
     textoQuantidade.setText(`${tropasParaMover}/${maxTropas}`);
   }
+  
+  // Tornar a interface arrastável
+  tornarInterfaceArrastavel(interfaceRemanejamento, scene);
 }
 
 function mostrarObjetivo(objetivo, scene) {
+  // Verificar se a scene é válida
+  if (!scene || !scene.add) {
+    console.error('❌ Scene inválida em mostrarObjetivo:', scene);
+    return;
+  }
+  
   // Fechar outras modais primeiro
   fecharTodasModais();
   
@@ -3088,9 +3536,18 @@ function mostrarObjetivo(objetivo, scene) {
     duration: 200,
     ease: 'Power2'
   });
+  
+  // Tornar a modal arrastável
+  tornarInterfaceArrastavel(container, scene);
 }
 
 function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
+  // Verificar se a scene é válida
+  if (!scene || !scene.add) {
+    console.error('❌ Scene inválida em mostrarCartasTerritorio:', scene);
+    return;
+  }
+  
   // Fechar outras modais primeiro
   fecharTodasModais();
   
@@ -3362,6 +3819,9 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     duration: 200,
     ease: 'Power2'
   });
+  
+  // Tornar a modal arrastável
+  tornarInterfaceArrastavel(container, scene);
 }
 
 // Variável global para controlar se os indicadores já foram criados
@@ -3484,12 +3944,22 @@ function updateCSSHUD() {
         // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
-        // Start timer if it's our turn and not already running and timer hasn't just expired
-        if (gameState.meuNome === gameState.turno && !isPlayerTurn && !timerJustExpired) {
-          console.log('🚀 Starting turn timer for player:', gameState.meuNome);
-          startTurnTimer();
-        } else if (gameState.meuNome === gameState.turno && !isPlayerTurn && timerJustExpired) {
-          console.log('⏸️ Timer not started - just expired for player:', gameState.meuNome);
+        // Show turn confirmation popup if it's our turn and not already running
+        if (gameState.meuNome === gameState.turno && !isPlayerTurn) {
+          console.log('🎮 Player turn detected - forcedTurnCount:', forcedTurnCount);
+          console.log('🎮 isPlayerTurn:', isPlayerTurn);
+          console.log('🎮 gameState.meuNome:', gameState.meuNome);
+          console.log('🎮 gameState.turno:', gameState.turno);
+          console.log('🎮 turnConfirmationPopup exists:', !!turnConfirmationPopup);
+          
+          if (forcedTurnCount === 0) {
+            console.log('🚀 Showing turn confirmation popup for player:', gameState.meuNome);
+            showTurnConfirmationPopup(currentScene);
+          } else {
+            console.log('⏸️ Skipping popup - player has forced turn count:', forcedTurnCount);
+            // Start timer directly without popup for players with forced turn history
+            startTurnTimer();
+          }
         }
       } else {
         // Hide timer if it's CPU turn or game is over
@@ -4134,4 +4604,67 @@ function getPlayerColor(playerName) {
   const colors = Object.values(colorMap);
   const index = playerName.length % colors.length;
   return colors[index];
+}
+
+// Função para tornar uma interface arrastável
+function tornarInterfaceArrastavel(container, scene) {
+  if (!container || !scene) return;
+  
+  // Adicionar interatividade ao container
+  container.setInteractive(new Phaser.Geom.Rectangle(-175, -100, 350, 200), Phaser.Geom.Rectangle.Contains);
+  
+  // Variáveis para controlar o drag
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+  
+  // Evento de início do drag
+  container.on('pointerdown', (pointer) => {
+    isDragging = true;
+    
+    // Calcular offset do clique em relação ao centro da interface
+    dragOffsetX = pointer.x - container.x;
+    dragOffsetY = pointer.y - container.y;
+    
+    // Mudar cursor para indicar que está arrastando
+    scene.input.setDefaultCursor('grabbing');
+  });
+  
+  // Evento de movimento do mouse durante o drag
+  container.on('pointermove', (pointer) => {
+    if (isDragging) {
+      // Posicionar a interface diretamente na posição do mouse menos o offset
+      container.x = pointer.x - dragOffsetX;
+      container.y = pointer.y - dragOffsetY;
+    }
+  });
+  
+  // Evento de fim do drag
+  container.on('pointerup', () => {
+    if (isDragging) {
+      isDragging = false;
+      // Restaurar cursor padrão
+      scene.input.setDefaultCursor('default');
+    }
+  });
+  
+  // Evento quando o mouse sai da interface - NÃO parar o drag
+  container.on('pointerout', () => {
+    // Não fazer nada - manter o drag ativo
+  });
+  
+  // Adicionar listener global para capturar pointerup mesmo fora da interface
+  const globalPointerUp = () => {
+    if (isDragging) {
+      isDragging = false;
+      scene.input.setDefaultCursor('default');
+    }
+  };
+  
+  scene.input.on('pointerup', globalPointerUp);
+  
+  // Limpar o listener global quando a interface for destruída
+  container.on('destroy', () => {
+    scene.input.off('pointerup', globalPointerUp);
+  });
 }

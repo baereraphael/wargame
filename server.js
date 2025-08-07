@@ -417,7 +417,7 @@ io.on('connection', (socket) => {
     io.to(playerRoom.roomId).emit('tocarSomMovimento');
 
     // Send updated state to all clients in this room
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
     
     // Verificar vitória após transferir tropas
     checarVitoria(playerRoom);
@@ -570,7 +570,7 @@ io.on('connection', (socket) => {
       });
 
       // Send updated state to all clients in this room
-      io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+      enviarEstadoParaTodos(playerRoom);
       
       // Verificar vitória após colocar reforço
       checarVitoria(playerRoom);
@@ -692,7 +692,7 @@ io.on('connection', (socket) => {
     });
     
     // Send updated state to all clients in this room
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
 
     });
 
@@ -728,7 +728,7 @@ io.on('connection', (socket) => {
       playerRoom.faseRemanejamento = true;
       io.to(playerRoom.roomId).emit('mostrarMensagem', `🔄 ${playerRoom.turno} está na fase de remanejamento. Clique em um território para mover tropas.`);
       io.to(playerRoom.roomId).emit('iniciarFaseRemanejamento');
-      io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+      enviarEstadoParaTodos(playerRoom);
       return;
     }
 
@@ -772,11 +772,69 @@ io.on('connection', (socket) => {
     playerRoom.tropasBonusContinente = resultadoReforco.bonus;
 
     io.to(playerRoom.roomId).emit('mostrarMensagem', `🎮 Turno de ${playerRoom.turno}. Reforços: ${playerRoom.tropasReforco} base + ${Object.values(playerRoom.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
     
     // Verificar se é turno de CPU
     verificarTurnoCPU(playerRoom);
 
+  });
+
+  // Player inactive event - handle player disconnection due to inactivity
+  socket.on('playerInactive', (data) => {
+    console.log('🚫 Player inactive event received:', data);
+    console.log('🚫 Socket ID:', socket.id);
+    
+    // Find which room this socket belongs to
+    let playerRoom = null;
+    for (const [roomId, room] of gameRooms) {
+      const jogador = room.jogadores.find(j => j.socketId === socket.id);
+      if (jogador) {
+        playerRoom = room;
+        console.log('🚫 Found player room:', roomId);
+        break;
+      }
+    }
+    
+    if (!playerRoom) {
+      console.log('🚫 No player room found for socket:', socket.id);
+      return;
+    }
+    
+    if (!playerRoom.gameStarted) {
+      console.log('🚫 Game not started in room:', playerRoom.roomId);
+      return;
+    }
+    
+    const jogador = playerRoom.jogadores.find(j => j.socketId === socket.id);
+    if (!jogador) {
+      console.log('🚫 No player found for socket:', socket.id);
+      return;
+    }
+    
+    console.log(`🚫 Converting inactive player ${jogador.nome} to CPU`);
+    console.log(`🚫 Current turn: ${playerRoom.turno}`);
+    console.log(`🚫 Is this player's turn? ${playerRoom.turno === jogador.nome}`);
+    
+    // Convert player to CPU
+    jogador.isCPU = true;
+    jogador.ativo = true;
+    jogador.socketId = null; // Remove socket association
+    
+    console.log(`🚫 Player ${jogador.nome} converted to CPU`);
+    
+    // Notify other players
+    io.to(playerRoom.roomId).emit('mostrarMensagem', `🤖 ${jogador.nome} foi desconectado por inatividade e substituído por uma CPU`);
+    
+    // Send updated state
+    enviarEstadoParaTodos(playerRoom);
+    
+    // If it was this player's turn, continue with CPU turn
+    if (playerRoom.turno === jogador.nome) {
+      console.log(`🚫 Continuing with CPU turn for ${jogador.nome}`);
+      verificarTurnoCPU(playerRoom);
+    } else {
+      console.log(`🚫 Not this player's turn, continuing normally`);
+    }
   });
 
   // Force turn change event for timer timeout
@@ -842,7 +900,7 @@ io.on('connection', (socket) => {
     playerRoom.tropasBonusContinente = resultadoReforco.bonus;
 
     io.to(playerRoom.roomId).emit('mostrarMensagem', `⏰ Turno forçado para ${playerRoom.turno} devido ao timeout. Reforços: ${playerRoom.tropasReforco} base + ${Object.values(playerRoom.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
     
     // Check if it's CPU turn
     verificarTurnoCPU(playerRoom);
@@ -1055,13 +1113,15 @@ io.on('connection', (socket) => {
     }
     
     // Atualizar estado para todos os clientes na sala
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
     
     // Verificar vitória após troca de cartas
     checarVitoria(playerRoom);
   });
 
   socket.on('verificarMovimentoRemanejamento', (dados) => {
+    console.log('🔧 DEBUG: verificarMovimentoRemanejamento recebido:', dados);
+    
     // Find which room this socket belongs to
     let playerRoom = null;
     for (const [roomId, room] of gameRooms) {
@@ -1072,10 +1132,18 @@ io.on('connection', (socket) => {
       }
     }
     
-    if (!playerRoom || !playerRoom.gameStarted) return;
+    if (!playerRoom || !playerRoom.gameStarted) {
+      console.log('🔧 DEBUG: Sala não encontrada ou jogo não iniciado');
+      return;
+    }
     
     const jogador = playerRoom.jogadores.find(j => j.socketId === socket.id);
+    console.log('🔧 DEBUG: Jogador:', jogador ? jogador.nome : 'não encontrado');
+    console.log('🔧 DEBUG: Turno atual:', playerRoom.turno);
+    console.log('🔧 DEBUG: Fase remanejamento:', playerRoom.faseRemanejamento);
+    
     if (jogador.nome !== playerRoom.turno || playerRoom.vitoria || playerRoom.derrota || !playerRoom.faseRemanejamento) {
+      console.log('🔧 DEBUG: Verificação falhou - não é sua vez ou não está na fase de remanejamento');
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Não é sua vez ou não está na fase de remanejamento' });
       return;
     }
@@ -1083,17 +1151,26 @@ io.on('connection', (socket) => {
     const territorioOrigem = playerRoom.paises.find(p => p.nome === dados.origem);
     const territorioDestino = playerRoom.paises.find(p => p.nome === dados.destino);
     
+    console.log('🔧 DEBUG: Território origem:', territorioOrigem ? territorioOrigem.nome : 'não encontrado');
+    console.log('🔧 DEBUG: Território destino:', territorioDestino ? territorioDestino.nome : 'não encontrado');
+    
     if (!territorioOrigem || !territorioDestino) {
+      console.log('🔧 DEBUG: Territórios não encontrados');
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não encontrados' });
       return;
     }
     
+    console.log('🔧 DEBUG: Dono origem:', territorioOrigem.dono, 'Dono destino:', territorioDestino.dono);
+    console.log('🔧 DEBUG: Vizinhos de origem:', territorioOrigem.vizinhos);
+    
     if (territorioOrigem.dono !== playerRoom.turno || territorioDestino.dono !== playerRoom.turno) {
+      console.log('🔧 DEBUG: Territórios não são do jogador');
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não são seus' });
       return;
     }
     
     if (!territorioOrigem.vizinhos.includes(territorioDestino.nome)) {
+      console.log('🔧 DEBUG: Territórios não são vizinhos');
       socket.emit('resultadoVerificacaoMovimento', { podeMover: false, quantidadeMaxima: 0, motivo: 'Territórios não são vizinhos' });
       return;
     }
@@ -1118,12 +1195,15 @@ io.on('connection', (socket) => {
       return;
     }
 
-    socket.emit('resultadoVerificacaoMovimento', { 
+    console.log('🔧 DEBUG: Movimento aprovado, quantidade máxima:', quantidadeMaxima);
+    const resposta = { 
       podeMover: true, 
       quantidadeMaxima: quantidadeMaxima,
-      destino: dados.destino,
+      territorioDestino: dados.destino,
       motivo: null
-    });
+    };
+    console.log('🔧 DEBUG: Enviando resposta:', resposta);
+    socket.emit('resultadoVerificacaoMovimento', resposta);
   });
 
   socket.on('moverTropas', (dados) => {
@@ -1180,7 +1260,7 @@ io.on('connection', (socket) => {
     checarVitoria(playerRoom);
 
     // Send updated state to all clients in this room
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
   });
 
   socket.on('reiniciarJogo', () => {
@@ -1259,7 +1339,7 @@ io.on('connection', (socket) => {
     playerRoom.tropasReforco = resultadoReforco.base;
     playerRoom.tropasBonusContinente = resultadoReforco.bonus;
     io.to(playerRoom.roomId).emit('mostrarMensagem', `Jogo reiniciado! É a vez do jogador ${playerRoom.turno}.`);
-    io.to(playerRoom.roomId).emit('estadoAtualizado', getEstado(socket.id, playerRoom));
+    enviarEstadoParaTodos(playerRoom);
   });
 });
 
@@ -1333,6 +1413,18 @@ function getEstado(socketId = null, room = null) {
   });
   
   return estado;
+}
+
+// Função para enviar estado atualizado para todos os jogadores da sala
+function enviarEstadoParaTodos(room) {
+  console.log(`🔧 DEBUG: enviarEstadoParaTodos para sala ${room.roomId}`);
+  
+  room.jogadores.forEach(jogador => {
+    if (jogador.socketId) {
+      console.log(`🔧 DEBUG: Enviando estado para ${jogador.nome} (socket: ${jogador.socketId})`);
+      io.to(jogador.socketId).emit('estadoAtualizado', getEstado(jogador.socketId, room));
+    }
+  });
 }
 
 function rolarDado() {
@@ -1420,7 +1512,7 @@ function checarEliminacao(room) {
             io.to(j.socketId).emit('derrota');
         }
         });
-      io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+      enviarEstadoParaTodos(room);
     }
   });
   checarVitoria(room);
@@ -1839,7 +1931,7 @@ function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCP
     });
     
     // Atualizar estado para todos os jogadores
-    io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+    enviarEstadoParaTodos(room);
   }
   
   // Iniciar ataques imediatamente após concentrar tropas
@@ -1859,7 +1951,7 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
   const territoriosDoJogador = room.paises.filter(p => p.dono === jogadorCPU.nome);
   const movimentos = [];
   
-  // ESTRATÉGIA: Identificar territórios que precisam de reforço
+  // ESTRATÉGIA AVANÇADA: Análise completa do mapa
   territoriosDoJogador.forEach(territorio => {
     const pais = room.paises.find(p => p.nome === territorio.nome);
     const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
@@ -1867,14 +1959,62 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
       return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
     });
     
-    // Se tem muitos inimigos e poucas tropas, precisa de reforço
+    const vizinhosProprios = pais.vizinhos.filter(vizinho => {
+      const paisVizinho = room.paises.find(p => p.nome === vizinho);
+      return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
+    });
+    
+    // 1. TERRITÓRIOS VULNERÁVEIS (prioridade máxima)
     if (vizinhosInimigos.length > 0 && pais.tropas <= 2) {
-      // Procurar territórios seguros para mover tropas
-      const vizinhosProprios = pais.vizinhos.filter(vizinho => {
+      vizinhosProprios.forEach(vizinho => {
         const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
+        if (paisVizinho.tropas > 3) {
+          const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
+          if (tropasParaMover > 0) {
+            movimentos.push({
+              origem: paisVizinho,
+              destino: pais,
+              quantidade: tropasParaMover,
+              prioridade: 1000 + vizinhosInimigos.length * 100 + (3 - pais.tropas) * 50
+            });
+          }
+        }
       });
+    }
+    
+    // 2. CONCENTRAÇÃO PARA ATAQUE (se tem objetivo de conquista)
+    if (objetivo?.tipo === 'conquistar3Continentes' && vizinhosInimigos.length > 0) {
+      const continente = Object.keys(room.continentes).find(cont => 
+        room.continentes[cont].territorios.includes(territorio.nome)
+      );
       
+      if (continente === objetivo.continente1 || continente === objetivo.continente2) {
+        // Concentrar tropas em territórios do continente objetivo
+        vizinhosProprios.forEach(vizinho => {
+          const paisVizinho = room.paises.find(p => p.nome === vizinho);
+          const vizinhosInimigosVizinho = paisVizinho.vizinhos.filter(v => {
+            const paisV = room.paises.find(p => p.nome === v);
+            return paisV && paisV.dono !== jogadorCPU.nome;
+          });
+          
+          // Se o vizinho tem menos inimigos, pode doar tropas
+          if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 2) {
+            const tropasParaMover = Math.min(paisVizinho.tropas - 1, 3);
+            if (tropasParaMover > 0) {
+              movimentos.push({
+                origem: paisVizinho,
+                destino: pais,
+                quantidade: tropasParaMover,
+                prioridade: 800 + vizinhosInimigos.length * 80
+              });
+            }
+          }
+        });
+      }
+    }
+    
+    // 3. DEFESA ESTRATÉGICA (territórios com muitos inimigos)
+    if (vizinhosInimigos.length >= 3 && pais.tropas <= 3) {
       vizinhosProprios.forEach(vizinho => {
         const paisVizinho = room.paises.find(p => p.nome === vizinho);
         const vizinhosInimigosVizinho = paisVizinho.vizinhos.filter(v => {
@@ -1882,28 +2022,57 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
           return paisV && paisV.dono !== jogadorCPU.nome;
         });
         
-        // Se o vizinho tem menos inimigos e mais tropas, pode doar tropas
-        if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 3) {
-          const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2); // Deixar pelo menos 2 tropas
-          
+        // Se o vizinho tem menos inimigos e mais tropas, pode doar
+        if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 4) {
+          const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
           if (tropasParaMover > 0) {
             movimentos.push({
               origem: paisVizinho,
               destino: pais,
               quantidade: tropasParaMover,
-              prioridade: vizinhosInimigos.length * 10 + (3 - pais.tropas) * 5
+              prioridade: 600 + vizinhosInimigos.length * 60
             });
           }
         }
       });
+    }
+    
+    // 4. OPORTUNIDADES DE ATAQUE (territórios com alvos fracos próximos)
+    if (vizinhosInimigos.length > 0) {
+      const alvosFracos = vizinhosInimigos.filter(vizinho => {
+        const paisVizinho = room.paises.find(p => p.nome === vizinho);
+        return paisVizinho.tropas <= 2;
+      });
+      
+      if (alvosFracos.length > 0 && pais.tropas <= 3) {
+        vizinhosProprios.forEach(vizinho => {
+          const paisVizinho = room.paises.find(p => p.nome === vizinho);
+          if (paisVizinho.tropas > 3) {
+            const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
+            if (tropasParaMover > 0) {
+              movimentos.push({
+                origem: paisVizinho,
+                destino: pais,
+                quantidade: tropasParaMover,
+                prioridade: 400 + alvosFracos.length * 40
+              });
+            }
+          }
+        });
+      }
     }
   });
   
   // Ordenar movimentos por prioridade
   movimentos.sort((a, b) => b.prioridade - a.prioridade);
   
+  // Limitar a 3 movimentos por turno para não sobrecarregar
+  const movimentosLimitados = movimentos.slice(0, 3);
+  
+  console.log(`🎯 CPU ${jogadorCPU.nome} planejou ${movimentosLimitados.length} movimentos de remanejamento`);
+  
   // Executar movimentos sequencialmente
-  executarMovimentoRemanejamento(jogadorCPU, movimentos, 0, objetivo, room);
+  executarMovimentoRemanejamento(jogadorCPU, movimentosLimitados, 0, objetivo, room);
 }
 
 // Função para executar movimentos de remanejamento
@@ -1911,9 +2080,10 @@ function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo,
   if (room.vitoria || room.derrota) return;
   
   if (index >= movimentos.length) {
-    // Finalizar turno da CPU
+    // Finalizar turno da CPU após remanejamento
     console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno após remanejamento na sala ${room.roomId}...`);
-    io.to(room.roomId).emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno`);
+    console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, room.territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
+    io.to(room.roomId).emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno após remanejamento`);
     
     // Processar cartas da CPU ANTES de passar o turno
     processarCartasJogador(jogadorCPU.nome, room);
@@ -1935,7 +2105,7 @@ function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo,
     io.to(room.roomId).emit('tocarSomMovimento');
     
     // Atualizar estado para todos os jogadores
-    io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+    enviarEstadoParaTodos(room);
   }
   
   // Processar próximo movimento após delay
@@ -2031,19 +2201,18 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
   
   // Finalizar turno se não há mais oportunidades de ataque
   if (index >= oportunidadesAtaque.length) {
-    // ESTRATÉGIA DE CAMPEÃO: Finalizar turno após ataques esmagadores
+    // ESTRATÉGIA DE CAMPEÃO: Finalizar ataques e iniciar remanejamento
     if (room.vitoria || room.derrota) return;
-    console.log(`🏆 CPU ${jogadorCPU.nome} finalizando turno após ataques esmagadores na sala ${room.roomId}...`);
-    console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, room.territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
-    io.to(room.roomId).emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} finalizando turno após ataques esmagadores`);
+    console.log(`🏆 CPU ${jogadorCPU.nome} finalizando ataques, iniciando remanejamento na sala ${room.roomId}...`);
+    console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final dos ataques:`, room.territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
+    io.to(room.roomId).emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} finalizando ataques, iniciando remanejamento`);
     
-    // Processar cartas da CPU ANTES de passar o turno
-    processarCartasJogador(jogadorCPU.nome, room);
-    
-    // Finalizar turno imediatamente
+    // Iniciar fase de remanejamento da CPU
     setTimeout(() => {
-      passarTurno(room);
-    }, 500);
+      if (room.vitoria || room.derrota) return;
+      executarRemanejamentoCPU(jogadorCPU, objetivo, room);
+    }, 1000);
+    
     return;
   }
   
@@ -2129,7 +2298,7 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
           sucesso: true
         });
         
-        io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+        enviarEstadoParaTodos(room);
         // Recalcular oportunidades de ataque após conquista
         setTimeout(() => {
           recalcularOportunidadesAtaque(jogadorCPU, objetivo, index + 1, room);
@@ -2151,7 +2320,7 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
     }
     
     // Atualizar estado para todos os jogadores
-    io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+    enviarEstadoParaTodos(room);
     
   } else {
     console.log(`🤔 CPU ${jogadorCPU.nome} desistiu de atacar ${oportunidade.destino.nome} (desvantagem numérica)`);
@@ -2159,7 +2328,7 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
   }
   
 
-  io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+  enviarEstadoParaTodos(room);
   // Processar próximo ataque após delay
   setTimeout(() => {
     executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index + 1, objetivo, room);
@@ -2575,7 +2744,7 @@ function passarTurno(room) {
         io.to(room.roomId).emit('tocarSomTakeCard');
         
         // Continuar com o turno
-        io.to(room.roomId).emit('estadoAtualizado', getEstado(null, room));
+        enviarEstadoParaTodos(room);
       } else {
         console.log(`❌ CPU ${room.turno} não conseguiu selecionar 3 cartas para trocar`);
       }
