@@ -129,6 +129,167 @@
     margin: 0;
   }
 
+  /* Room Selection Screen Styles */
+  .room-selection-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('assets/background2.png') center center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+  }
+
+  .room-selection-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #444;
+    border-radius: 20px;
+    padding: 40px;
+    width: 700px;
+    max-width: 90vw;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+  }
+
+  .room-selection-header h1 {
+    color: #fff;
+    font-size: 28px;
+    margin: 0 0 10px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .room-selection-header p {
+    color: #ccc;
+    font-size: 16px;
+    margin: 0 0 30px 0;
+  }
+
+  .room-options {
+    display: flex;
+    gap: 20px;
+    margin: 30px 0;
+  }
+
+  .room-option {
+    flex: 1;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #444;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .room-option:hover {
+    border-color: #0077cc;
+    background: rgba(0, 119, 204, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .room-option.selected {
+    border-color: #0077cc;
+    background: rgba(0, 119, 204, 0.3);
+  }
+
+  .room-option-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+
+  .room-option-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .room-option-description {
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .room-input-group {
+    margin: 20px 0;
+  }
+
+  .room-input-group label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .room-input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #444;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .room-input-group input:focus {
+    outline: none;
+    border-color: #0077cc;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 10px rgba(0, 119, 204, 0.3);
+  }
+
+  .room-input-group input::placeholder {
+    color: #888;
+  }
+
+  .room-selection-button {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(45deg, #0077cc, #005fa3);
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px auto 0;
+  }
+
+  .room-selection-button:hover {
+    background: linear-gradient(45deg, #005fa3, #004a82);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 119, 204, 0.4);
+  }
+
+  .room-selection-button:active {
+    transform: translateY(0);
+  }
+
+  .room-selection-button:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .room-selection-button.success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+  }
+
+  .room-selection-button.success:hover {
+    background: linear-gradient(45deg, #20c997, #17a2b8);
+  }
+
   /* Lobby Screen Styles */
   .lobby-screen {
     position: fixed;
@@ -140,7 +301,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1500;
+    z-index: 1400;
   }
 
   .lobby-container {
@@ -1411,6 +1572,41 @@
       padding: 3px 6px;
       min-width: 50px;
     }
+
+    /* Room Selection Responsive */
+    .room-options {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .room-option {
+      padding: 15px;
+    }
+
+    .room-option-icon {
+      font-size: 24px;
+    }
+
+    .room-option-title {
+      font-size: 16px;
+    }
+
+    .room-option-description {
+      font-size: 12px;
+    }
+
+    .room-selection-container {
+      padding: 30px 20px;
+      width: 95vw;
+    }
+
+    .room-selection-header h1 {
+      font-size: 24px;
+    }
+
+    .room-selection-header p {
+      font-size: 14px;
+    }
   }
 </style>
 </head>
@@ -1430,7 +1626,7 @@
         
         <button type="submit" class="login-button">
           <span>🚀</span>
-          <span>ENTRAR NO JOGO</span>
+          <span>CONTINUAR</span>
         </button>
       </form>
       
@@ -1440,12 +1636,63 @@
     </div>
   </div>
 
+  <!-- Room Selection Screen (initially hidden) -->
+  <div class="room-selection-screen" id="room-selection-screen" style="display: none;">
+    <div class="room-selection-container">
+      <div class="room-selection-header">
+        <h1>🏰 Seleção de Sala</h1>
+        <p>Escolha como você quer jogar</p>
+      </div>
+      
+      <div class="room-options">
+        <div class="room-option" id="room-option-join">
+          <div class="room-option-icon">🔗</div>
+          <div class="room-option-title">Entrar em Sala</div>
+          <div class="room-option-description">Junte-se a uma sala existente com outros jogadores</div>
+        </div>
+        
+        <div class="room-option" id="room-option-create">
+          <div class="room-option-icon">➕</div>
+          <div class="room-option-title">Criar Nova Sala</div>
+          <div class="room-option-description">Crie uma nova sala e aguarde outros jogadores</div>
+        </div>
+      </div>
+      
+      <div id="room-join-section" style="display: none;">
+        <div class="room-input-group">
+          <label for="room-id">ID da Sala</label>
+          <input type="text" id="room-id" placeholder="Digite o ID da sala..." maxlength="10">
+        </div>
+        <button class="room-selection-button" id="btn-join-room">
+          <span>🔗</span>
+          <span>ENTRAR NA SALA</span>
+        </button>
+      </div>
+      
+      <div id="room-create-section" style="display: none;">
+        <div class="room-input-group">
+          <label for="new-room-id">ID da Nova Sala (opcional)</label>
+          <input type="text" id="new-room-id" placeholder="Deixe em branco para gerar automaticamente" maxlength="10">
+        </div>
+        <button class="room-selection-button" id="btn-create-room">
+          <span>➕</span>
+          <span>CRIAR SALA</span>
+        </button>
+      </div>
+      
+      <button class="room-selection-button" id="btn-back-to-login" style="background: #666; margin-top: 20px;">
+        <span>⬅️</span>
+        <span>VOLTAR</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Lobby Screen (initially hidden) -->
   <div class="lobby-screen" id="lobby-screen" style="display: none;">
     <div class="lobby-container">
       <div class="lobby-header">
         <h1>🎮 Sala de Espera</h1>
-        <p>Aguardando jogadores se conectarem...</p>
+        <p>Sala: <span id="lobby-room-id">Carregando...</span> | Aguardando jogadores se conectarem...</p>
       </div>
       
       <div class="lobby-timer" id="lobby-timer">
@@ -1466,6 +1713,10 @@
       
       <div class="lobby-footer">
         <p>O jogo iniciará automaticamente em 5 segundos ou quando todos os jogadores se conectarem</p>
+        <button class="room-selection-button" id="btn-copy-room-id" style="background: #28a745; margin-top: 15px;">
+          <span>📋</span>
+          <span>COPIAR ID DA SALA</span>
+        </button>
       </div>
     </div>
   </div>

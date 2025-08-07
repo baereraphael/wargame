@@ -2,6 +2,10 @@
 let playerLoggedIn = false;
 let playerUsername = '';
 
+// Room Selection System
+let currentRoomId = null;
+let roomSelectionScreen = null;
+
 // Turn Timer System
 let turnTimer = null;
 let turnTimeLeft = 90; // 1 minute and 30 seconds in seconds
@@ -123,19 +127,22 @@ function updateTimerDisplay() {
 }
 
 function endTurnByTimeout() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   console.log('⏰ Turno encerrado por timeout! Timer just expired flag set to true');
   timerJustExpired = true; // Set flag to prevent immediate restart
   stopTurnTimer();
   
   // Automatically end turn - force it regardless of game state
-  if (getSocket() && meuNome === turno) {
+  if (getSocket() && gameState.meuNome === gameState.turno) {
     console.log('📤 Emitting passarTurno due to timeout - forcing turn change');
-    getSocket().emit('passarTurno');
+    emitWithRoom('passarTurno');
     
     // Also emit a force turn change event as backup
     setTimeout(() => {
       console.log('🔄 Backup: Emitting forceTurnChange due to timeout');
-      getSocket().emit('forceTurnChange');
+      emitWithRoom('forceTurnChange');
     }, 1000);
   }
 }
@@ -158,15 +165,171 @@ function handleLogin() {
   playerUsername = username;
   playerLoggedIn = true;
   
-  // Hide login screen and show lobby
+  // Hide login screen and show room selection screen
   const loginScreen = document.getElementById('login-screen');
-  const lobbyScreen = document.getElementById('lobby-screen');
+  const roomSelectionScreen = document.getElementById('room-selection-screen');
   
-  if (loginScreen) loginScreen.style.display = 'none';
-  if (lobbyScreen) lobbyScreen.style.display = 'flex';
+  if (loginScreen) {
+    loginScreen.style.display = 'none';
+    console.log('✅ Tela de login ocultada');
+  }
+  if (roomSelectionScreen) {
+    roomSelectionScreen.style.display = 'flex';
+    console.log('✅ Tela de seleção de sala exibida');
+  } else {
+    console.log('❌ Tela de seleção de sala não encontrada!');
+  }
   
-  // Initialize the lobby
-  initializeLobby();
+  // Initialize room selection system
+  initializeRoomSelection();
+}
+
+function initializeRoomSelection() {
+  console.log('🏠 Inicializando sistema de seleção de sala...');
+  
+  // Get room selection elements
+  const joinRoomBtn = document.getElementById('btn-join-room');
+  const createRoomBtn = document.getElementById('btn-create-room');
+  const roomIdInput = document.getElementById('room-id');
+  const copyRoomIdBtn = document.getElementById('btn-copy-room-id');
+  
+
+  
+  // Add event listeners
+  if (joinRoomBtn) {
+    joinRoomBtn.addEventListener('click', () => {
+      const roomId = roomIdInput.value.trim();
+      if (roomId) {
+        joinRoom(roomId);
+      } else {
+        alert('Por favor, digite o ID da sala.');
+      }
+    });
+  }
+  
+  if (createRoomBtn) {
+    createRoomBtn.addEventListener('click', () => {
+      createRoom();
+    });
+  }
+  
+  if (copyRoomIdBtn) {
+    copyRoomIdBtn.addEventListener('click', () => {
+      copyRoomId();
+    });
+  }
+  
+  // Allow Enter key to join room
+  if (roomIdInput) {
+    roomIdInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const roomId = roomIdInput.value.trim();
+        if (roomId) {
+          joinRoom(roomId);
+        }
+      }
+    });
+  }
+  
+  // Add click handlers for room options
+  const roomOptionJoin = document.getElementById('room-option-join');
+  const roomOptionCreate = document.getElementById('room-option-create');
+  const roomJoinSection = document.getElementById('room-join-section');
+  const roomCreateSection = document.getElementById('room-create-section');
+  
+  if (roomOptionJoin) {
+    roomOptionJoin.addEventListener('click', () => {
+      console.log('🔗 Opção "Entrar em Sala" selecionada');
+      // Show join section, hide create section
+      if (roomJoinSection) roomJoinSection.style.display = 'block';
+      if (roomCreateSection) roomCreateSection.style.display = 'none';
+      // Update visual selection
+      roomOptionJoin.classList.add('selected');
+      roomOptionCreate.classList.remove('selected');
+    });
+  }
+  
+  if (roomOptionCreate) {
+    roomOptionCreate.addEventListener('click', () => {
+      console.log('➕ Opção "Criar Nova Sala" selecionada');
+      // Show create section, hide join section
+      if (roomCreateSection) roomCreateSection.style.display = 'block';
+      if (roomJoinSection) roomJoinSection.style.display = 'none';
+      // Update visual selection
+      roomOptionCreate.classList.add('selected');
+      roomOptionJoin.classList.remove('selected');
+    });
+  }
+  
+  // Add back button handler
+  const backButton = document.getElementById('btn-back-to-login');
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      console.log('⬅️ Voltando para tela de login');
+      // Show login screen, hide room selection screen
+      const loginScreen = document.getElementById('login-screen');
+      const roomSelectionScreen = document.getElementById('room-selection-screen');
+      if (loginScreen) loginScreen.style.display = 'flex';
+      if (roomSelectionScreen) roomSelectionScreen.style.display = 'none';
+    });
+  }
+}
+
+function createRoom() {
+  console.log('🏠 Criando nova sala...');
+  
+  // Connect to socket if not already connected
+  const socket = getSocket() || io();
+  window.socket = socket;
+  
+  // Emit create room event
+  socket.emit('createRoom', { username: playerUsername });
+  
+  // Listen for room created response
+  socket.once('roomCreated', (data) => {
+    currentRoomId = data.roomId;
+    console.log(`✅ Sala criada com ID: ${currentRoomId}`);
+    
+    // Show room selection screen and update with room ID
+    const roomSelectionScreen = document.getElementById('room-selection-screen');
+    if (roomSelectionScreen) {
+      roomSelectionScreen.style.display = 'none';
+    }
+    
+    // Initialize lobby with room ID
+    initializeLobby();
+  });
+}
+
+function joinRoom(roomId) {
+  console.log(`🏠 Tentando entrar na sala: ${roomId}`);
+  
+  // Connect to socket if not already connected
+  const socket = getSocket() || io();
+  window.socket = socket;
+  
+  // Emit join room event
+  socket.emit('joinRoom', { roomId: roomId, username: playerUsername });
+  
+  // Listen for join room response
+  socket.once('roomJoined', (data) => {
+    currentRoomId = data.roomId;
+    console.log(`✅ Entrou na sala: ${currentRoomId}`);
+    
+    // Show room selection screen and update with room ID
+    const roomSelectionScreen = document.getElementById('room-selection-screen');
+    if (roomSelectionScreen) {
+      roomSelectionScreen.style.display = 'none';
+    }
+    
+    // Initialize lobby with room ID
+    initializeLobby();
+  });
+  
+  // Listen for join room error
+  socket.once('roomJoinError', (error) => {
+    alert(`Erro ao entrar na sala: ${error.message}`);
+  });
 }
 
 function initializeGame() {
@@ -206,28 +369,57 @@ function initializeGame() {
     addChatMessage(dados.player, dados.message, new Date(dados.timestamp));
     
     // Play sound if message is from another player and chat is not open
-    if (dados.player !== (playerUsername || meuNome) && !historyPopupVisible) {
+    const gameState = getGameState();
+    if (gameState && dados.player !== (playerUsername || gameState.meuNome) && !gameState.historyPopupVisible) {
       tocarSomHuh();
     }
   });
 }
 
 function initializeLobby() {
-  console.log('🎮 Inicializando lobby...');
+  console.log(`🎮 Inicializando lobby para sala: ${currentRoomId}`);
   
-  const socket = io(); // conecta no servidor socket.io
-  window.socket = socket; // Make socket globally available
+  // Show lobby screen
+  const lobbyScreen = document.getElementById('lobby-screen');
+  if (lobbyScreen) lobbyScreen.style.display = 'flex';
   
-  // Wait for socket connection before starting lobby
-  socket.on('connect', () => {
-    console.log('Socket conectado, iniciando lobby...');
+  // Update lobby room ID display
+  const lobbyRoomId = document.getElementById('lobby-room-id');
+  if (lobbyRoomId) lobbyRoomId.textContent = currentRoomId;
+  
+  const socket = getSocket();
+  if (!socket) {
+    console.error('Socket não encontrado!');
+    return;
+  }
+  
+  // Check if socket is already connected
+  if (socket.connected) {
+    console.log('Socket já conectado, iniciando lobby...');
     
-    // Emit player joined event
-    socket.emit('playerJoinedLobby', { username: playerUsername });
+    // Emit player joined event with room ID
+    socket.emit('playerJoinedLobby', { 
+      username: playerUsername, 
+      roomId: currentRoomId 
+    });
     
     // Start lobby timer
     startLobbyTimer();
-  });
+  } else {
+    // Wait for socket connection before starting lobby
+    socket.on('connect', () => {
+      console.log('Socket conectado, iniciando lobby...');
+      
+      // Emit player joined event with room ID
+      socket.emit('playerJoinedLobby', { 
+        username: playerUsername, 
+        roomId: currentRoomId 
+      });
+      
+      // Start lobby timer
+      startLobbyTimer();
+    });
+  }
   
   // Handle connection errors
   socket.on('connect_error', (error) => {
@@ -241,7 +433,7 @@ function initializeLobby() {
   });
   
   socket.on('gameStarting', () => {
-    console.log('🎮 Jogo iniciando...');
+    console.log('🎮 Recebido evento gameStarting do servidor!');
     startGame();
   });
   
@@ -252,27 +444,19 @@ function initializeLobby() {
 }
 
 function startLobbyTimer() {
-  console.log('⏰ Iniciando timer do lobby...');
-  lobbyTimeLeft = 5; // Reset to 5 seconds
-  updateLobbyTimerDisplay();
-  
-  lobbyTimerInterval = setInterval(() => {
-    lobbyTimeLeft--;
-    updateLobbyTimerDisplay();
-    
-    if (lobbyTimeLeft <= 0) {
-      console.log('⏰ Timer do lobby expirou!');
-      clearInterval(lobbyTimerInterval);
-      // Server will handle game start
-    }
-  }, 1000);
+  console.log('⏰ Timer do lobby será controlado pelo servidor');
+  // Timer is now controlled by server via lobbyUpdate events
+  // We just need to wait for the first lobbyUpdate to sync the timer
 }
 
 function updateLobbyTimerDisplay() {
   const timerDisplay = document.getElementById('lobby-timer-display');
   const timerElement = document.getElementById('lobby-timer');
   
-  if (!timerDisplay) return;
+  if (!timerDisplay) {
+    console.error('❌ Elemento lobby-timer-display não encontrado!');
+    return;
+  }
   
   const minutes = Math.floor(lobbyTimeLeft / 60);
   const seconds = lobbyTimeLeft % 60;
@@ -281,15 +465,23 @@ function updateLobbyTimerDisplay() {
   timerDisplay.textContent = timeString;
   
   // Update visual state based on time remaining
-  timerElement.className = 'lobby-timer';
-  if (lobbyTimeLeft <= 10) {
-    timerElement.classList.add('danger');
-  } else if (lobbyTimeLeft <= 30) {
-    timerElement.classList.add('warning');
+  if (timerElement) {
+    timerElement.className = 'lobby-timer';
+    if (lobbyTimeLeft <= 10) {
+      timerElement.classList.add('danger');
+    } else if (lobbyTimeLeft <= 30) {
+      timerElement.classList.add('warning');
+    }
   }
 }
 
 function updateLobbyDisplay(data) {
+  // Sync timer with server
+  if (data.timeLeft !== undefined) {
+    lobbyTimeLeft = data.timeLeft;
+    updateLobbyTimerDisplay();
+  }
+  
   const playersList = document.getElementById('lobby-players-list');
   const statusText = document.getElementById('lobby-status-text');
   
@@ -328,14 +520,14 @@ function updateLobbyDisplay(data) {
     playersList.appendChild(playerElement);
   });
   
-  // Update status text
+  // Update status text with room information
   const connectedPlayers = data.players.filter(p => p.socketId).length;
   const totalPlayers = data.players.length;
   
   if (connectedPlayers === totalPlayers) {
-    statusText.textContent = `Todos os jogadores conectados! Iniciando jogo...`;
+    statusText.textContent = `Sala ${currentRoomId}: Todos os jogadores conectados! Iniciando jogo...`;
   } else {
-    statusText.textContent = `${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
+    statusText.textContent = `Sala ${currentRoomId}: ${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
   }
 }
 
@@ -360,34 +552,93 @@ function startGame() {
   initializeGame();
 }
 
+function copyRoomId() {
+  if (currentRoomId) {
+    navigator.clipboard.writeText(currentRoomId).then(() => {
+      const copyBtn = document.getElementById('btn-copy-room-id');
+      if (copyBtn) {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copiado!';
+        copyBtn.classList.add('success');
+        
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.classList.remove('success');
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Erro ao copiar ID da sala:', err);
+      alert('Erro ao copiar ID da sala. Tente copiar manualmente: ' + currentRoomId);
+    });
+  }
+}
+
 // Lobby variables
 let lobbyTimeLeft = 5; // 5 seconds
 let lobbyTimerInterval = null;
 let lobbyPlayers = [];
 let gameStarted = false;
 
-let paises = [];
-let jogadores = [];
-let turno = null;
-let tropasReforco = 0;
-let tropasBonusContinente = {}; // Track bonus troops by continent
-let selecionado = null;
-let meuNome = null;
-let continentes = {};
-let continentePrioritario = null; // Continente com prioridade para reforço
-let faseRemanejamento = false; // Controla se está na fase de remanejamento
-let cartasTerritorio = {}; // Cartas território do jogador
-let actionHistory = []; // Array to store action history
-let actionHistoryMaxSize = 50; // Maximum number of history entries to keep
-let historyPopupVisible = false; // Track if history popup is visible
-let chatMessages = []; // Array to store chat messages
-let chatMessagesMaxSize = 100; // Maximum number of chat messages to keep
-let currentTab = 'chat'; // Track current active tab
-let unreadMessages = 0; // Track unread messages
+// Game state management for multi-room support
+let gameStates = new Map(); // Map to store game states for each room
+
+// Helper function to get current room's game state
+function getGameState() {
+  if (!currentRoomId) {
+    console.error('currentRoomId não disponível para obter game state');
+    return null;
+  }
+  
+  if (!gameStates.has(currentRoomId)) {
+    // Initialize game state for this room
+    gameStates.set(currentRoomId, {
+      paises: [],
+      jogadores: [],
+      turno: null,
+      tropasReforco: 0,
+      tropasBonusContinente: {}, // Track bonus troops by continent
+      selecionado: null,
+      meuNome: null,
+      continentes: {},
+      continentePrioritario: null, // Continente com prioridade para reforço
+      faseRemanejamento: false, // Controla se está na fase de remanejamento
+      cartasTerritorio: {}, // Cartas território do jogador
+      actionHistory: [], // Array to store action history
+      actionHistoryMaxSize: 50, // Maximum number of history entries to keep
+      historyPopupVisible: false, // Track if history popup is visible
+      chatMessages: [], // Array to store chat messages
+      chatMessagesMaxSize: 100, // Maximum number of chat messages to keep
+      currentTab: 'chat', // Track current active tab
+      unreadMessages: 0, // Track unread messages
+      vitoria: false,
+      derrota: false
+    });
+  }
+  
+  return gameStates.get(currentRoomId);
+}
+
+// Helper function to clear game state when leaving a room
+function clearGameState(roomId) {
+  if (gameStates.has(roomId)) {
+    gameStates.delete(roomId);
+    console.log(`🧹 Game state cleared for room: ${roomId}`);
+  }
+}
 
 // Get socket from global scope
 function getSocket() {
   return window.socket;
+}
+
+// Helper function to emit events with room ID
+function emitWithRoom(event, data = {}) {
+  const socket = getSocket();
+  if (socket && currentRoomId) {
+    socket.emit(event, { ...data, roomId: currentRoomId });
+  } else {
+    console.error('Socket ou roomId não disponível para emitir evento:', event);
+  }
 }
 
 // Cores dos jogadores
@@ -404,9 +655,6 @@ const coresDosDonos = {
 
 let botaoTurno;
 let currentScene = null; // Global reference to current Phaser scene
-
-let vitoria = false;
-let derrota = false;
 
 let overlay;
 let textoVitoriaGrande;
@@ -531,20 +779,21 @@ function create() {
 
   // Add event listeners for CSS buttons
   botaoTurno.addEventListener('click', () => {
-    if (vitoria || derrota) return;
+    const gameState = getGameState();
+    if (!gameState || gameState.vitoria || gameState.derrota) return;
     tocarSomClick();
     stopTurnTimer(); // Stop timer when manually ending turn
-    getSocket().emit('passarTurno');
+    emitWithRoom('passarTurno');
   });
 
   botaoObjetivo.addEventListener('click', () => {
     tocarSomClick();
-    getSocket().emit('consultarObjetivo');
+    emitWithRoom('consultarObjetivo');
   });
 
   botaoCartasTerritorio.addEventListener('click', () => {
     tocarSomClick();
-    getSocket().emit('consultarCartasTerritorio');
+    emitWithRoom('consultarCartasTerritorio');
   });
 
   // CSS HUD handles positioning automatically
@@ -629,15 +878,19 @@ function create() {
   });
 
   botaoReiniciar.on('pointerdown', () => {
-    if (vitoria || derrota) return;
+    const gameState = getGameState();
+    if (!gameState || gameState.vitoria || gameState.derrota) return;
     tocarSomClick();
-    getSocket().emit('reiniciarJogo');
+    emitWithRoom('reiniciarJogo');
   });
    
        // DEBUG: Detectar cliques fora dos territórios
     this.input.on('pointerdown', (pointer) => {
+      const gameState = getGameState();
+      if (!gameState) return;
+      
       // Verificar se o clique foi em algum território
-      const territorioClicado = paises.find(pais => {
+      const territorioClicado = gameState.paises.find(pais => {
         if (pais.polygon && pais.polygon.getBounds()) {
           return pais.polygon.getBounds().contains(pointer.x, pointer.y);
         }
@@ -684,24 +937,30 @@ function create() {
     console.log('🗺️ Países recebidos:', estado.paises ? estado.paises.length : 'undefined');
     console.log('📊 Estado completo:', estado);
     
-    jogadores = estado.jogadores;
-    const previousTurn = turno; // Store previous turn
-    turno = estado.turno;
+    const gameState = getGameState();
+    if (!gameState) {
+      console.error('❌ Game state não disponível para atualizar estado');
+      return;
+    }
+    
+    gameState.jogadores = estado.jogadores;
+    const previousTurn = gameState.turno; // Store previous turn
+    gameState.turno = estado.turno;
     
     // Reset timer expiration flag when turn changes
-    if (previousTurn !== turno) {
+    if (previousTurn !== gameState.turno) {
       timerJustExpired = false;
     }
     
-    tropasReforco = estado.tropasReforco;
-    tropasBonusContinente = estado.tropasBonusContinente || {};
-    vitoria = estado.vitoria;
-    derrota = estado.derrota
-    meuNome = estado.meuNome;
-    continentes = estado.continentes || {};
-    continentePrioritario = estado.continentePrioritario || null;
-    faseRemanejamento = estado.faseRemanejamento || false;
-    cartasTerritorio = estado.cartasTerritorio || {};
+    gameState.tropasReforco = estado.tropasReforco;
+    gameState.tropasBonusContinente = estado.tropasBonusContinente || {};
+    gameState.vitoria = estado.vitoria;
+    gameState.derrota = estado.derrota;
+    gameState.meuNome = estado.meuNome;
+    gameState.continentes = estado.continentes || {};
+    gameState.continentePrioritario = estado.continentePrioritario || null;
+    gameState.faseRemanejamento = estado.faseRemanejamento || false;
+    gameState.cartasTerritorio = estado.cartasTerritorio || {};
 
     if (currentScene && estado.paises) {
       console.log('✅ Chamando atualizarPaises...');
@@ -715,7 +974,7 @@ function create() {
     atualizarHUD();
     atualizarTextoBotaoTurno();
 
-    const jogadorLocal = jogadores.find(j => j.nome === meuNome);
+    const jogadorLocal = gameState.jogadores.find(j => j.nome === gameState.meuNome);
 
     if (!jogadorLocal.ativo) {
       perdeuJogo(`Você perdeu!`, this);
@@ -724,8 +983,8 @@ function create() {
       desbloquearJogo();
     }
 
-    if (vitoria) {
-      bloquearJogo(`Jogador ${turno} venceu!`, this);
+    if (gameState.vitoria) {
+      bloquearJogo(`Jogador ${gameState.turno} venceu!`, this);
       return;
     } else {
       desbloquearJogo();
@@ -737,21 +996,24 @@ function create() {
   });
 
   getSocket().on('adicionarAoHistorico', (mensagem) => {
+    const gameState = getGameState();
+    if (!gameState) return;
+    
     const timestamp = new Date().toLocaleTimeString();
     const historyEntry = {
       timestamp: timestamp,
       message: mensagem
     };
     
-    actionHistory.push(historyEntry);
+    gameState.actionHistory.push(historyEntry);
     
     // Keep only the last N entries
-    if (actionHistory.length > actionHistoryMaxSize) {
-      actionHistory.shift();
+    if (gameState.actionHistory.length > gameState.actionHistoryMaxSize) {
+      gameState.actionHistory.shift();
     }
     
     // Update history display if popup is visible
-    if (historyPopupVisible) {
+    if (gameState.historyPopupVisible) {
       updateHistoryDisplay();
     }
   });
@@ -791,8 +1053,11 @@ function create() {
 
   getSocket().on('territorioConquistado', (dados) => {
     console.log('DEBUG: Recebido territorioConquistado, dados =', dados);
+    const gameState = getGameState();
+    if (!gameState) return;
+    
     // Só mostrar a interface para o jogador atacante
-    if (dados.jogadorAtacante === meuNome) {
+    if (dados.jogadorAtacante === gameState.meuNome) {
       dadosConquista = dados;
       console.log('DEBUG: dadosConquista definido como', dadosConquista);
       mostrarInterfaceTransferenciaConquista(dados, this);
@@ -810,8 +1075,11 @@ function create() {
   });
 
   getSocket().on('forcarTrocaCartas', (dados) => {
+    const gameState = getGameState();
+    if (!gameState) return;
+    
     // Só mostrar para o jogador específico
-    const jogador = jogadores.find(j => j.socketId === socket.id);
+    const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
       mostrarCartasTerritorio(dados.cartas, this, true);
     }
@@ -837,11 +1105,14 @@ function create() {
   });
 
   getSocket().on('resultadoVerificacaoMovimento', (resultado) => {
+    const gameState = getGameState();
+    if (!gameState) return;
+    
     if (resultado.podeMover) {
       // Encontrar os territórios selecionados
-      const territorioOrigem = paises.find(p => p.nome === selecionado.nome);
+      const territorioOrigem = gameState.paises.find(p => p.nome === gameState.selecionado.nome);
       // Encontrar o território de destino que foi clicado
-      const territorioDestino = paises.find(p => p.nome === resultado.destino);
+      const territorioDestino = gameState.paises.find(p => p.nome === resultado.destino);
       
       if (territorioOrigem && territorioDestino) {
         mostrarInterfaceRemanejamento(territorioOrigem, territorioDestino, this, resultado.quantidadeMaxima);
@@ -858,6 +1129,12 @@ function create() {
 function atualizarPaises(novosPaises, scene) {
   console.log('🗺️ atualizarPaises chamada com:', novosPaises.length, 'países');
   console.log('🎮 Scene:', scene);
+  
+  const gameState = getGameState();
+  if (!gameState) {
+    console.error('❌ Game state não disponível para atualizar países');
+    return;
+  }
   
   // Atualizar dados dos países
   const dadosGeograficos = {
@@ -1074,12 +1351,12 @@ function atualizarPaises(novosPaises, scene) {
   };
 
   console.log('📊 Verificando criação de territórios...');
-  console.log('📊 paises.length:', paises.length);
+  console.log('📊 paises.length:', gameState.paises.length);
   console.log('📊 novosPaises.length:', novosPaises.length);
   
-  if (paises.length === 0) {
+  if (gameState.paises.length === 0) {
     console.log('✅ Criando territórios pela primeira vez...');
-    paises = novosPaises.map(pais => {
+    gameState.paises = novosPaises.map(pais => {
       const obj = { ...pais };
 
       const geo = dadosGeograficos[pais.nome];
@@ -1124,7 +1401,7 @@ function atualizarPaises(novosPaises, scene) {
      });
      
      // Debug logs for first few territories
-     if (paises.length < 5) {
+     if (gameState.paises.length < 5) {
        console.log(`🗺️ Território criado: ${pais.nome}`);
        console.log(`🗺️ Posição: (${minX}, ${minY + 40})`);
        console.log(`🗺️ Cor: ${coresDosDonos[pais.dono] || 0xffffff}`);
@@ -1177,15 +1454,16 @@ function atualizarPaises(novosPaises, scene) {
          // DEBUG: Mostrar coordenadas exatas do clique
          console.log(`DEBUG: Clicou em ${obj.nome} nas coordenadas (${pointer.x}, ${pointer.y})`);
          
-         if (vitoria || derrota) return;
+         const gameState = getGameState();
+         if (!gameState || gameState.vitoria || gameState.derrota) return;
          
          // Verificar se há tropas para colocar (base ou bônus)
-         const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-         const temTropasParaColocar = tropasReforco > 0 || totalBonus > 0;
+         const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+         const temTropasParaColocar = gameState.tropasReforco > 0 || totalBonus > 0;
          
-         if (temTropasParaColocar && obj.dono === turno && turno === meuNome) {
+         if (temTropasParaColocar && obj.dono === gameState.turno && gameState.turno === gameState.meuNome) {
            // Verificar se está na fase de remanejamento (não pode colocar reforços)
-           if (faseRemanejamento) {
+           if (gameState.faseRemanejamento) {
              mostrarMensagem("❌ Não é possível colocar reforços durante a fase de remanejamento!");
              return;
            }
@@ -1194,8 +1472,8 @@ function atualizarPaises(novosPaises, scene) {
            if (totalBonus > 0) {
              // Verificar se este país pertence ao continente prioritário
              let podeReceberBonus = false;
-             if (continentePrioritario) {
-               const continente = continentes[continentePrioritario.nome];
+             if (gameState.continentePrioritario) {
+               const continente = gameState.continentes[gameState.continentePrioritario.nome];
                if (continente && continente.territorios.includes(obj.nome)) {
                  podeReceberBonus = true;
                }
@@ -1203,8 +1481,8 @@ function atualizarPaises(novosPaises, scene) {
              
              if (!podeReceberBonus) {
                // Não pode colocar tropas de bônus neste país
-               if (continentePrioritario) {
-                 mostrarMensagem(`❌ Primeiro coloque todas as ${totalBonus} tropas de bônus restantes! (${continentePrioritario.nome}: ${continentePrioritario.quantidade})`);
+               if (gameState.continentePrioritario) {
+                 mostrarMensagem(`❌ Primeiro coloque todas as ${totalBonus} tropas de bônus restantes! (${gameState.continentePrioritario.nome}: ${gameState.continentePrioritario.quantidade})`);
                } else {
                  mostrarMensagem("❌ Este país não pertence a nenhum continente com tropas de bônus pendentes!");
                }
@@ -1222,25 +1500,25 @@ function atualizarPaises(novosPaises, scene) {
          }
 
          // Verificar se está na fase de remanejamento
-         if (faseRemanejamento && obj.dono === turno && turno === meuNome) {
-           if (!selecionado) {
+         if (gameState.faseRemanejamento && obj.dono === gameState.turno && gameState.turno === gameState.meuNome) {
+           if (!gameState.selecionado) {
              // Selecionar território de origem
-             selecionado = obj;
+             gameState.selecionado = obj;
              // Aplicar borda branca grossa apenas no território de origem
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              mostrarMensagem(`Território de origem selecionado: ${obj.nome}. Clique em um território vizinho para mover tropas.`);
              tocarSomHuh();
-           } else if (selecionado === obj) {
+           } else if (gameState.selecionado === obj) {
              // Deselecionar
              obj.polygon.setStrokeStyle(4, 0x000000, 1);
-             selecionado = null;
+             gameState.selecionado = null;
              mostrarMensagem('Seleção cancelada');
-           } else if (selecionado.vizinhos.includes(obj.nome) && obj.dono === turno) {
+           } else if (gameState.selecionado.vizinhos.includes(obj.nome) && obj.dono === gameState.turno) {
              // Destacar território de destino com borda branca grossa
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              // Verificar se é possível mover tropas antes de mostrar a interface
-             getSocket().emit('verificarMovimentoRemanejamento', {
-               origem: selecionado.nome,
+             emitWithRoom('verificarMovimentoRemanejamento', {
+               origem: gameState.selecionado.nome,
                destino: obj.nome
              });
            } else {
@@ -1249,40 +1527,40 @@ function atualizarPaises(novosPaises, scene) {
            return;
          }
 
-        if (obj.dono !== turno && !selecionado) {
+        if (obj.dono !== gameState.turno && !gameState.selecionado) {
           mostrarMensagem("Você só pode selecionar territórios seus no começo da jogada.");
           return;
         }
 
-        if (!selecionado) {
-          selecionado = obj;
+        if (!gameState.selecionado) {
+          gameState.selecionado = obj;
           obj.polygon.setFillStyle(0xffff00, 0.3);
           mostrarMensagem(`País selecionado: ${obj.nome}`);
           tocarSomHuh(); // Tocar som quando selecionar território
-        } else if (selecionado === obj) {
+        } else if (gameState.selecionado === obj) {
           obj.polygon.setFillStyle(coresDosDonos[obj.dono], 1); // usa alpha baixo se quiser estilo antigo
-          selecionado = null;
+          gameState.selecionado = null;
           mostrarMensagem('Seleção cancelada');
         } else {
           // Verificar se está na fase de remanejamento (não pode atacar)
-          if (faseRemanejamento) {
+          if (gameState.faseRemanejamento) {
             mostrarMensagem("❌ Não é possível atacar durante a fase de remanejamento!");
             return;
           }
           
-          if (!selecionado.vizinhos.includes(obj.nome)) {
-            mostrarMensagem(`${obj.nome} não é vizinho de ${selecionado.nome}.`);
+          if (!gameState.selecionado.vizinhos.includes(obj.nome)) {
+            mostrarMensagem(`${obj.nome} não é vizinho de ${gameState.selecionado.nome}.`);
             return;
           }
-          if (obj.dono === selecionado.dono) {
+          if (obj.dono === gameState.selecionado.dono) {
             mostrarMensagem("Você não pode atacar um território seu.");
             return;
           }
-          if (selecionado.tropas <= 1) {
+          if (gameState.selecionado.tropas <= 1) {
             mostrarMensagem("Você precisa de mais de 1 tropa para atacar.");
             return;
           }
-          getSocket().emit('atacar', { de: selecionado.nome, para: obj.nome });
+          emitWithRoom('atacar', { de: gameState.selecionado.nome, para: obj.nome });
           limparSelecao();
         }
       });
@@ -1292,41 +1570,41 @@ function atualizarPaises(novosPaises, scene) {
   }
 
 
-  for (let i = 0; i < paises.length; i++) {
+  for (let i = 0; i < gameState.paises.length; i++) {
 
-    paises[i].dono = novosPaises[i].dono;
-    paises[i].tropas = novosPaises[i].tropas;
-    paises[i].vizinhos = novosPaises[i].vizinhos;
-    paises[i].text.setText(getTextoPais(paises[i]));
+    gameState.paises[i].dono = novosPaises[i].dono;
+    gameState.paises[i].tropas = novosPaises[i].tropas;
+    gameState.paises[i].vizinhos = novosPaises[i].vizinhos;
+    gameState.paises[i].text.setText(getTextoPais(gameState.paises[i]));
     
     // Atualizar círculo e texto das tropas
-    if (paises[i].troopCircle && paises[i].troopText) {
+    if (gameState.paises[i].troopCircle && gameState.paises[i].troopText) {
       // Atualizar cor do círculo baseada no dono
-      paises[i].troopCircle.setFillStyle(coresDosDonos[paises[i].dono] || 0xffffff, 1);
-      paises[i].troopText.setText(paises[i].tropas.toString());
+      gameState.paises[i].troopCircle.setFillStyle(coresDosDonos[gameState.paises[i].dono] || 0xffffff, 1);
+      gameState.paises[i].troopText.setText(gameState.paises[i].tropas.toString());
     }
     
     // Verificar se este país pertence ao continente prioritário
     let pertenceAoContinentePrioritario = false;
-    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
     
-    if (totalBonus > 0 && paises[i].dono === turno && continentePrioritario) {
-      const continente = continentes[continentePrioritario.nome];
-      if (continente && continente.territorios.includes(paises[i].nome)) {
+    if (totalBonus > 0 && gameState.paises[i].dono === gameState.turno && gameState.continentePrioritario) {
+      const continente = gameState.continentes[gameState.continentePrioritario.nome];
+      if (continente && continente.territorios.includes(gameState.paises[i].nome)) {
         pertenceAoContinentePrioritario = true;
       }
     }
     
     // Aplicar cor e borda baseada na prioridade
     if (pertenceAoContinentePrioritario) {
-      paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono], 0.7);
-      paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
+      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+      gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
     } else {
-      paises[i].polygon.setFillStyle(coresDosDonos[paises[i].dono], 0.7);
-      paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
+      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+      gameState.paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
     }
   }
-  selecionado = null;
+  gameState.selecionado = null;
   
   // Adicionar indicadores de continentes após os territórios serem carregados
   adicionarIndicadoresContinentes(scene);
@@ -1348,9 +1626,12 @@ function atualizarHUD() {
 }
 
 function atualizarTextoBotaoTurno() {
-  if (faseRemanejamento && meuNome === turno) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = 'Encerrar Turno';
-  } else if (meuNome === turno) {
+  } else if (gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = 'Encerrar Ataque';
   } else {
     botaoTurno.textContent = 'Encerrar Turno';
@@ -1358,14 +1639,17 @@ function atualizarTextoBotaoTurno() {
 }
 
 function limparSelecao() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Limpar todas as bordas especiais e restaurar as bordas normais
-  paises.forEach(p => {
+  gameState.paises.forEach(p => {
     // Verificar se este país pertence ao continente prioritário
     let pertenceAoContinentePrioritario = false;
-    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
     
-    if (totalBonus > 0 && p.dono === turno && continentePrioritario) {
-      const continente = continentes[continentePrioritario.nome];
+    if (totalBonus > 0 && p.dono === gameState.turno && gameState.continentePrioritario) {
+      const continente = gameState.continentes[gameState.continentePrioritario.nome];
       if (continente && continente.territorios.includes(p.nome)) {
         pertenceAoContinentePrioritario = true;
       }
@@ -1378,10 +1662,13 @@ function limparSelecao() {
       p.polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
     }
   });
-  selecionado = null;
+  gameState.selecionado = null;
 }
 
 function mostrarMensagem(texto) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Handle game restart
   if (texto.includes('Jogo reiniciado')) {
     stopTurnTimer(); // Stop any existing timer
@@ -1418,21 +1705,24 @@ function mostrarMensagem(texto) {
     message: texto
   };
   
-  actionHistory.push(historyEntry);
+  gameState.actionHistory.push(historyEntry);
   
   // Keep only the last N entries
-  if (actionHistory.length > actionHistoryMaxSize) {
-    actionHistory.shift();
+  if (gameState.actionHistory.length > gameState.actionHistoryMaxSize) {
+    gameState.actionHistory.shift();
   }
   
   // Update history display if popup is visible
-  if (historyPopupVisible) {
+  if (gameState.historyPopupVisible) {
     updateHistoryDisplay();
   }
 }
 
 function bloquearJogo(mensagem, scene) {
   console.log('🎯 bloquearJogo chamado com mensagem:', mensagem);
+  
+  const gameState = getGameState();
+  if (!gameState) return;
   
   // Stop turn timer
   stopTurnTimer();
@@ -1444,7 +1734,7 @@ function bloquearJogo(mensagem, scene) {
     botaoTurno.style.cursor = 'not-allowed';
     console.log('✅ Botão turno desabilitado');
     
-    paises.forEach(pais => pais.polygon.disableInteractive());
+    gameState.paises.forEach(pais => pais.polygon.disableInteractive());
     console.log('✅ Territórios desabilitados');
     
     // Mostrar overlay e container de vitória
@@ -1478,6 +1768,9 @@ function bloquearJogo(mensagem, scene) {
 }
 
 function perdeuJogo(mensagem, scene) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Stop turn timer
   stopTurnTimer();
   
@@ -1486,7 +1779,7 @@ function perdeuJogo(mensagem, scene) {
   botaoTurno.style.backgroundColor = '#555';
   botaoTurno.style.cursor = 'not-allowed';
   
-  paises.forEach(pais => pais.polygon.disableInteractive());
+  gameState.paises.forEach(pais => pais.polygon.disableInteractive());
   
   // Mostrar overlay e container de derrota
   overlay.setVisible(true);
@@ -1523,12 +1816,15 @@ function perdeuJogo(mensagem, scene) {
 }
 
 function desbloquearJogo() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // botaoTurno é um elemento HTML, não Phaser
   botaoTurno.disabled = false;
   botaoTurno.style.backgroundColor = '#0077cc';
   botaoTurno.style.cursor = 'pointer';
   
-  paises.forEach(pais => pais.polygon.setInteractive({ useHandCursor: true }));
+  gameState.paises.forEach(pais => pais.polygon.setInteractive({ useHandCursor: true }));
   overlay.setVisible(false);
   containerVitoria.setVisible(false);
 }
@@ -1572,9 +1868,12 @@ function tocarSomClockTicking() {
 
 // Função para mostrar efeito visual de ataque
 function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Encontrar os territórios no mapa
-  const territorioOrigem = paises.find(p => p.nome === origem);
-  const territorioDestino = paises.find(p => p.nome === destino);
+  const territorioOrigem = gameState.paises.find(p => p.nome === origem);
+  const territorioDestino = gameState.paises.find(p => p.nome === destino);
   
   if (!territorioOrigem || !territorioDestino) return;
   
@@ -1736,8 +2035,11 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
 
 // Função para mostrar efeito visual de reforço
 function mostrarEfeitoReforco(territorio, jogador, scene) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Encontrar o território no array de países
-  const pais = paises.find(p => p.nome === territorio);
+  const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais) return;
 
   // Usar as mesmas coordenadas que o efeito de ataque (texto do território)
@@ -1786,20 +2088,23 @@ function mostrarEfeitoReforco(territorio, jogador, scene) {
 
 // Funções para interface de reforço
 function mostrarInterfaceReforco(territorio, pointer, scene) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   // Esconder interface anterior se existir
   esconderInterfaceReforco();
   
   // Calcular tropas disponíveis
-  const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+  const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
   
   // Se há tropas de bônus pendentes, mostrar apenas as do continente prioritário
   let tropasDisponiveis;
-  if (totalBonus > 0 && continentePrioritario) {
+  if (totalBonus > 0 && gameState.continentePrioritario) {
     // Mostrar apenas as tropas de bônus do continente prioritário
-    tropasDisponiveis = continentePrioritario.quantidade;
+    tropasDisponiveis = gameState.continentePrioritario.quantidade;
   } else {
     // Não há tropas de bônus, mostrar tropas base
-    tropasDisponiveis = tropasReforco;
+    tropasDisponiveis = gameState.tropasReforco;
   }
   
   // Inicializar com 1 tropa
@@ -2013,7 +2318,7 @@ function confirmarReforco() {
   if (territorioSelecionadoParaReforco && tropasParaColocar > 0) {
     // Enviar múltiplas vezes para colocar as tropas
     for (let i = 0; i < tropasParaColocar; i++) {
-      getSocket().emit('colocarReforco', territorioSelecionadoParaReforco.nome);
+      emitWithRoom('colocarReforco', territorioSelecionadoParaReforco.nome);
     }
     esconderInterfaceReforco();
   }
@@ -2228,7 +2533,7 @@ function confirmarTransferenciaConquista() {
   
   if (dadosConquista && tropasParaTransferir >= 0) {
     console.log('DEBUG: Enviando transferirTropasConquista para o servidor');
-    getSocket().emit('transferirTropasConquista', {
+    emitWithRoom('transferirTropasConquista', {
       territorioAtacante: dadosConquista.territorioAtacante,
       territorioConquistado: dadosConquista.territorioConquistado,
       quantidade: tropasParaTransferir
@@ -2408,7 +2713,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   botaoConfirmar.on('pointerdown', (pointer) => {
     tocarSomClick();
-    getSocket().emit('moverTropas', {
+    emitWithRoom('moverTropas', {
       origem: origem.nome,
       destino: destino.nome,
       quantidade: tropasParaMover
@@ -2800,7 +3105,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
       if (cartasSelecionadas.length === 3) {
         // Mapear os containers de carta de volta para os nomes dos territórios
         const territoriosSelecionados = cartasSelecionadas.map(cartaContainer => cartaContainer.getData('carta').territorio);
-        getSocket().emit('trocarCartasTerritorio', territoriosSelecionados);
+        emitWithRoom('trocarCartasTerritorio', territoriosSelecionados);
       }
     });
   }
@@ -2881,6 +3186,9 @@ function initializeCSSHUD() {
 }
 
 function updateCSSHUD() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const playerNameEl = document.getElementById('player-name');
   const playerStatsEl = document.getElementById('player-stats');
   const turnMarksEl = document.getElementById('turn-marks');
@@ -2891,17 +3199,17 @@ function updateCSSHUD() {
   // Update player info
   if (playerNameEl) {
     // Use logged in username first, then server-assigned name, then loading
-    const displayName = playerUsername || meuNome || 'Carregando...';
+    const displayName = playerUsername || gameState.meuNome || 'Carregando...';
     playerNameEl.textContent = displayName;
   }
 
   // Update player stats
   if (playerStatsEl) {
-    const tropas = paises
-      .filter(p => p.dono === meuNome)
+    const tropas = gameState.paises
+      .filter(p => p.dono === gameState.meuNome)
       .reduce((soma, p) => soma + p.tropas, 0);
-    const totalBonus = Object.values(tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
-    const totalReforcos = tropasReforco + totalBonus;
+    const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+    const totalReforcos = gameState.tropasReforco + totalBonus;
     playerStatsEl.textContent = `Tropas: ${tropas} | Reforço: ${totalReforcos}`;
   }
 
@@ -2912,7 +3220,7 @@ function updateCSSHUD() {
     
     // Count territories per player
     const playerTerritories = {};
-    paises.forEach(pais => {
+    gameState.paises.forEach(pais => {
       if (pais.dono && pais.dono !== 'Neutro') {
         playerTerritories[pais.dono] = (playerTerritories[pais.dono] || 0) + 1;
       }
@@ -2944,10 +3252,10 @@ function updateCSSHUD() {
       });
 
       // Update pointer to point to current player's section
-      if (turno && playerAngles[turno] !== undefined) {
+      if (gameState.turno && playerAngles[gameState.turno] !== undefined) {
         turnPointerEl.style.display = 'block';
-        turnPointerEl.className = `turn-pointer ${getPlayerColorClass(turno)}`;
-        turnPointerEl.style.transform = `rotate(${playerAngles[turno]}deg)`;
+        turnPointerEl.className = `turn-pointer ${getPlayerColorClass(gameState.turno)}`;
+        turnPointerEl.style.transform = `rotate(${playerAngles[gameState.turno]}deg)`;
       } else {
         turnPointerEl.style.display = 'none';
       }
@@ -2956,9 +3264,9 @@ function updateCSSHUD() {
     }
 
     // Update turn text
-    if (faseRemanejamento && meuNome === turno) {
+    if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
       turnTextEl.textContent = '🔄';
-    } else if (meuNome === turno) {
+    } else if (gameState.meuNome === gameState.turno) {
       turnTextEl.textContent = '⚔️';
     } else {
       turnTextEl.textContent = '⏳';
@@ -2968,19 +3276,19 @@ function updateCSSHUD() {
     const globalTimerEl = document.getElementById('global-turn-timer');
     if (globalTimerEl) {
       // Show timer for all human players' turns (not CPU)
-      const currentPlayer = jogadores.find(j => j.nome === turno);
+      const currentPlayer = gameState.jogadores.find(j => j.nome === gameState.turno);
       const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
       
-      if (isHumanPlayer && !vitoria && !derrota) {
+      if (isHumanPlayer && !gameState.vitoria && !gameState.derrota) {
         // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
         // Start timer if it's our turn and not already running and timer hasn't just expired
-        if (meuNome === turno && !isPlayerTurn && !timerJustExpired) {
-          console.log('🚀 Starting turn timer for player:', meuNome);
+        if (gameState.meuNome === gameState.turno && !isPlayerTurn && !timerJustExpired) {
+          console.log('🚀 Starting turn timer for player:', gameState.meuNome);
           startTurnTimer();
-        } else if (meuNome === turno && !isPlayerTurn && timerJustExpired) {
-          console.log('⏸️ Timer not started - just expired for player:', meuNome);
+        } else if (gameState.meuNome === gameState.turno && !isPlayerTurn && timerJustExpired) {
+          console.log('⏸️ Timer not started - just expired for player:', gameState.meuNome);
         }
       } else {
         // Hide timer if it's CPU turn or game is over
@@ -2999,7 +3307,7 @@ function updateCSSHUD() {
   // Update button states
   if (botaoTurno) {
     // Hide the turn button completely if it's not the player's turn
-    if (meuNome !== turno || vitoria || derrota) {
+    if (gameState.meuNome !== gameState.turno || gameState.vitoria || gameState.derrota) {
       botaoTurno.style.display = 'none';
     } else {
       botaoTurno.style.display = 'flex';
@@ -3007,10 +3315,10 @@ function updateCSSHUD() {
     }
   }
   if (botaoObjetivo) {
-    botaoObjetivo.disabled = vitoria || derrota;
+    botaoObjetivo.disabled = gameState.vitoria || gameState.derrota;
   }
   if (botaoCartasTerritorio) {
-    botaoCartasTerritorio.disabled = vitoria || derrota;
+    botaoCartasTerritorio.disabled = gameState.vitoria || gameState.derrota;
   }
   
   // Atualizar cards dos jogadores se estiverem visíveis
@@ -3094,7 +3402,10 @@ function adicionarIndicadoresContinentes(scene) {
 
     // Adicionar linha conectando o território representativo ao indicador
     // Primeiro, precisamos encontrar as coordenadas do território representativo
-    const territorio = paises.find(p => p.nome === indicador.territorioRepresentativo);
+    const gameState = getGameState();
+    if (!gameState) return;
+    
+    const territorio = gameState.paises.find(p => p.nome === indicador.territorioRepresentativo);
     
     // DEBUG: Log para Zarandis
     if (indicador.nome === 'Zarandis') {
@@ -3146,8 +3457,9 @@ function fecharTodasModais() {
   }
   
   // Fechar popup de histórico
-  if (historyPopupVisible) {
-    historyPopupVisible = false;
+  const gameState = getGameState();
+  if (gameState && gameState.historyPopupVisible) {
+    gameState.historyPopupVisible = false;
     const popup = document.getElementById('history-popup');
     if (popup) {
       popup.style.display = 'none';
@@ -3250,40 +3562,46 @@ function createHistoryPopup() {
 }
 
 function toggleHistoryPopup() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const popup = document.getElementById('history-popup');
   if (!popup) {
     console.log('❌ History popup not found!');
     return;
   }
   
-  console.log('🔄 Toggling history popup, current state:', historyPopupVisible);
+  console.log('🔄 Toggling history popup, current state:', gameState.historyPopupVisible);
   
-  if (!historyPopupVisible) {
+  if (!gameState.historyPopupVisible) {
     // Fechar outras modais primeiro
     fecharTodasModais();
     
     // Abrir popup
-    historyPopupVisible = true;
+    gameState.historyPopupVisible = true;
     popup.style.display = 'block';
     
-    console.log('✅ Popup opened, current tab:', currentTab);
+    console.log('✅ Popup opened, current tab:', gameState.currentTab);
     
     // Show current tab content
-    if (currentTab === 'chat') {
+    if (gameState.currentTab === 'chat') {
       switchToChat();
     } else {
       switchToHistory();
     }
   } else {
     // Fechar popup
-    historyPopupVisible = false;
+    gameState.historyPopupVisible = false;
     popup.style.display = 'none';
     console.log('✅ Popup closed');
   }
 }
 
 function switchToChat() {
-  currentTab = 'chat';
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  gameState.currentTab = 'chat';
   
   console.log('🔄 Switching to chat...');
   
@@ -3344,7 +3662,7 @@ function switchToChat() {
   }
   
   // Reset unread messages when opening chat
-  unreadMessages = 0;
+  gameState.unreadMessages = 0;
   updateHistoryButtonBadge();
   
   // Update chat display
@@ -3352,7 +3670,10 @@ function switchToChat() {
 }
 
 function switchToHistory() {
-  currentTab = 'history';
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  gameState.currentTab = 'history';
   
   // Update tab buttons
   document.getElementById('history-tab').classList.add('active');
@@ -3367,15 +3688,18 @@ function switchToHistory() {
 }
 
 function sendChatMessage() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const input = document.getElementById('chat-input');
   const message = input.value.trim();
   
   if (message.length === 0) return;
   
   // Send message to server
-  getSocket().emit('chatMessage', {
+  emitWithRoom('chatMessage', {
     message: message,
-    player: playerUsername || meuNome
+    player: playerUsername || gameState.meuNome
   });
   
   // Clear input
@@ -3383,42 +3707,48 @@ function sendChatMessage() {
 }
 
 function addChatMessage(player, message, timestamp = new Date()) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const chatMessage = {
     player: player,
     message: message,
     timestamp: timestamp
   };
   
-  chatMessages.push(chatMessage);
+  gameState.chatMessages.push(chatMessage);
   
   // Keep only the last N messages
-  if (chatMessages.length > chatMessagesMaxSize) {
-    chatMessages.shift();
+  if (gameState.chatMessages.length > gameState.chatMessagesMaxSize) {
+    gameState.chatMessages.shift();
   }
   
   // Increment unread messages if from another player and chat not open
-  if (player !== (playerUsername || meuNome) && !historyPopupVisible) {
-    unreadMessages++;
+  if (player !== (playerUsername || gameState.meuNome) && !gameState.historyPopupVisible) {
+    gameState.unreadMessages++;
     updateHistoryButtonBadge();
   }
   
   // Update display if chat is currently visible
-  if (currentTab === 'chat') {
+  if (gameState.currentTab === 'chat') {
     updateChatDisplay();
   }
 }
 
 function updateChatDisplay() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const messagesContainer = document.getElementById('chat-messages');
   if (!messagesContainer) return;
   
-  if (chatMessages.length === 0) {
+  if (gameState.chatMessages.length === 0) {
     messagesContainer.innerHTML = '<div class="chat-empty">Nenhuma mensagem ainda. Seja o primeiro a conversar!</div>';
     return;
   }
   
-  const messagesHTML = chatMessages.map(msg => {
-    const isOwnMessage = msg.player === (playerUsername || meuNome);
+  const messagesHTML = gameState.chatMessages.map(msg => {
+    const isOwnMessage = msg.player === (playerUsername || gameState.meuNome);
     const timeStr = msg.timestamp.toLocaleTimeString('pt-BR', { 
       hour: '2-digit', 
       minute: '2-digit' 
@@ -3444,6 +3774,9 @@ function updateChatDisplay() {
 }
 
 function updateHistoryButtonBadge() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const historyButton = document.getElementById('btn-history');
   if (!historyButton) return;
   
@@ -3454,25 +3787,28 @@ function updateHistoryButtonBadge() {
   }
   
   // Add badge if there are unread messages
-  if (unreadMessages > 0) {
+  if (gameState.unreadMessages > 0) {
     const badge = document.createElement('span');
     badge.className = 'message-badge';
-    badge.textContent = unreadMessages > 99 ? '99+' : unreadMessages.toString();
+    badge.textContent = gameState.unreadMessages > 99 ? '99+' : gameState.unreadMessages.toString();
     historyButton.appendChild(badge);
   }
 }
 
 function updateHistoryDisplay() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const content = document.getElementById('history-content');
   if (!content) return;
   
-  if (actionHistory.length === 0) {
+  if (gameState.actionHistory.length === 0) {
     content.innerHTML = '<div class="history-empty">Nenhuma ação registrada ainda.</div>';
     return;
   }
   
   // Create history entries
-  const historyHTML = actionHistory
+  const historyHTML = gameState.actionHistory
     .slice()
     .reverse() // Show newest first
     .map(entry => `
@@ -3513,15 +3849,18 @@ function togglePlayerInfoPanel() {
 }
 
 function updatePlayerInfoPanel() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
   const panelBody = document.getElementById('panel-body');
-  if (!panelBody || !jogadores) return;
+  if (!panelBody || !gameState.jogadores) return;
 
-  const playerCards = jogadores.map(jogador => {
+  const playerCards = gameState.jogadores.map(jogador => {
     // Calcular estatísticas do jogador
-    const territorios = paises.filter(p => p.dono === jogador.nome).length;
-    const tropas = paises.filter(p => p.dono === jogador.nome).reduce((sum, p) => sum + p.tropas, 0);
-    const cartas = cartasTerritorio[jogador.nome] ? cartasTerritorio[jogador.nome].length : 0;
-    const isCurrentTurn = jogador.nome === turno;
+    const territorios = gameState.paises.filter(p => p.dono === jogador.nome).length;
+    const tropas = gameState.paises.filter(p => p.dono === jogador.nome).reduce((sum, p) => sum + p.tropas, 0);
+    const cartas = gameState.cartasTerritorio[jogador.nome] ? gameState.cartasTerritorio[jogador.nome].length : 0;
+    const isCurrentTurn = jogador.nome === gameState.turno;
     const isActive = jogador.ativo !== false;
 
     // Avatar baseado no nome do jogador
