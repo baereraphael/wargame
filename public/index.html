@@ -482,15 +482,15 @@
     .game-container {
       height: 100vh;
       width: 100vw;
-      padding-top: 35px; /* Space for mobile HUD */
+      padding-top: 25px; /* Space for mobile HUD */
     }
     
     .game-container canvas {
       width: auto !important;
       height: auto !important;
       max-width: 100% !important;
-      max-height: calc(100% - 35px) !important; /* Account for mobile HUD height */
-      top: 35px !important; /* Position below mobile HUD */
+      max-height: calc(100% - 25px) !important; /* Account for mobile HUD height */
+      top: 25px !important; /* Position below mobile HUD */
     }
   }
 
@@ -503,15 +503,15 @@
       top: 0;
       left: 0;
       overflow: hidden;
-      padding-top: 35px; /* Space for HUD on iPhone */
+      padding-top: 25px; /* Space for HUD on iPhone */
     }
     
     .game-container canvas {
       width: auto !important;
       height: auto !important;
       max-width: 100% !important;
-      max-height: calc(100% - 35px) !important; /* Account for HUD height on iPhone */
-      top: 35px !important; /* Position below HUD on iPhone */
+      max-height: calc(100% - 25px) !important; /* Account for HUD height on iPhone */
+      top: 25px !important; /* Position below HUD on iPhone */
       touch-action: none;
       -webkit-user-select: none;
       user-select: none;
@@ -1680,40 +1680,40 @@
   @media (max-width: 768px) {
     /* Top HUD Bar - Mobile */
     .hud-top {
-      height: 35px;
-      padding: 0 8px;
+      height: 25px;
+      padding: 0 5px;
     }
 
     /* Player Info - Mobile */
     .player-info {
-      gap: 8px;
+      gap: 4px;
     }
 
     .player-avatar {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
       border: 1px solid #fff;
     }
 
     .player-name {
-      font-size: 11px;
+      font-size: 9px;
     }
 
     .player-stats {
-      font-size: 9px;
+      font-size: 7px;
     }
 
     /* Action Buttons - Mobile */
     .action-buttons {
-      gap: 6px;
+      gap: 3px;
     }
 
     .hud-button {
-      padding: 3px 6px;
-      border-radius: 8px;
-      font-size: 10px;
-      gap: 2px;
+      padding: 2px 4px;
+      border-radius: 6px;
+      font-size: 8px;
+      gap: 1px;
     }
 
     .hud-button span:first-child {
@@ -1722,10 +1722,10 @@
 
     /* Timer Display - Mobile */
     .timer-display {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: bold;
-      padding: 2px 6px;
-      min-width: 50px;
+      padding: 1px 4px;
+      min-width: 40px;
     }
 
     /* Game Info - Mobile */
@@ -1746,36 +1746,36 @@
   /* Extra Small Mobile Devices */
   @media (max-width: 480px) {
     .game-container {
-      padding-top: 30px; /* Space for extra small mobile HUD */
+      padding-top: 20px; /* Space for extra small mobile HUD */
     }
     
     .game-container canvas {
-      top: 30px !important; /* Position below extra small mobile HUD */
-      max-height: calc(100% - 30px) !important; /* Account for extra small mobile HUD height */
+      top: 20px !important; /* Position below extra small mobile HUD */
+      max-height: calc(100% - 20px) !important; /* Account for extra small mobile HUD height */
     }
     
     .hud-top {
-      height: 30px;
-      padding: 0 6px;
+      height: 20px;
+      padding: 0 4px;
     }
 
     .player-avatar {
-      width: 18px;
-      height: 18px;
-      font-size: 9px;
+      width: 14px;
+      height: 14px;
+      font-size: 7px;
     }
 
     .player-name {
-      font-size: 10px;
-    }
-
-    .player-stats {
       font-size: 8px;
     }
 
+    .player-stats {
+      font-size: 6px;
+    }
+
     .hud-button {
-      padding: 2px 4px;
-      font-size: 9px;
+      padding: 1px 3px;
+      font-size: 7px;
     }
 
     .hud-button span:first-child {
@@ -1783,9 +1783,51 @@
     }
 
     .timer-display {
-      font-size: 10px;
-      padding: 1px 4px;
-      min-width: 40px;
+      font-size: 8px;
+      padding: 1px 3px;
+      min-width: 30px;
+    }
+  }
+
+  /* Very Small Mobile Devices */
+  @media (max-width: 400px) {
+    .hud-top {
+      height: 18px;
+      padding: 0 3px;
+    }
+    
+    .player-avatar {
+      width: 12px;
+      height: 12px;
+      font-size: 6px;
+    }
+    
+    .player-name {
+      font-size: 7px;
+    }
+    
+    .player-stats {
+      font-size: 5px;
+    }
+    
+    .hud-button {
+      padding: 1px 2px;
+      font-size: 6px;
+    }
+    
+    .timer-display {
+      font-size: 7px;
+      padding: 1px 2px;
+      min-width: 25px;
+    }
+    
+    .game-container {
+      padding-top: 18px;
+    }
+    
+    .game-container canvas {
+      top: 18px !important;
+      max-height: calc(100% - 18px) !important;
     }
   }
 
