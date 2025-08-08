@@ -1679,9 +1679,7 @@ function create() {
   somTakeCard = this.sound.add('takecard');
   somClockTicking = this.sound.add('clockticking');
 
-  // Adicionar indicadores de continentes (será chamado após os territórios serem carregados)
-
-    // Initialize CSS HUD elements
+  // Initialize CSS HUD elements
   initializeCSSHUD();
 
   // Initialize action history system
@@ -2022,7 +2020,7 @@ function atualizarPaises(novosPaises, scene) {
      textoY: 250
    },
    "Qumaran": {
-     pontos: [1060,247,1054,260,1038,272,1021,277,1006,277,991,290,964,311,886,297,861,218,826,264,847,314,842,344,908,352,964,349,981,354,997,359,1008,363,1020,372,1033,373,1043,374,1055,369,1064,363,1057,351,1066,341,1075,332,1066,323,1069,303,1077,290,1089,278,1098,272,1092,254,1077,250],
+     pontos: [1060,247,1054,260,1038,272,1021,277,1006,277,991,290,964,311,886,297,861,218,826,264,847,314,842,344,908,352,964,349,981,354,997,363,1008,363,1020,372,1033,373,1043,374,1055,369,1064,363,1057,351,1066,341,1075,332,1066,323,1069,303,1077,290,1089,278,1098,272,1092,254,1077,250],
      textoX: 1000,
      textoY: 320
    },
@@ -2294,6 +2292,15 @@ function atualizarPaises(novosPaises, scene) {
           gameState.selecionado = null;
           mostrarMensagem('Seleção cancelada');
         } else {
+          // Bloquear ataques enquanto a interface de transferência pós-conquista estiver aberta
+          if (interfaceTransferenciaConquista) {
+            mostrarMensagem('⚠️ Confirme ou cancele a transferência antes de atacar novamente.');
+            if (typeof tremerInterfaceTransferenciaConquista === 'function') {
+              tremerInterfaceTransferenciaConquista();
+            }
+            return;
+          }
+
           // Verificar se está na fase de remanejamento (não pode atacar)
           if (gameState.faseRemanejamento) {
             mostrarMensagem("❌ Não é possível atacar durante a fase de remanejamento!");
@@ -2392,6 +2399,103 @@ function atualizarPaises(novosPaises, scene) {
   
   // Adicionar indicadores de continentes após os territórios serem carregados
   adicionarIndicadoresContinentes(scene);
+  
+  // Desenhar linhas tracejadas usando o mesmo sistema de posicionamento dos textos
+  const dadosGeograficosLinha = {
+    "Highmoor": {
+      pontos: [305,165,252,223,345,279,358,279,373,279,384,279,378,268,373,257,364,253,366,236,370,223,386,215,380,203,370,198,360,189,349,182,336,168,322,163]
+    },
+    "Stormfen": {
+      pontos: [111,194,194,141,206,132,207,122,207,114,219,115,233,116,248,119,265,125,273,132,274,142,283,151,302,151,307,162]
+    },
+    "Blackmere": {
+      pontos: [592,145,600,137,609,124,622,116,632,112,630,123,634,131,638,137,629,141,627,156,637,162,646,166,654,171,667,171,684,166,695,173,707,175,714,179,720,191,721,200,713,201,706,198,691,197,676,198,662,198,650,197,636,196,625,196,616,198,608,197,610,180,611,166,603,153]
+    },
+    "Duskmere": {
+      pontos: [555,246,555,231,559,217,569,207,584,203,598,200,613,199,624,198,642,198,654,198,669,198,681,198,693,198,705,198,715,201,711,209,703,217,698,226,693,234,685,238,679,244,673,252,669,264,661,268,652,268,643,268,634,268,625,270,632,278,637,283,646,287,636,294,627,293,618,292,611,288,604,287,596,286,600,275,603,267,598,257,591,249,585,253,570,250]
+    },
+    "Nihadara": {
+      pontos: [715,135,729,136,739,141,748,142,764,132,774,127,797,134,812,128,826,121,833,126,838,134,845,141,851,150,853,161,854,174,853,183,852,192,841,192,826,189,810,185,800,184,782,184,764,183,750,183,740,176,733,161,721,156,714,144]
+    },
+    "Shōrenji": {
+      pontos: [823,269,836,252,845,242,851,229,857,218,857,206,850,197,836,192,823,191,808,188,797,186,782,185,768,185,758,185,747,185,747,197,740,206,730,214,728,225,723,231,715,233,723,241,739,244,754,246,773,248,790,252,803,255,811,260]
+    },
+    "Kaer'Tai": {
+      pontos: [711,237,723,242,736,244,753,249,765,251,786,253,800,257,812,261,828,272,834,280,837,290,842,303,845,313,845,320,845,332,846,346,845,359,846,370,836,370,826,371,818,374,810,378,809,366,795,354,790,346,780,340,777,330,771,320,765,307,763,296,776,295,777,287,766,284,748,278,739,275,732,280,725,290,715,293,703,293,695,294,687,284,687,271,684,260,690,250,702,246,710,246]
+    },
+    "Zul'Marak": {
+      pontos: [527,367,537,354,549,345,563,336,574,337,583,324,582,311,596,312,606,315,618,317,631,312,640,321,650,323,660,303,663,317,663,325,662,334,662,341,661,349,661,362,658,385,656,394,621,436,601,438,589,440,582,441,573,441,566,444,555,442,551,428,541,424,530,421,527,415,523,392,530,380]
+    },
+    "Ravenspire": {
+      pontos: [463,450,494,454,521,466,526,474,509,482,497,487,490,509,486,528,466,538,451,546,444,562,430,573,420,593,402,579,408,502,397,458,436,427,453,430,461,439]
+    },
+    "Aetheris": {
+      pontos: [1094,458,1083,454,1076,454,1070,458,1067,470,1063,480,1069,492,1079,485,1089,487,1088,472,1080,466,1095,463]
+    },
+    "Dawnwatch": {
+      pontos: [1113,475,1128,472,1144,472,1156,471,1165,479,1174,485,1184,491,1196,505,1182,505,1171,497,1162,496,1153,496,1144,488,1134,485,1123,482]
+    },
+    "Mistveil": {
+      pontos: [1078,511,1069,517,1060,524,1050,531,1039,537,1025,544,1020,554,1022,567,1019,580,1011,588,1010,597,1022,597,1034,593,1048,590,1063,585,1077,582,1089,581,1099,587,1114,591,1114,605,1122,609,1139,614,1153,610,1165,599,1173,597,1179,585,1188,581,1189,567,1184,555,1175,543,1164,529,1162,513,1154,504,1152,514,1148,524,1138,531,1127,528,1119,518,1123,509,1110,504,1099,504,1097,512,1094,519,1086,514]
+    },
+    "Ish'Tanor": {
+      pontos: [963,349,976,350,991,355,1005,361,1016,365,1032,371,1048,371,1043,379,1025,378,1015,380,1008,389,1014,400,1025,404,1025,413,1020,422,1010,426,1001,423,988,413,989,425,994,434,999,440,1034,448,1044,442,1053,442,1058,448,1061,456,1060,465,1053,474,1047,482,1034,484,1024,479,1015,468,1013,459,1027,457,1034,454,999,451,985,451,980,434,973,417,973,401,964,385,963,366]
+    },
+    "Darakai": {
+      pontos: [961,352,962,365,962,379,966,388,970,402,973,418,975,427,983,442,987,461,999,472,1005,482,1005,491,997,491,984,484,976,475,970,460,963,449,967,432,963,416,961,405,955,393,946,383,937,378,928,384,923,394,919,406,914,418,913,433,909,441,898,436,889,423,877,408,871,397,863,384,852,375,842,372,847,357,846,344,859,346,883,350,903,353,922,352,942,349]
+    },
+    "Frosthollow": {
+      pontos: [310,112,328,106,344,109,356,102,367,90,382,87,395,81,409,72,426,67,444,61,460,72,478,73,492,76,509,77,522,81,515,89,503,101,489,105,482,114,477,124,466,128,456,130,449,139,451,146,442,150,435,155,433,163,429,170,422,179,422,188,419,197,412,199,403,191,395,177,384,174,373,171,367,163,359,164,348,161,338,150,341,135,327,124,316,119]
+    }
+  };
+  
+  // Calcular centro dos territórios usando o mesmo método dos textos
+  const calcularCentro = (pontos) => {
+    let somaX = 0;
+    let somaY = 0;
+    for (let i = 0; i < pontos.length; i += 2) {
+      somaX += pontos[i];
+      somaY += pontos[i + 1];
+    }
+    const centroX = somaX / (pontos.length / 2);
+    const centroY = somaY / (pontos.length / 2);
+    return { centroX, centroY };
+  };
+  
+  // Array com todas as conexões específicas entre territórios (apenas territórios que existem)
+  const conexoes = [
+    { origem: "Blackmere", destino: "Nihadara" },
+    { origem: "Duskmere", destino: "Shōrenji" },
+    { origem: "Kaer'Tai", destino: "Duskmere" },
+    { origem: "Highmoor", destino: "Frosthollow" },
+    { origem: "Stormfen", destino: "Frosthollow" },
+    { origem: "Ravenspire", destino: "Zul'Marak" },
+    { origem: "Ish'Tanor", destino: "Aetheris" },
+    { origem: "Darakai", destino: "Aetheris" },
+    { origem: "Aetheris", destino: "Dawnwatch" },
+    { origem: "Dawnwatch", destino: "Mistveil" },
+    { origem: "Aetheris", destino: "Mistveil" },
+    { origem: "Darakai", destino: "Mistveil" }
+  ];
+  
+  // Iterar sobre todas as conexões e desenhar as linhas
+  conexoes.forEach(conexao => {
+    const origemGeo = dadosGeograficosLinha[conexao.origem];
+    const destinoGeo = dadosGeograficosLinha[conexao.destino];
+    
+    if (origemGeo && destinoGeo) {
+      const origemCentro = calcularCentro(origemGeo.pontos);
+      const destinoCentro = calcularCentro(destinoGeo.pontos);
+      
+      console.log(`🎨 Desenhando linha tracejada entre os centros de ${conexao.origem} e ${conexao.destino}`);
+      console.log(`📍 ${conexao.origem} centro: (${origemCentro.centroX.toFixed(1)}, ${origemCentro.centroY.toFixed(1)})`);
+      console.log(`📍 ${conexao.destino} centro: (${destinoCentro.centroX.toFixed(1)}, ${destinoCentro.centroY.toFixed(1)})`);
+      
+      desenharLinhaTracejada(scene, origemCentro.centroX, origemCentro.centroY, destinoCentro.centroX, destinoCentro.centroY);
+    } else {
+      console.log(`❌ Não foi possível encontrar os dados geográficos de ${conexao.origem} ou ${conexao.destino}`);
+    }
+  });
   
   // Atualizar cards dos jogadores se estiverem visíveis
   const panel = document.getElementById('player-info-panel');
@@ -4203,6 +4307,23 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   const botoesContainer = scene.add.container(0, getResponsiveSize(100));
   botoesContainer.setDepth(2);
   interfaceTransferenciaConquista.add(botoesContainer);
+
+  // Função para tremer a interface quando o jogador tentar atacar durante a transferência
+  window.tremerInterfaceTransferenciaConquista = () => {
+    if (!interfaceTransferenciaConquista || !scene || !scene.tweens) return;
+    const originalX = interfaceTransferenciaConquista.x;
+    const originalY = interfaceTransferenciaConquista.y;
+    scene.tweens.add({
+      targets: interfaceTransferenciaConquista,
+      x: originalX + 12,
+      duration: 50,
+      yoyo: true,
+      repeat: 4,
+      onComplete: () => {
+        interfaceTransferenciaConquista.setPosition(originalX, originalY);
+      }
+    });
+  };
   
   // Detectar se é dispositivo móvel
   const isMobile = window.innerWidth <= 768;
@@ -4365,9 +4486,9 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   interfaceRemanejamento.add(titulo);
   
   // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
-  linhaDecorativa.setDepth(1);
-  interfaceRemanejamento.add(linhaDecorativa);
+  const linhaDecorativaRemanejamento = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
+  linhaDecorativaRemanejamento.setDepth(1);
+  interfaceRemanejamento.add(linhaDecorativaRemanejamento);
   
   // Container para territórios
   const territoriosContainer = scene.add.container(0, -30);
@@ -4407,349 +4528,10 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(destinoIcon);
   
-  const destinoText = scene.add.text(70, 0, destino.nome, {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  territoriosContainer.add(destinoText);
-  
-  // Container para controles de quantidade
-  const controlesContainer = scene.add.container(0, 30);
-  controlesContainer.setDepth(2);
-  interfaceRemanejamento.add(controlesContainer);
-  
-  // Background dos controles
-  const controlesBg = scene.add.rectangle(0, 0, 300, 60, 0x2a2a2a, 0.9);
-  controlesBg.setStrokeStyle(2, 0x444444);
-  controlesContainer.add(controlesBg);
-  
-  // Título dos controles
-  const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#cccccc',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(controlesTitulo);
-  
-  // Botão menos
-  const botaoMenos = scene.add.text(-80, 10, '-', {
-    fontSize: getResponsiveFontSize(28),
-    fill: '#ffffff',
-    backgroundColor: '#ff3333',
-    padding: { x: getResponsivePadding(15), y: getResponsivePadding(8) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Variáveis para incremento progressivo
-  let incrementoStep = 1;
-  let incrementoDelay = 100;
-  
-  // Função para decremento progressivo
-  function decrementoProgressivoRemanejamento() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.decrementoIntervalRemanejamento) return; // Já está rodando
-    
-    window.decrementoIntervalRemanejamento = setInterval(() => {
-      if (tropasParaMover > 1) {
-        // Calcular quantidade a decrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.decrementoIntervalRemanejamento.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          incrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          incrementoStep = 2;
-        }
-        
-        // Decrementar
-        const decrementoReal = Math.min(incrementoStep, tropasParaMover - 1);
-        tropasParaMover -= decrementoReal;
-        atualizarTextoQuantidadeRemanejamento();
-        
-        // Tocar som a cada 5 decrementos para feedback
-        if (tropasParaMover % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararDecrementoProgressivoRemanejamento();
-      }
-    }, incrementoDelay);
-    
-    window.decrementoIntervalRemanejamento.startTime = Date.now();
-  }
-  
-  // Função para parar decremento progressivo
-  function pararDecrementoProgressivoRemanejamento() {
-    if (window.decrementoIntervalRemanejamento) {
-      clearInterval(window.decrementoIntervalRemanejamento);
-      window.decrementoIntervalRemanejamento = null;
-      incrementoStep = 1; // Resetar para próximo uso
-    }
-  }
-  
-  botaoMenos.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    if (tropasParaMover > 1) {
-      tropasParaMover--;
-      atualizarTextoQuantidadeRemanejamento();
-    }
-  });
-  
-  botaoMenos.on('pointerdown', decrementoProgressivoRemanejamento);
-  botaoMenos.on('pointerup', pararDecrementoProgressivoRemanejamento);
-  botaoMenos.on('pointerout', pararDecrementoProgressivoRemanejamento);
-  
-  controlesContainer.add(botaoMenos);
-  
-  // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 10, `${tropasParaMover}/${maxTropas}`, {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    align: 'center',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(textoQuantidade);
-  
-  // Botão mais
-  const botaoMais = scene.add.text(80, 10, '+', {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    backgroundColor: '#33ff33',
-    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para incremento progressivo
-  function incrementoProgressivoRemanejamento() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.incrementoIntervalRemanejamento) return; // Já está rodando
-    
-    window.incrementoIntervalRemanejamento = setInterval(() => {
-      if (tropasParaMover < maxTropas) {
-        // Calcular quantidade a incrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.incrementoIntervalRemanejamento.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          incrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          incrementoStep = 2;
-        }
-        
-        // Incrementar
-        const incrementoReal = Math.min(incrementoStep, maxTropas - tropasParaMover);
-        tropasParaMover += incrementoReal;
-        atualizarTextoQuantidadeRemanejamento();
-        
-        // Tocar som a cada 5 incrementos para feedback
-        if (tropasParaMover % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararIncrementoProgressivoRemanejamento();
-      }
-    }, incrementoDelay);
-    
-    window.incrementoIntervalRemanejamento.startTime = Date.now();
-  }
-  
-  // Função para parar incremento progressivo
-  function pararIncrementoProgressivoRemanejamento() {
-    if (window.incrementoIntervalRemanejamento) {
-      clearInterval(window.incrementoIntervalRemanejamento);
-      window.incrementoIntervalRemanejamento = null;
-      incrementoStep = 1; // Resetar para próximo uso
-    }
-  }
-  
-  botaoMais.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    if (tropasParaMover < maxTropas) {
-      tropasParaMover++;
-      atualizarTextoQuantidadeRemanejamento();
-    }
-  });
-  
-  botaoMais.on('pointerdown', incrementoProgressivoRemanejamento);
-  botaoMais.on('pointerup', pararIncrementoProgressivoRemanejamento);
-  botaoMais.on('pointerout', pararIncrementoProgressivoRemanejamento);
-  
-  controlesContainer.add(botaoMais);
-  
-  // Container para botões de ação
-  const botoesContainer = scene.add.container(0, getResponsiveSize(100));
-  botoesContainer.setDepth(2);
-  interfaceRemanejamento.add(botoesContainer);
-  
-  // Detectar se é dispositivo móvel
-  const isMobile = window.innerWidth <= 768;
-  const buttonWidth = isMobile ? getResponsiveSize(160) : getResponsiveSize(140);
-  const buttonHeight = isMobile ? getResponsiveSize(50) : getResponsiveSize(40);
-  const buttonFontSize = isMobile ? getResponsiveFontSize(18) : getResponsiveFontSize(14);
-  
-  // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(-80, 0, buttonWidth, buttonHeight, 0x0077cc, 0.9);
-  botaoConfirmarBg.setStrokeStyle(2, 0x005fa3);
-  botaoConfirmarBg.setInteractive({ useHandCursor: true });
-  botoesContainer.add(botaoConfirmarBg);
-  
-  const botaoConfirmar = scene.add.text(-80, 0, '✅ CONFIRMAR', {
-    fontSize: buttonFontSize,
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para confirmar remanejamento
-  const confirmarRemanejamentoAcao = () => {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    tocarSomClick();
-    console.log('🔧 DEBUG: Confirmando movimento de remanejamento');
-    
-    // Limpar intervalos de incremento/decremento se existirem
-    if (window.incrementoIntervalRemanejamento) {
-      clearInterval(window.incrementoIntervalRemanejamento);
-      window.incrementoIntervalRemanejamento = null;
-    }
-    if (window.decrementoIntervalRemanejamento) {
-      clearInterval(window.decrementoIntervalRemanejamento);
-      window.decrementoIntervalRemanejamento = null;
-    }
-    
-    emitWithRoom('moverTropas', {
-      origem: origem.nome,
-      destino: destino.nome,
-      quantidade: tropasParaMover
-    });
-    limparSelecao();
-    interfaceRemanejamento.destroy();
-    interfaceRemanejamento = null;
-    console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
-  };
-  
-  botaoConfirmarBg.on('pointerdown', confirmarRemanejamentoAcao);
-  botaoConfirmar.on('pointerdown', confirmarRemanejamentoAcao);
-  botoesContainer.add(botaoConfirmar);
-  
-  // Botão cancelar
-  const botaoCancelarBg = scene.add.rectangle(80, 0, buttonWidth, buttonHeight, 0x666666, 0.9);
-  botaoCancelarBg.setStrokeStyle(2, 0x444444);
-  botaoCancelarBg.setInteractive({ useHandCursor: true });
-  botoesContainer.add(botaoCancelarBg);
-  
-  const botaoCancelar = scene.add.text(80, 0, '❌ CANCELAR', {
-    fontSize: buttonFontSize,
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para cancelar remanejamento
-  const cancelarRemanejamentoAcao = () => {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    tocarSomClick();
-    console.log('🔧 DEBUG: Cancelando movimento de remanejamento');
-    
-    // Limpar intervalos de incremento/decremento se existirem
-    if (window.incrementoIntervalRemanejamento) {
-      clearInterval(window.incrementoIntervalRemanejamento);
-      window.incrementoIntervalRemanejamento = null;
-    }
-    if (window.decrementoIntervalRemanejamento) {
-      clearInterval(window.decrementoIntervalRemanejamento);
-      window.decrementoIntervalRemanejamento = null;
-    }
-    
-    limparSelecao();
-    interfaceRemanejamento.destroy();
-    interfaceRemanejamento = null;
-    console.log('🔧 DEBUG: Interface de remanejamento destruída e variável resetada');
-  };
-  
-  botaoCancelarBg.on('pointerdown', cancelarRemanejamentoAcao);
-  botaoCancelar.on('pointerdown', cancelarRemanejamentoAcao);
-  botoesContainer.add(botaoCancelar);
-  
-  // Função para atualizar o texto da quantidade
-  function atualizarTextoQuantidadeRemanejamento() {
-    textoQuantidade.setText(`${tropasParaMover}/${maxTropas}`);
-  }
-  
-  // Tornar a interface arrastável
-  tornarInterfaceArrastavel(interfaceRemanejamento, scene);
-}
-
-function mostrarObjetivo(objetivo, scene) {
-  // Verificar se a scene é válida
-  if (!scene || !scene.add) {
-    console.error('❌ Scene inválida em mostrarObjetivo:', scene);
-    return;
-  }
-  
-  // Fechar outras modais primeiro
-  fecharTodasModais();
-  
-  modalObjetivoAberto = true; // Marca que o modal está aberto
-  
-  // Obter dimensões reais do canvas
-  const canvas = scene.sys.game.canvas;
-  const largura = canvas.width;
-  const altura = canvas.height;
-  
-  // Criar overlay com blur effect
-  const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.7);
-  overlay.setDepth(20);
-  
-  // Container principal com estilo moderno como o chat
-  const container = scene.add.container(largura/2, altura/2);
-  container.setDepth(21);
-  
-  // Background do container - estilo moderno como o chat
-  const background = scene.add.rectangle(0, 0, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(400, 0.9, 0.8), 0x000000, 0.95);
-  background.setStrokeStyle(2, 0x444444);
-  background.setDepth(0);
-  container.add(background);
-  
-  // Header com estilo moderno como o chat
-  const headerBg = scene.add.rectangle(0, -170, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(50, 0.9, 0.8), 0x000000, 0.95);
-  headerBg.setStrokeStyle(1, 0x444444);
-  headerBg.setDepth(1);
-  container.add(headerBg);
-  
-  // Ícone do objetivo
-  const objetivoIcon = scene.add.text(-250, -170, '🎯', {
-    fontSize: getResponsiveFontSize(24, 0.8, 0.6),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  container.add(objetivoIcon);
-  
-  // Título principal
-  const titulo = scene.add.text(-210, -170, 'SEU OBJETIVO', {
-    fontSize: getResponsiveFontSize(20, 0.8, 0.6),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  container.add(titulo);
-  
   // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -145, 550, 1, 0x444444, 0.8);
-  linhaDecorativa.setDepth(1);
-  container.add(linhaDecorativa);
+  const linhaDecorativaObjetivo = scene.add.rectangle(0, -145, 550, 1, 0x444444, 0.8);
+  linhaDecorativaObjetivo.setDepth(1);
+  container.add(linhaDecorativaObjetivo);
   
   // Container para o conteúdo principal
   const contentContainer = scene.add.container(0, -30);
@@ -7354,3 +7136,73 @@ function fecharIndicacaoInicioTurnoAutomatico() {
     fecharIndicacaoInicioTurno();
   }
 }
+
+// Função para desenhar linha tracejada entre dois pontos
+function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
+  console.log('🎨 Desenhando linha tracejada de', x1, y1, 'para', x2, y2);
+  
+  // Verificar se a cena é válida
+  if (!scene || !scene.add) {
+    console.error('❌ Cena inválida para desenhar linha tracejada');
+    return;
+  }
+  
+  // Configurações da linha tracejada
+  const dashLength = 8; // Comprimento de cada traço
+  const gapLength = 4;  // Comprimento do espaço entre traços
+  const lineWidth = 3;  // Espessura da linha
+  const lineColor = 0xffffff; // Cor branca
+  const lineAlpha = 0.8; // Transparência
+  
+  // Calcular a distância total entre os pontos
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // Verificar se a distância é válida
+  if (distance <= 0) {
+    console.error('❌ Distância inválida entre os pontos');
+    return;
+  }
+  
+  // Calcular o número de segmentos necessários
+  const segmentLength = dashLength + gapLength;
+  const numSegments = Math.ceil(distance / segmentLength);
+  
+  // Calcular o vetor unitário na direção da linha
+  const unitX = dx / distance;
+  const unitY = dy / distance;
+  
+  console.log(`📏 Distância total: ${distance.toFixed(1)}px, ${numSegments} segmentos`);
+  
+  // Criar os segmentos tracejados
+  for (let i = 0; i < numSegments; i++) {
+    const startDistance = i * segmentLength;
+    const endDistance = Math.min(startDistance + dashLength, distance);
+    
+    // Calcular as coordenadas de início e fim do segmento
+    const segmentStartX = x1 + unitX * startDistance;
+    const segmentStartY = y1 + unitY * startDistance;
+    const segmentEndX = x1 + unitX * endDistance;
+    const segmentEndY = y1 + unitY * endDistance;
+    
+    // Criar o segmento da linha
+    const line = scene.add.line(
+      0, 0, // x, y (não importa para line)
+      segmentStartX, segmentStartY, // x1, y1
+      segmentEndX, segmentEndY,     // x2, y2
+      lineColor, lineAlpha
+    );
+    
+    // Configurar a espessura da linha
+    line.setLineWidth(lineWidth);
+    
+    // Definir a profundidade para ficar acima do mapa mas abaixo dos territórios
+    line.setDepth(5);
+    
+    console.log(`🎨 Segmento ${i + 1}: (${segmentStartX.toFixed(1)}, ${segmentStartY.toFixed(1)}) para (${segmentEndX.toFixed(1)}, ${segmentEndY.toFixed(1)})`);
+  }
+  
+  console.log('✅ Linha tracejada desenhada com sucesso!');
+}
+
