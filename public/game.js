@@ -704,6 +704,33 @@ function resizeGameElements(scene) {
     window.indicacaoInicioTurno.container.setPosition(canvas.width / 2, canvas.height / 2);
   }
 
+  // Update victory screen if visible
+  // Buscar elementos da tela de vitória de forma mais robusta
+  const victoryOverlay = scene.children.list.find(child => 
+    child.type === 'Rectangle' && 
+    child.depth === 10 && 
+    child.visible && 
+    child.width === canvas.width && 
+    child.height === canvas.height
+  );
+  
+  const victoryContainer = scene.children.list.find(child => 
+    child.type === 'Container' && 
+    child.depth === 15 && 
+    child.visible
+  );
+  
+  if (victoryOverlay) {
+    console.log('🎯 Atualizando posição da tela de vitória - overlay');
+    victoryOverlay.setPosition(canvas.width / 2, canvas.height / 2);
+    victoryOverlay.setDisplaySize(canvas.width, canvas.height);
+  }
+  
+  if (victoryContainer) {
+    console.log('🎯 Atualizando posição da tela de vitória - container');
+    victoryContainer.setPosition(canvas.width / 2, canvas.height / 2);
+  }
+
   // Update continent indicator lines
   atualizarLinhasContinentes(scene, scaleX, scaleY);
 }
@@ -1518,6 +1545,7 @@ let botaoTurno;
 let currentScene = null; // Global reference to current Phaser scene
 
 let overlay;
+let containerVitoria;
 let textoVitoriaGrande;
 let botaoReiniciar;
 
@@ -2375,6 +2403,12 @@ function atualizarPaises(novosPaises, scene) {
         console.log(`🎯 Aplicando animação de salto em ${gameState.paises[i].nome} (continente prioritário)`);
         gameState.paises[i].polygon.timelineSalto = criarAnimacaoSalto(gameState.paises[i].polygon, scene);
       }
+      
+      // Aplicar elevação se não estiver elevado
+      if (!gameState.paises[i].elevado) {
+        console.log(`🎯 Aplicando elevação em ${gameState.paises[i].nome} (continente prioritário)`);
+        criarElevacaoTerritorio(gameState.paises[i].nome, scene);
+      }
     } else {
       gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
       gameState.paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
@@ -2383,6 +2417,12 @@ function atualizarPaises(novosPaises, scene) {
       if (gameState.paises[i].polygon.timelineSalto) {
         console.log(`🛑 Parando animação de salto em ${gameState.paises[i].nome} (não é mais prioritário)`);
         pararAnimacaoSalto(gameState.paises[i].polygon, scene);
+      }
+      
+      // Remover elevação se estiver elevado
+      if (gameState.paises[i].elevado) {
+        console.log(`🛑 Removendo elevação de ${gameState.paises[i].nome} (não é mais prioritário)`);
+        removerElevacaoTerritorio(gameState.paises[i].nome, scene);
       }
     }
   }
@@ -2467,6 +2507,15 @@ function limparSelecao() {
           p.polygon.timelineSalto = criarAnimacaoSalto(p.polygon, scene);
         }
       }
+      
+      // Aplicar elevação se não estiver elevado
+      if (!p.elevado) {
+        const scene = p.polygon.scene;
+        if (scene) {
+          console.log(`🎯 Aplicando elevação em ${p.nome} (continente prioritário - limparSelecao)`);
+          criarElevacaoTerritorio(p.nome, scene);
+        }
+      }
     } else {
       p.polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
       
@@ -2475,6 +2524,15 @@ function limparSelecao() {
         const scene = p.polygon.scene;
         if (scene) {
           pararAnimacaoSalto(p.polygon, scene);
+        }
+      }
+      
+      // Remover elevação se estiver elevado
+      if (p.elevado) {
+        const scene = p.polygon.scene;
+        if (scene) {
+          console.log(`🛑 Removendo elevação de ${p.nome} (não é mais prioritário - limparSelecao)`);
+          removerElevacaoTerritorio(p.nome, scene);
         }
       }
     }
@@ -2488,11 +2546,33 @@ function limparSelecao() {
   // Limpar elevação de todos os territórios que possam ter sido elevados durante remanejamento
   gameState.paises.forEach(pais => {
     if (pais.polygon && pais.polygon.scene) {
-      // Verificar se o território tem borda branca (indicando que foi elevado durante remanejamento)
+      // Verificar se o território tem borda branca grossa (width 8) - indicando que foi elevado durante remanejamento
       const strokeStyle = pais.polygon.strokeStyle;
       if (strokeStyle && strokeStyle.color === 0xffffff && strokeStyle.width === 8) {
-        // Restaurar borda normal
-        pais.polygon.setStrokeStyle(4, 0x000000, 1);
+        // Verificar se este território pertence ao continente prioritário antes de restaurar borda
+        let pertenceAoContinentePrioritario = false;
+        const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+        
+        if (totalBonus > 0 && pais.dono === gameState.turno && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
+          const continente = gameState.continentes[gameState.continentePrioritario.nome];
+          if (continente && continente.territorios.includes(pais.nome)) {
+            pertenceAoContinentePrioritario = true;
+          }
+        }
+        
+        if (pertenceAoContinentePrioritario) {
+          // Manter borda branca grossa para continente prioritário
+          pais.polygon.setStrokeStyle(6, 0xffffff, 1);
+          
+          // Aplicar animação de salto se não estiver já animando
+          if (!pais.polygon.timelineSalto) {
+            pais.polygon.timelineSalto = criarAnimacaoSalto(pais.polygon, pais.polygon.scene);
+          }
+        } else {
+          // Restaurar borda normal apenas se não for território prioritário
+          pais.polygon.setStrokeStyle(4, 0x000000, 1);
+        }
+        
         // Remover elevação
         removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
       }
@@ -2600,27 +2680,67 @@ function bloquearJogo(mensagem, scene) {
     console.log('✅ Territórios desabilitados');
     
     // Mostrar overlay e container de vitória
-    overlay.setVisible(true);
-    containerVitoria.setVisible(true);
-    console.log('✅ Overlay e container visíveis');
+    console.log('🎯 Buscando elementos da tela de vitória na scene...');
+    
+    // Buscar elementos da tela de vitória de forma robusta
+    const victoryOverlay = scene.children.list.find(child => 
+      child.type === 'Rectangle' && 
+      child.depth === 10
+    );
+    
+    const victoryContainer = scene.children.list.find(child => 
+      child.type === 'Container' && 
+      child.depth === 15
+    );
+    
+    console.log('🎯 Elementos encontrados:');
+    console.log('🎯 victoryOverlay:', victoryOverlay);
+    console.log('🎯 victoryContainer:', victoryContainer);
+    
+    if (victoryOverlay) {
+      victoryOverlay.setVisible(true);
+      console.log('✅ Overlay definido como visível');
+    } else {
+      console.error('❌ Overlay não encontrado!');
+    }
+    
+    if (victoryContainer) {
+      victoryContainer.setVisible(true);
+      console.log('✅ Container de vitória definido como visível');
+    } else {
+      console.error('❌ Container de vitória não encontrado!');
+    }
     
     // Atualizar texto do jogador vencedor
-    textoVitoriaGrande.setText(mensagem);
-    console.log('✅ Texto de vitória atualizado:', mensagem);
-    
-    // Animação de entrada
-    containerVitoria.setScale(0);
-    if (scene && scene.tweens) {
-      scene.tweens.add({
-        targets: containerVitoria,
-        scaleX: 1,
-        scaleY: 1,
-        duration: 500,
-        ease: 'Back.easeOut'
-      });
-    } else {
-      // Fallback se scene não estiver disponível
-      containerVitoria.setScale(1);
+    if (victoryContainer) {
+      // Buscar o texto dentro do container
+      const victoryText = victoryContainer.list.find(child => 
+        child.type === 'Text' && 
+        child.depth === 2 &&
+        child.y === -50 // Posição Y do texto de vitória
+      );
+      
+      if (victoryText) {
+        victoryText.setText(mensagem);
+        console.log('✅ Texto de vitória atualizado:', mensagem);
+      } else {
+        console.error('❌ Texto de vitória não encontrado no container!');
+      }
+      
+      // Animação de entrada
+      victoryContainer.setScale(0);
+      if (scene && scene.tweens) {
+        scene.tweens.add({
+          targets: victoryContainer,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 500,
+          ease: 'Back.easeOut'
+        });
+      } else {
+        // Fallback se scene não estiver disponível
+        victoryContainer.setScale(1);
+      }
     }
     
     console.log('🎯 Tela de vitória exibida com sucesso!');
@@ -2702,11 +2822,30 @@ function desbloquearJogo() {
   }
   
   // Verificar se os elementos Phaser existem
-  if (typeof overlay !== 'undefined' && overlay) {
-    overlay.setVisible(false);
-  }
-  if (typeof containerVitoria !== 'undefined' && containerVitoria) {
-    containerVitoria.setVisible(false);
+  // Só esconder a tela de vitória se o jogo não estiver em estado de vitória ou derrota
+  if (gameState.vitoria || gameState.derrota) {
+    console.log('🎯 Jogo em estado de vitória/derrota - mantendo tela de vitória visível');
+  } else {
+    // Buscar elementos da tela de vitória de forma robusta
+    const currentScene = game.scene.getScene('GameScene');
+    if (currentScene) {
+      const victoryOverlay = currentScene.children.list.find(child => 
+        child.type === 'Rectangle' && 
+        child.depth === 10
+      );
+      
+      const victoryContainer = currentScene.children.list.find(child => 
+        child.type === 'Container' && 
+        child.depth === 15
+      );
+      
+      if (victoryOverlay) {
+        victoryOverlay.setVisible(false);
+      }
+      if (victoryContainer) {
+        victoryContainer.setVisible(false);
+      }
+    }
   }
 }
 
@@ -3383,13 +3522,33 @@ function esconderInterfaceReforco() {
   }
   const gameState = getGameState();
   if (gameState) {
-    // Remover efeito de elevação e borda branca do território selecionado
+    // Verificar se o território selecionado pertence ao continente prioritário
     if (gameState.territorioSelecionadoParaReforco) {
-      gameState.territorioSelecionadoParaReforco.polygon.setStrokeStyle(4, 0x000000, 1);
-      // Obter a scene do polígono do território
-      const scene = gameState.territorioSelecionadoParaReforco.polygon.scene;
-      if (scene) {
-        removerElevacaoTerritorio(gameState.territorioSelecionadoParaReforco.nome, scene);
+      const territorio = gameState.territorioSelecionadoParaReforco;
+      let pertenceAoContinentePrioritario = false;
+      const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+      
+      if (totalBonus > 0 && territorio.dono === gameState.turno && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
+        const continente = gameState.continentes[gameState.continentePrioritario.nome];
+        if (continente && continente.territorios.includes(territorio.nome)) {
+          pertenceAoContinentePrioritario = true;
+        }
+      }
+      
+      if (pertenceAoContinentePrioritario) {
+        // Manter borda branca grossa para território prioritário
+        territorio.polygon.setStrokeStyle(6, 0xffffff, 1);
+        // Não remover elevação - ela será gerenciada pela função restaurarAnimacoesTerritoriosBonus
+        console.log(`🎯 Mantendo borda branca e elevação em ${territorio.nome} (território prioritário)`);
+      } else {
+        // Remover efeito de elevação e borda branca apenas se não for território prioritário
+        territorio.polygon.setStrokeStyle(4, 0x000000, 1);
+        // Obter a scene do polígono do território
+        const scene = territorio.polygon.scene;
+        if (scene) {
+          removerElevacaoTerritorio(territorio.nome, scene);
+          console.log(`🎯 Removendo borda e elevação de ${territorio.nome} (não prioritário)`);
+        }
       }
     }
     gameState.tropasParaColocar = 0;
@@ -3415,6 +3574,9 @@ function confirmarReforco() {
     if (tropasRestantes <= 0) {
       // Se não há mais tropas para colocar, parar todas as animações de salto
       limparTodasAnimacoesSalto();
+    } else {
+      // Se ainda há tropas bônus, restaurar animações para territórios bônus
+      restaurarAnimacoesTerritoriosBonus();
     }
   } else {
     console.log('❌ Não foi possível confirmar reforço - dados inválidos');
@@ -3543,6 +3705,54 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
     padding: { x: 10, y: 5 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Variáveis para incremento progressivo
+  let incrementoStep = 1;
+  let incrementoDelay = 100;
+  
+  // Função para decremento progressivo
+  function decrementoProgressivoTransferencia() {
+    if (window.decrementoIntervalTransferencia) return; // Já está rodando
+    
+    window.decrementoIntervalTransferencia = setInterval(() => {
+      if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
+        // Calcular quantidade a decrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.decrementoIntervalTransferencia.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          incrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          incrementoStep = 2;
+        }
+        
+        // Decrementar
+        const decrementoReal = Math.min(incrementoStep, tropasParaTransferir - 1);
+        tropasParaTransferir -= decrementoReal;
+        atualizarTextoQuantidadeTransferencia();
+        
+        // Tocar som a cada 5 decrementos para feedback
+        if (tropasParaTransferir % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararDecrementoProgressivoTransferencia();
+      }
+    }, incrementoDelay);
+    
+    window.decrementoIntervalTransferencia.startTime = Date.now();
+  }
+  
+  // Função para parar decremento progressivo
+  function pararDecrementoProgressivoTransferencia() {
+    if (window.decrementoIntervalTransferencia) {
+      clearInterval(window.decrementoIntervalTransferencia);
+      window.decrementoIntervalTransferencia = null;
+      incrementoStep = 1; // Resetar para próximo uso
+    }
+  }
+  
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
@@ -3550,6 +3760,11 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
       atualizarTextoQuantidadeTransferencia();
     }
   });
+  
+  botaoMenos.on('pointerdown', decrementoProgressivoTransferencia);
+  botaoMenos.on('pointerup', pararDecrementoProgressivoTransferencia);
+  botaoMenos.on('pointerout', pararDecrementoProgressivoTransferencia);
+  
   controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
@@ -3571,6 +3786,50 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
     padding: { x: 10, y: 5 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Função para incremento progressivo
+  function incrementoProgressivoTransferencia() {
+    if (window.incrementoIntervalTransferencia) return; // Já está rodando
+    
+    window.incrementoIntervalTransferencia = setInterval(() => {
+      if (tropasParaTransferir < dados.tropasDisponiveis) {
+        // Calcular quantidade a incrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.incrementoIntervalTransferencia.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          incrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          incrementoStep = 2;
+        }
+        
+        // Incrementar
+        const incrementoReal = Math.min(incrementoStep, dados.tropasDisponiveis - tropasParaTransferir);
+        tropasParaTransferir += incrementoReal;
+        atualizarTextoQuantidadeTransferencia();
+        
+        // Tocar som a cada 5 incrementos para feedback
+        if (tropasParaTransferir % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararIncrementoProgressivoTransferencia();
+      }
+    }, incrementoDelay);
+    
+    window.incrementoIntervalTransferencia.startTime = Date.now();
+  }
+  
+  // Função para parar incremento progressivo
+  function pararIncrementoProgressivoTransferencia() {
+    if (window.incrementoIntervalTransferencia) {
+      clearInterval(window.incrementoIntervalTransferencia);
+      window.incrementoIntervalTransferencia = null;
+      incrementoStep = 1; // Resetar para próximo uso
+    }
+  }
+  
   botaoMais.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaTransferir < dados.tropasDisponiveis) {
@@ -3578,6 +3837,11 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
       atualizarTextoQuantidadeTransferencia();
     }
   });
+  
+  botaoMais.on('pointerdown', incrementoProgressivoTransferencia);
+  botaoMais.on('pointerup', pararIncrementoProgressivoTransferencia);
+  botaoMais.on('pointerout', pararIncrementoProgressivoTransferencia);
+  
   controlesContainer.add(botaoMais);
   
   // Container para botões de ação
@@ -3630,6 +3894,17 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
 
 function esconderInterfaceTransferenciaConquista(manterDados = false) {
   console.log('DEBUG: esconderInterfaceTransferenciaConquista chamada, manterDados =', manterDados);
+  
+  // Limpar intervalos de incremento/decremento se existirem
+  if (window.incrementoIntervalTransferencia) {
+    clearInterval(window.incrementoIntervalTransferencia);
+    window.incrementoIntervalTransferencia = null;
+  }
+  if (window.decrementoIntervalTransferencia) {
+    clearInterval(window.decrementoIntervalTransferencia);
+    window.decrementoIntervalTransferencia = null;
+  }
+  
   if (interfaceTransferenciaConquista) {
     interfaceTransferenciaConquista.destroy();
     interfaceTransferenciaConquista = null;
@@ -3787,6 +4062,54 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
     padding: { x: 15, y: 8 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Variáveis para incremento progressivo
+  let incrementoStep = 1;
+  let incrementoDelay = 100;
+  
+  // Função para decremento progressivo
+  function decrementoProgressivoRemanejamento() {
+    if (window.decrementoIntervalRemanejamento) return; // Já está rodando
+    
+    window.decrementoIntervalRemanejamento = setInterval(() => {
+      if (tropasParaMover > 1) {
+        // Calcular quantidade a decrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.decrementoIntervalRemanejamento.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          incrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          incrementoStep = 2;
+        }
+        
+        // Decrementar
+        const decrementoReal = Math.min(incrementoStep, tropasParaMover - 1);
+        tropasParaMover -= decrementoReal;
+        atualizarTextoQuantidadeRemanejamento();
+        
+        // Tocar som a cada 5 decrementos para feedback
+        if (tropasParaMover % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararDecrementoProgressivoRemanejamento();
+      }
+    }, incrementoDelay);
+    
+    window.decrementoIntervalRemanejamento.startTime = Date.now();
+  }
+  
+  // Função para parar decremento progressivo
+  function pararDecrementoProgressivoRemanejamento() {
+    if (window.decrementoIntervalRemanejamento) {
+      clearInterval(window.decrementoIntervalRemanejamento);
+      window.decrementoIntervalRemanejamento = null;
+      incrementoStep = 1; // Resetar para próximo uso
+    }
+  }
+  
   botaoMenos.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaMover > 1) {
@@ -3794,6 +4117,11 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
       atualizarTextoQuantidadeRemanejamento();
     }
   });
+  
+  botaoMenos.on('pointerdown', decrementoProgressivoRemanejamento);
+  botaoMenos.on('pointerup', pararDecrementoProgressivoRemanejamento);
+  botaoMenos.on('pointerout', pararDecrementoProgressivoRemanejamento);
+  
   controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
@@ -3815,6 +4143,50 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
     padding: { x: 10, y: 5 },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Função para incremento progressivo
+  function incrementoProgressivoRemanejamento() {
+    if (window.incrementoIntervalRemanejamento) return; // Já está rodando
+    
+    window.incrementoIntervalRemanejamento = setInterval(() => {
+      if (tropasParaMover < maxTropas) {
+        // Calcular quantidade a incrementar baseada no tempo
+        const tempoDecorrido = Date.now() - (window.incrementoIntervalRemanejamento.startTime || Date.now());
+        
+        if (tempoDecorrido > 2000) { // Após 2 segundos
+          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
+        } else if (tempoDecorrido > 1000) { // Após 1 segundo
+          incrementoStep = 5;
+        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
+          incrementoStep = 2;
+        }
+        
+        // Incrementar
+        const incrementoReal = Math.min(incrementoStep, maxTropas - tropasParaMover);
+        tropasParaMover += incrementoReal;
+        atualizarTextoQuantidadeRemanejamento();
+        
+        // Tocar som a cada 5 incrementos para feedback
+        if (tropasParaMover % 5 === 0) {
+          tocarSomClick();
+        }
+      } else {
+        pararIncrementoProgressivoRemanejamento();
+      }
+    }, incrementoDelay);
+    
+    window.incrementoIntervalRemanejamento.startTime = Date.now();
+  }
+  
+  // Função para parar incremento progressivo
+  function pararIncrementoProgressivoRemanejamento() {
+    if (window.incrementoIntervalRemanejamento) {
+      clearInterval(window.incrementoIntervalRemanejamento);
+      window.incrementoIntervalRemanejamento = null;
+      incrementoStep = 1; // Resetar para próximo uso
+    }
+  }
+  
   botaoMais.on('pointerdown', (pointer) => {
     tocarSomClick();
     if (tropasParaMover < maxTropas) {
@@ -3822,6 +4194,11 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
       atualizarTextoQuantidadeRemanejamento();
     }
   });
+  
+  botaoMais.on('pointerdown', incrementoProgressivoRemanejamento);
+  botaoMais.on('pointerup', pararIncrementoProgressivoRemanejamento);
+  botaoMais.on('pointerout', pararIncrementoProgressivoRemanejamento);
+  
   controlesContainer.add(botaoMais);
   
   // Container para botões de ação
@@ -3853,6 +4230,17 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   const confirmarRemanejamentoAcao = () => {
     tocarSomClick();
     console.log('🔧 DEBUG: Confirmando movimento de remanejamento');
+    
+    // Limpar intervalos de incremento/decremento se existirem
+    if (window.incrementoIntervalRemanejamento) {
+      clearInterval(window.incrementoIntervalRemanejamento);
+      window.incrementoIntervalRemanejamento = null;
+    }
+    if (window.decrementoIntervalRemanejamento) {
+      clearInterval(window.decrementoIntervalRemanejamento);
+      window.decrementoIntervalRemanejamento = null;
+    }
+    
     emitWithRoom('moverTropas', {
       origem: origem.nome,
       destino: destino.nome,
@@ -3886,6 +4274,17 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   const cancelarRemanejamentoAcao = () => {
     tocarSomClick();
     console.log('🔧 DEBUG: Cancelando movimento de remanejamento');
+    
+    // Limpar intervalos de incremento/decremento se existirem
+    if (window.incrementoIntervalRemanejamento) {
+      clearInterval(window.incrementoIntervalRemanejamento);
+      window.incrementoIntervalRemanejamento = null;
+    }
+    if (window.decrementoIntervalRemanejamento) {
+      clearInterval(window.decrementoIntervalRemanejamento);
+      window.decrementoIntervalRemanejamento = null;
+    }
+    
     limparSelecao();
     interfaceRemanejamento.destroy();
     interfaceRemanejamento = null;
@@ -5436,6 +5835,68 @@ function limparTodasAnimacoesSalto() {
   
   // Também limpar todas as elevações
   limparTodasElevacoes();
+  
+  // Verificar se ainda há tropas bônus antes de restaurar animações
+  const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+  const totalReforco = gameState.tropasReforco || 0;
+  const tropasRestantes = totalReforco + totalBonus;
+  
+  console.log(`🎯 Tropas restantes após limpeza: ${tropasRestantes} (${totalReforco} reforço + ${totalBonus} bônus)`);
+  
+  // Só restaurar animações se ainda há tropas para colocar
+  if (tropasRestantes > 0) {
+    console.log('🎯 Restaurando animações pois ainda há tropas para colocar');
+    restaurarAnimacoesTerritoriosBonus();
+  } else {
+    console.log('🎯 Não restaurando animações - não há mais tropas para colocar');
+  }
+}
+
+// Função para restaurar animações de salto nos territórios bônus
+function restaurarAnimacoesTerritoriosBonus() {
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+  const totalReforco = gameState.tropasReforco || 0;
+  const tropasRestantes = totalReforco + totalBonus;
+  
+  console.log(`🎯 restaurarAnimacoesTerritoriosBonus - tropas restantes: ${tropasRestantes} (${totalReforco} reforço + ${totalBonus} bônus)`);
+  
+  // Só restaurar se há tropas para colocar e é o turno do jogador
+  if (tropasRestantes > 0 && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
+    console.log('🎯 Restaurando animações de salto para territórios bônus');
+    
+    gameState.paises.forEach(pais => {
+      if (pais.dono === gameState.turno && pais.polygon && pais.polygon.scene) {
+        const continente = gameState.continentes[gameState.continentePrioritario.nome];
+        if (continente && continente.territorios.includes(pais.nome)) {
+          // Aplicar borda branca grossa
+          pais.polygon.setStrokeStyle(6, 0xffffff, 1);
+          
+          // Aplicar animação de salto se não estiver já animando
+          if (!pais.polygon.timelineSalto) {
+            console.log(`🎯 Restaurando animação de salto em ${pais.nome}`);
+            pais.polygon.timelineSalto = criarAnimacaoSalto(pais.polygon, pais.polygon.scene);
+          }
+          
+          // Garantir que o território tenha elevação se necessário
+          // Verificar se o território tem borda branca grossa mas não tem elevação
+          const strokeStyle = pais.polygon.strokeStyle;
+          if (strokeStyle && strokeStyle.color === 0xffffff && strokeStyle.width === 6) {
+            // Verificar se não tem elevação aplicada usando a propriedade elevado
+            if (!pais.elevado) {
+              console.log(`🎯 Aplicando elevação em ${pais.nome} (território bônus)`);
+              criarElevacaoTerritorio(pais.nome, pais.polygon.scene);
+            }
+          }
+        }
+      }
+    });
+  } else {
+    console.log('🎯 Não restaurando animações - condições não atendidas');
+    console.log(`🎯 tropasRestantes: ${tropasRestantes}, meuNome: ${gameState.meuNome}, turno: ${gameState.turno}, continentePrioritario: ${gameState.continentePrioritario ? 'sim' : 'não'}`);
+  }
 }
 
 // Função para criar efeito de onda quando conquista um continente
@@ -6200,17 +6661,29 @@ function fecharIndicacaoInicioTurno() {
         if (pais.polygon && pais.polygon.scene) {
           // Verificar se o território pertence ao continente prioritário
           let pertenceAoContinentePrioritario = false;
-          if (gameState.continentePrioritario) {
+          const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+          
+          if (totalBonus > 0 && pais.dono === gameState.turno && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
             const continente = gameState.continentes[gameState.continentePrioritario.nome];
             if (continente && continente.territorios.includes(pais.nome)) {
               pertenceAoContinentePrioritario = true;
             }
           }
           
-          // Restaurar borda normal apenas se não for território prioritário
-          if (!pertenceAoContinentePrioritario) {
+          if (pertenceAoContinentePrioritario) {
+            // Manter borda branca grossa para continente prioritário
+            pais.polygon.setStrokeStyle(6, 0xffffff, 1);
+            
+            // Aplicar animação de salto se não estiver já animando
+            if (!pais.polygon.timelineSalto) {
+              console.log(`🎯 Restaurando animação de salto em ${pais.nome} após fechar indicação de turno`);
+              pais.polygon.timelineSalto = criarAnimacaoSalto(pais.polygon, pais.polygon.scene);
+            }
+          } else {
+            // Restaurar borda normal para territórios não prioritários
             pais.polygon.setStrokeStyle(4, 0x000000, 1);
           }
+          
           // Remover elevação
           removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
         }
@@ -6218,5 +6691,8 @@ function fecharIndicacaoInicioTurno() {
     }
     
     window.indicacaoInicioTurno = null;
+    
+    // Restaurar animações de salto para territórios bônus após fechar indicação
+    restaurarAnimacoesTerritoriosBonus();
   }
 }
