@@ -519,6 +519,39 @@
     }
   }
 
+  /* iPhone Landscape Specific */
+  @supports (-webkit-touch-callout: none) {
+    @media (orientation: landscape) and (max-height: 500px) {
+      .game-container {
+        padding-top: 15px !important;
+      }
+      
+      .game-container canvas {
+        top: 15px !important;
+        max-height: calc(100% - 15px) !important;
+      }
+      
+      .hud-top {
+        height: 15px !important;
+      }
+    }
+    
+    @media (orientation: landscape) and (max-height: 400px) {
+      .game-container {
+        padding-top: 12px !important;
+      }
+      
+      .game-container canvas {
+        top: 12px !important;
+        max-height: calc(100% - 12px) !important;
+      }
+      
+      .hud-top {
+        height: 12px !important;
+      }
+    }
+  }
+
   /* Prevent zoom and scroll on mobile */
   @media (max-width: 768px) {
     * {
@@ -1828,6 +1861,103 @@
     .game-container canvas {
       top: 18px !important;
       max-height: calc(100% - 18px) !important;
+    }
+  }
+
+  /* Landscape Mobile Devices */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .hud-top {
+      height: 15px !important;
+      padding: 0 3px !important;
+    }
+    
+    .player-info {
+      gap: 2px !important;
+    }
+    
+    .player-avatar {
+      width: 10px !important;
+      height: 10px !important;
+      font-size: 5px !important;
+    }
+    
+    .player-name {
+      font-size: 6px !important;
+    }
+    
+    .player-stats {
+      display: none !important; /* Hide stats in landscape to save space */
+    }
+    
+    .action-buttons {
+      gap: 2px !important;
+    }
+    
+    .hud-button {
+      padding: 1px 2px !important;
+      font-size: 5px !important;
+      border-radius: 4px !important;
+    }
+    
+    .hud-button span:first-child {
+      font-size: 6px !important;
+    }
+    
+    .timer-display {
+      font-size: 6px !important;
+      padding: 1px 2px !important;
+      min-width: 20px !important;
+    }
+    
+    .game-container {
+      padding-top: 15px !important;
+    }
+    
+    .game-container canvas {
+      top: 15px !important;
+      max-height: calc(100% - 15px) !important;
+    }
+  }
+
+  /* Extra Compact for Very Small Landscape */
+  @media (max-height: 400px) and (orientation: landscape) {
+    .hud-top {
+      height: 12px !important;
+      padding: 0 2px !important;
+    }
+    
+    .player-avatar {
+      width: 8px !important;
+      height: 8px !important;
+      font-size: 4px !important;
+    }
+    
+    .player-name {
+      font-size: 5px !important;
+    }
+    
+    .hud-button {
+      padding: 0px 1px !important;
+      font-size: 4px !important;
+    }
+    
+    .hud-button span:first-child {
+      font-size: 5px !important;
+    }
+    
+    .timer-display {
+      font-size: 5px !important;
+      padding: 0px 1px !important;
+      min-width: 15px !important;
+    }
+    
+    .game-container {
+      padding-top: 12px !important;
+    }
+    
+    .game-container canvas {
+      top: 12px !important;
+      max-height: calc(100% - 12px) !important;
     }
   }
 
