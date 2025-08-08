@@ -2,12 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
 <title>War Multiplayer</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <script src="game.js"></script>
 <style>
+  html, body { 
+    margin: 0; 
+    padding: 0;
+    background: #1a1a1a; 
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+
   body { 
     margin: 0; 
     background: #1a1a1a; 
@@ -443,6 +457,7 @@
     width: 100%;
     height: 100vh;
     position: relative;
+    overflow: hidden;
   }
   
   /* Ensure Phaser canvas is visible */
@@ -455,6 +470,67 @@
     z-index: 1 !important;
     display: block !important;
     visibility: visible !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+
+  /* Mobile-specific canvas adjustments */
+  @media (max-width: 768px) {
+    .game-container {
+      height: 100vh;
+      width: 100vw;
+    }
+    
+    .game-container canvas {
+      width: auto !important;
+      height: auto !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+    }
+  }
+
+  /* iPhone-specific adjustments */
+  @supports (-webkit-touch-callout: none) {
+    .game-container {
+      height: 100vh;
+      width: 100vw;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+    
+    .game-container canvas {
+      width: auto !important;
+      height: auto !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
+
+  /* Prevent zoom and scroll on mobile */
+  @media (max-width: 768px) {
+    * {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    input, textarea {
+      -webkit-user-select: text;
+      -khtml-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
   }
 
   /* Modern HUD Container */

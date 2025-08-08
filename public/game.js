@@ -925,7 +925,15 @@ function initializeGame() {
     parent: 'game-container',
     scale: {
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      min: {
+        width: 800,
+        height: 450
+      },
+      max: {
+        width: 1920,
+        height: 1080
+      }
     },
     scene: {
       preload,
@@ -938,6 +946,42 @@ function initializeGame() {
   const game = new Phaser.Game(config);
   window.game = game; // Make game globally available
   console.log('✅ Phaser criado com sucesso!');
+  
+  // Add resize listener for mobile devices
+  window.addEventListener('resize', () => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const isMobile = window.innerWidth <= 768;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      if (isMobile || isIOS) {
+        canvas.style.width = 'auto';
+        canvas.style.height = 'auto';
+        canvas.style.maxWidth = '100%';
+        canvas.style.maxHeight = '100%';
+      }
+    }
+  });
+
+  // Add orientation change listener for mobile devices
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        const isMobile = window.innerWidth <= 768;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isMobile || isIOS) {
+          canvas.style.width = 'auto';
+          canvas.style.height = 'auto';
+          canvas.style.maxWidth = '100%';
+          canvas.style.maxHeight = '100%';
+          console.log('📱 Canvas adjusted for orientation change');
+        }
+      }
+    }, 100);
+  });
+  
   console.log('🔧 DEBUG: initializeGame() concluída');
 }
 
@@ -1405,7 +1449,10 @@ function create() {
     console.log('🎨 Canvas left:', canvasInDOM.style.left);
   }
 
-  const mapaImage = this.add.image(0, 18, 'mapa').setOrigin(0, 0).setDisplaySize(largura, altura);
+  // Add map image centered and scaled properly
+  const mapaImage = this.add.image(largura / 2, altura / 2, 'mapa')
+    .setOrigin(0.5, 0.5)
+    .setDisplaySize(largura, altura);
   console.log('🗺️ Imagem do mapa adicionada!');
   console.log('🗺️ Mapa image object:', mapaImage);
   console.log('🗺️ Mapa visible:', mapaImage.visible);
@@ -1421,8 +1468,21 @@ function create() {
       canvas.style.position = 'absolute';
       canvas.style.top = '0px';
       canvas.style.left = '0px';
-      canvas.style.transform = 'translateX(8.5%)';
+      canvas.style.transform = 'none';
       canvas.style.zIndex = '1';
+      
+      // Mobile-specific adjustments
+      const isMobile = window.innerWidth <= 768;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      if (isMobile || isIOS) {
+        canvas.style.width = 'auto';
+        canvas.style.height = 'auto';
+        canvas.style.maxWidth = '100%';
+        canvas.style.maxHeight = '100%';
+        console.log('📱 Mobile canvas adjustments applied');
+      }
+      
       console.log('🎨 Canvas positioning forced and centered!');
     }
   }, 100);
@@ -1908,7 +1968,7 @@ function atualizarPaises(novosPaises, scene) {
     }
     
          // Criar o polígono na posição (minX, minY + 40) com pontos relativos para alinhar com o mapa
-     obj.polygon = scene.add.polygon(minX, minY + 18, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
+     obj.polygon = scene.add.polygon(minX, minY, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
      obj.polygon.setOrigin(0, 0);
      obj.polygon.setStrokeStyle(4, 0x000000, 1); // Add black border for visibility
      obj.polygon.setInteractive({ 
@@ -1920,7 +1980,7 @@ function atualizarPaises(novosPaises, scene) {
      // Debug logs for first few territories
      if (gameState.paises.length < 5) {
        console.log(`🗺️ Território criado: ${pais.nome}`);
-       console.log(`🗺️ Posição: (${minX}, ${minY + 18})`);
+       console.log(`🗺️ Posição: (${minX}, ${minY})`);
        console.log(`🗺️ Cor: ${coresDosDonos[pais.dono] || 0xffffff}`);
        console.log(`🗺️ Pontos: ${pontosRelativos.length} pontos`);
        console.log(`🗺️ Polygon object:`, obj.polygon);
@@ -4348,7 +4408,7 @@ function adicionarIndicadoresContinentes(scene) {
 
   // Criar indicadores para cada continente
   indicadoresContinentes.forEach(indicador => {
-    const textoIndicador = scene.add.text(indicador.x, indicador.y + 18, indicador.texto, {
+    const textoIndicador = scene.add.text(indicador.x, indicador.y, indicador.texto, {
       fontSize: '14px',
       fill: '#ffffff',
       stroke: '#000000',
@@ -4381,8 +4441,8 @@ function adicionarIndicadoresContinentes(scene) {
       const linha = scene.add.graphics();
       linha.lineStyle(2, 0xffffff, 0.7); // Linha branca semi-transparente
       linha.beginPath();
-      linha.moveTo(territorio.x, territorio.y + 18);
-      linha.lineTo(indicador.x, indicador.y + 18);
+      linha.moveTo(territorio.x, territorio.y);
+      linha.lineTo(indicador.x, indicador.y);
       linha.strokePath();
       linha.setDepth(2); // Colocar abaixo dos indicadores mas acima dos territórios
     } else {
