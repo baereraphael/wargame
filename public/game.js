@@ -605,14 +605,13 @@ function resizeGameElements(scene) {
     const hudTop = document.querySelector('.hud-top');
     if (hudTop) {
       const hudHeight = hudTop.offsetHeight;
-      const hudBottom = hudTop.offsetTop + hudHeight;
-      const availableHeight = window.innerHeight - hudBottom;
+      const availableHeight = window.innerHeight - hudHeight;
       
       // Update canvas style to use actual available height
       const canvasElement = document.querySelector('canvas');
       if (canvasElement) {
         canvasElement.style.height = `${availableHeight}px`;
-        canvasElement.style.top = `${hudBottom}px`;
+        canvasElement.style.top = `${hudHeight}px`;
         canvasElement.style.position = 'absolute';
         canvasElement.style.left = '0';
         canvasElement.style.right = '0';
@@ -4668,22 +4667,24 @@ function forceMobileCanvasPosition() {
   const canvasElement = document.querySelector('canvas');
   
   if (hudTop && canvasElement) {
-    // Calcular posição exata do HUD
-    const hudRect = hudTop.getBoundingClientRect();
-    const hudBottom = hudRect.bottom;
+    // Calcular posição mais agressiva - usar altura do HUD em vez da posição real
+    const hudHeight = hudTop.offsetHeight;
     
-    // Aplicar posicionamento correto
+    // Posicionamento ainda mais agressivo - reduzir um pouco a altura do HUD
+    const adjustedTop = Math.max(hudHeight - 5, 20); // Mínimo de 20px do topo
+    
+    // Aplicar posicionamento mais próximo do HUD
     canvasElement.style.position = 'absolute';
-    canvasElement.style.top = `${hudBottom}px`;
+    canvasElement.style.top = `${adjustedTop}px`;
     canvasElement.style.left = '0';
     canvasElement.style.right = '0';
     canvasElement.style.bottom = '0';
     canvasElement.style.width = '100%';
-    canvasElement.style.height = `calc(100vh - ${hudBottom}px)`;
+    canvasElement.style.height = `calc(100vh - ${adjustedTop}px)`;
     canvasElement.style.objectFit = 'fill';
     canvasElement.style.zIndex = '1';
     
-    console.log('📱 Mobile canvas positioned at:', hudBottom, 'px from top');
+    console.log('📱 Mobile canvas positioned at:', adjustedTop, 'px from top (adjusted)');
   }
 }
 
