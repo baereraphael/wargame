@@ -1630,13 +1630,13 @@ function create() {
   containerVitoria.setVisible(false);
 
   // Background do container com bordas arredondadas
-  const bgContainer = this.add.rectangle(0, 0, 600, 400, 0x1a1a2e, 0.95);
+  const bgContainer = this.add.rectangle(0, 0, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(400, 0.9, 0.8), 0x1a1a2e, 0.95);
   bgContainer.setStrokeStyle(3, 0x4a90e2);
   containerVitoria.add(bgContainer);
 
   // Título "VITÓRIA!" com ícone integrado
   const tituloVitoria = this.add.text(0, -120, '🏆 VITÓRIA! 🏆', {
-    fontSize: '42px',
+    fontSize: getResponsiveFontSize(42, 0.7, 0.5),
     fill: '#ffd700',
     fontStyle: 'bold',
     stroke: '#8b4513',
@@ -1648,7 +1648,7 @@ function create() {
 
   // Texto do jogador vencedor
   textoVitoriaGrande = this.add.text(0, -50, '', {
-    fontSize: '32px',
+    fontSize: getResponsiveFontSize(32, 0.7, 0.5),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#2c3e50',
@@ -1665,7 +1665,7 @@ function create() {
 
   // Botão reiniciar com design moderno
   botaoReiniciar = this.add.text(0, 80, '🔄 REINICIAR JOGO', {
-    fontSize: '24px',
+    fontSize: getResponsiveFontSize(24, 0.8, 0.6),
     fill: '#ffffff',
     backgroundColor: '#4a90e2',
     padding: { x: 30, y: 15 },
@@ -2097,13 +2097,13 @@ function atualizarPaises(novosPaises, scene) {
     obj.text.setVisible(false);
 
     // Criar círculo com o número de tropas
-    obj.troopCircle = scene.add.circle(centroX, centroY, 12, 0xffffff, 1);
+    obj.troopCircle = scene.add.circle(centroX, centroY, getResponsiveSize(12, 0.8, 0.6), 0xffffff, 1);
     obj.troopCircle.setStrokeStyle(2, 0x000000, 1);
     obj.troopCircle.setDepth(3);
     
     // Criar texto do número de tropas dentro do círculo
     obj.troopText = scene.add.text(centroX, centroY, pais.tropas.toString(), {
-        fontSize: '14px',
+        fontSize: getResponsiveFontSize(14, 0.8, 0.6),
         fill: '#000000',
         align: 'center',
         fontStyle: 'bold'
@@ -2894,7 +2894,7 @@ function mostrarEfeitoReforco(territorio, jogador, scene) {
   const posY = pais.text.y;
 
   // Criar efeito de pulsação no território
-  const efeitoPulsacao = scene.add.circle(posX, posY, 30, 0x00ff00, 0.3);
+  const efeitoPulsacao = scene.add.circle(posX, posY, getResponsiveSize(30, 0.8, 0.6), 0x00ff00, 0.3);
   efeitoPulsacao.setDepth(15);
 
   // Animação de pulsação
@@ -2912,7 +2912,7 @@ function mostrarEfeitoReforco(territorio, jogador, scene) {
 
   // Criar texto flutuante
   const textoReforco = scene.add.text(posX, posY - 50, `🛡️ +1`, {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20, 0.8, 0.6),
     fill: '#00ff00',
     stroke: '#000000',
     strokeThickness: 3
@@ -2967,13 +2967,13 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   interfaceReforco.setDepth(20);
   
   // Background principal com gradiente
-  const background = scene.add.rectangle(0, 0, 350, 200, 0x1a1a1a, 0.95);
+  const background = scene.add.rectangle(0, 0, getResponsiveSize(350, 0.9, 0.8), getResponsiveSize(200, 0.9, 0.8), 0x1a1a1a, 0.95);
   background.setStrokeStyle(3, 0x33cc33);
   background.setDepth(0);
   interfaceReforco.add(background);
   
   // Header com gradiente
-  const headerBg = scene.add.rectangle(0, -80, 350, 40, 0x33cc33, 0.9);
+  const headerBg = scene.add.rectangle(0, -80, getResponsiveSize(350, 0.9, 0.8), getResponsiveSize(40, 0.9, 0.8), 0x33cc33, 0.9);
   headerBg.setDepth(1);
   interfaceReforco.add(headerBg);
   
@@ -2991,7 +2991,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   }
   
   const titulo = scene.add.text(-120, -80, tituloTexto, {
-    fontSize: '16px',
+    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
@@ -3022,7 +3022,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Nome do território
   const territorioText = scene.add.text(-100, 0, territorio.nome, {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -3030,7 +3030,7 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Tropas atuais
   const tropasAtuaisText = scene.add.text(80, 0, `Tropas: ${territorio.tropas}`, {
-    fontSize: '12px',
+    fontSize: getResponsiveFontSize(12, 0.8, 0.6),
     fill: '#cccccc',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
@@ -3868,13 +3868,13 @@ function mostrarObjetivo(objetivo, scene) {
   container.setDepth(21);
   
   // Background do container - estilo moderno como o chat
-  const background = scene.add.rectangle(0, 0, 600, 400, 0x000000, 0.95);
+  const background = scene.add.rectangle(0, 0, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(400, 0.9, 0.8), 0x000000, 0.95);
   background.setStrokeStyle(2, 0x444444);
   background.setDepth(0);
   container.add(background);
   
   // Header com estilo moderno como o chat
-  const headerBg = scene.add.rectangle(0, -170, 600, 50, 0x000000, 0.95);
+  const headerBg = scene.add.rectangle(0, -170, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(50, 0.9, 0.8), 0x000000, 0.95);
   headerBg.setStrokeStyle(1, 0x444444);
   headerBg.setDepth(1);
   container.add(headerBg);
@@ -3888,7 +3888,7 @@ function mostrarObjetivo(objetivo, scene) {
   
   // Título principal
   const titulo = scene.add.text(-210, -170, 'SEU OBJETIVO', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -3924,7 +3924,7 @@ function mostrarObjetivo(objetivo, scene) {
   
   // Descrição do objetivo com melhor formatação
   const descricao = scene.add.text(0, -10, objetivo.descricao, {
-    fontSize: '18px',
+    fontSize: getResponsiveFontSize(18, 0.8, 0.6),
     fill: '#ffffff',
     align: 'center',
     wordWrap: { width: 500 },
@@ -3934,7 +3934,7 @@ function mostrarObjetivo(objetivo, scene) {
   
   // Dica de jogo
   const dica = scene.add.text(0, 50, '💡 Dica: Mantenha seu objetivo em mente durante toda a partida!', {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14, 0.8, 0.6),
     fill: '#cccccc',
     align: 'center',
     wordWrap: { width: 450 },
@@ -3949,7 +3949,7 @@ function mostrarObjetivo(objetivo, scene) {
   container.add(botaoFecharBg);
   
   const botaoFechar = scene.add.text(0, 140, '✅ Entendi', {
-    fontSize: '16px',
+    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
@@ -4293,6 +4293,20 @@ function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMult
     return Math.floor(baseSize * mobileMultiplier) + 'px';
   } else {
     return baseSize + 'px';
+  }
+}
+
+// Função utilitária para calcular tamanhos de elementos gráficos responsivos
+function getResponsiveSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  
+  if (isSmallMobile) {
+    return Math.floor(baseSize * smallMobileMultiplier);
+  } else if (isMobile) {
+    return Math.floor(baseSize * mobileMultiplier);
+  } else {
+    return baseSize;
   }
 }
 
@@ -6001,13 +6015,13 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   container.setDepth(31);
   
   // Background do container - estilo preto como o chat
-  const background = scene.add.rectangle(0, 0, 400, 120, 0x000000, 0.95);
+  const background = scene.add.rectangle(0, 0, getResponsiveSize(400, 0.9, 0.8), getResponsiveSize(120, 0.9, 0.8), 0x000000, 0.95);
   background.setStrokeStyle(2, 0x444444);
   background.setDepth(0);
   container.add(background);
   
   // Header com estilo similar ao chat
-  const headerBg = scene.add.rectangle(0, -45, 400, 40, 0x000000, 0.95);
+  const headerBg = scene.add.rectangle(0, -45, getResponsiveSize(400, 0.9, 0.8), getResponsiveSize(40, 0.9, 0.8), 0x000000, 0.95);
   headerBg.setStrokeStyle(1, 0x444444);
   headerBg.setDepth(1);
   container.add(headerBg);
@@ -6021,7 +6035,7 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   
   // Título
   const titulo = scene.add.text(-140, -45, 'SEU TURNO!', {
-    fontSize: '18px',
+    fontSize: getResponsiveFontSize(18, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -6034,7 +6048,7 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   
   // Mensagem principal
   const mensagem = scene.add.text(0, 10, `É a vez de ${nomeJogador} jogar!`, {
-    fontSize: '16px',
+    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
