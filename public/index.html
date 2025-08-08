@@ -458,12 +458,13 @@
     height: 100vh;
     position: relative;
     overflow: hidden;
+    padding-top: 45px; /* Space for HUD */
   }
   
   /* Ensure Phaser canvas is visible */
   .game-container canvas {
     position: absolute !important;
-    top: 0 !important;
+    top: 45px !important; /* Position below HUD */
     left: 0 !important;
     margin-top: 0 !important;
     margin-left: 0 !important;
@@ -473,7 +474,7 @@
     width: auto !important;
     height: auto !important;
     max-width: 100% !important;
-    max-height: 100% !important;
+    max-height: calc(100% - 45px) !important; /* Account for HUD height */
   }
 
   /* Mobile-specific canvas adjustments */
@@ -481,13 +482,15 @@
     .game-container {
       height: 100vh;
       width: 100vw;
+      padding-top: 35px; /* Space for mobile HUD */
     }
     
     .game-container canvas {
       width: auto !important;
       height: auto !important;
       max-width: 100% !important;
-      max-height: 100% !important;
+      max-height: calc(100% - 35px) !important; /* Account for mobile HUD height */
+      top: 35px !important; /* Position below mobile HUD */
     }
   }
 
@@ -500,15 +503,18 @@
       top: 0;
       left: 0;
       overflow: hidden;
+      padding-top: 35px; /* Space for HUD on iPhone */
     }
     
     .game-container canvas {
       width: auto !important;
       height: auto !important;
       max-width: 100% !important;
-      max-height: 100% !important;
+      max-height: calc(100% - 35px) !important; /* Account for HUD height on iPhone */
+      top: 35px !important; /* Position below HUD on iPhone */
       touch-action: none;
       -webkit-user-select: none;
+      user-select: none;
       -webkit-touch-callout: none;
     }
   }
@@ -550,34 +556,35 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
-    border-bottom: 2px solid #444;
+    height: 45px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 100%);
+    border-bottom: 1px solid #444;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 15px;
     pointer-events: auto;
+    z-index: 100;
   }
 
   /* Player Info Section */
   .player-info {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     color: white;
   }
 
   .player-avatar {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: linear-gradient(45deg, #4a90e2, #357abd);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    border: 2px solid #fff;
+    font-size: 14px;
+    border: 1px solid #fff;
   }
 
   .player-details {
@@ -587,13 +594,13 @@
   }
 
   .player-name {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
     color: #fff;
   }
 
   .player-stats {
-    font-size: 12px;
+    font-size: 11px;
     color: #ccc;
   }
 
@@ -700,14 +707,14 @@
   }
 
   .timer-display {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     background: rgba(0, 0, 0, 0.6);
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    min-width: 80px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    min-width: 70px;
     text-align: center;
     transition: all 0.3s ease;
   }
@@ -760,21 +767,21 @@
   .action-buttons {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
 
   .hud-button {
-    padding: 6px 12px;
+    padding: 4px 10px;
     border: none;
-    border-radius: 16px;
+    border-radius: 12px;
     color: white;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     pointer-events: auto;
     position: relative;
   }
@@ -1673,8 +1680,8 @@
   @media (max-width: 768px) {
     /* Top HUD Bar - Mobile */
     .hud-top {
-      height: 45px;
-      padding: 0 10px;
+      height: 35px;
+      padding: 0 8px;
     }
 
     /* Player Info - Mobile */
@@ -1683,18 +1690,18 @@
     }
 
     .player-avatar {
-      width: 24px;
-      height: 24px;
-      font-size: 12px;
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
       border: 1px solid #fff;
     }
 
     .player-name {
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .player-stats {
-      font-size: 10px;
+      font-size: 9px;
     }
 
     /* Action Buttons - Mobile */
@@ -1703,10 +1710,10 @@
     }
 
     .hud-button {
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      gap: 3px;
+      padding: 3px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      gap: 2px;
     }
 
     .hud-button span:first-child {
@@ -1715,8 +1722,10 @@
 
     /* Timer Display - Mobile */
     .timer-display {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: bold;
+      padding: 2px 6px;
+      min-width: 50px;
     }
 
     /* Game Info - Mobile */
@@ -1736,28 +1745,37 @@
 
   /* Extra Small Mobile Devices */
   @media (max-width: 480px) {
+    .game-container {
+      padding-top: 30px; /* Space for extra small mobile HUD */
+    }
+    
+    .game-container canvas {
+      top: 30px !important; /* Position below extra small mobile HUD */
+      max-height: calc(100% - 30px) !important; /* Account for extra small mobile HUD height */
+    }
+    
     .hud-top {
-      height: 40px;
-      padding: 0 8px;
+      height: 30px;
+      padding: 0 6px;
     }
 
     .player-avatar {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
-    }
-
-    .player-name {
-      font-size: 11px;
-    }
-
-    .player-stats {
+      width: 18px;
+      height: 18px;
       font-size: 9px;
     }
 
-    .hud-button {
-      padding: 3px 6px;
+    .player-name {
       font-size: 10px;
+    }
+
+    .player-stats {
+      font-size: 8px;
+    }
+
+    .hud-button {
+      padding: 2px 4px;
+      font-size: 9px;
     }
 
     .hud-button span:first-child {
@@ -1765,7 +1783,9 @@
     }
 
     .timer-display {
-      font-size: 12px;
+      font-size: 10px;
+      padding: 1px 4px;
+      min-width: 40px;
     }
   }
 

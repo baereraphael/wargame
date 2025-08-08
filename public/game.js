@@ -1990,7 +1990,7 @@ function atualizarPaises(novosPaises, scene) {
 
 
     // Criar texto com apenas o nome do território (inicialmente invisível)
-    obj.text = scene.add.text(centroX, centroY + 25, getTextoPais(pais), {
+    obj.text = scene.add.text(centroX, centroY + 10, getTextoPais(pais), {
         fontSize: '14px',
         fill: '#ffffff',
         align: 'center',
@@ -2006,12 +2006,12 @@ function atualizarPaises(novosPaises, scene) {
     obj.text.setVisible(false);
 
     // Criar círculo com o número de tropas
-    obj.troopCircle = scene.add.circle(centroX, centroY + 50, 12, 0xffffff, 1);
+    obj.troopCircle = scene.add.circle(centroX, centroY, 12, 0xffffff, 1);
     obj.troopCircle.setStrokeStyle(2, 0x000000, 1);
     obj.troopCircle.setDepth(3);
     
     // Criar texto do número de tropas dentro do círculo
-    obj.troopText = scene.add.text(centroX, centroY + 50, pais.tropas.toString(), {
+    obj.troopText = scene.add.text(centroX, centroY, pais.tropas.toString(), {
         fontSize: '14px',
         fill: '#000000',
         align: 'center',
