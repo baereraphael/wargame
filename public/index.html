@@ -524,6 +524,15 @@
     }
   }
 
+  /* Force mobile canvas to start immediately after HUD */
+  @media (max-width: 768px) {
+    .game-container canvas {
+      top: 0 !important;
+      height: 100vh !important;
+      margin-top: 25px !important;
+    }
+  }
+
   /* iPhone-specific adjustments */
   @supports (-webkit-touch-callout: none) {
     .game-container {

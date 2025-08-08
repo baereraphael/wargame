@@ -605,13 +605,20 @@ function resizeGameElements(scene) {
     const hudTop = document.querySelector('.hud-top');
     if (hudTop) {
       const hudHeight = hudTop.offsetHeight;
-      const availableHeight = window.innerHeight - hudHeight;
+      const hudBottom = hudTop.offsetTop + hudHeight;
+      const availableHeight = window.innerHeight - hudBottom;
       
       // Update canvas style to use actual available height
       const canvasElement = document.querySelector('canvas');
       if (canvasElement) {
         canvasElement.style.height = `${availableHeight}px`;
-        canvasElement.style.top = `${hudHeight}px`;
+        canvasElement.style.top = `${hudBottom}px`;
+        canvasElement.style.position = 'absolute';
+        canvasElement.style.left = '0';
+        canvasElement.style.right = '0';
+        canvasElement.style.bottom = '0';
+        canvasElement.style.width = '100%';
+        canvasElement.style.objectFit = 'fill';
       }
     }
   }
@@ -1081,6 +1088,7 @@ function initializeGame() {
       if (canvas && window.game && window.game.scene.scenes[0]) {
         const scene = window.game.scene.scenes[0];
         resizeGameElements(scene);
+        forceMobileCanvasPosition();
         console.log('📱 Game elements adjusted for orientation change');
       }
     }, 100);
@@ -1097,6 +1105,7 @@ function initializeGame() {
         if (canvas && window.game && window.game.scene.scenes[0]) {
           const scene = window.game.scene.scenes[0];
           resizeGameElements(scene);
+          forceMobileCanvasPosition();
           console.log('📱 Game elements adjusted for viewport height change');
         }
       }, 100);
@@ -1105,6 +1114,19 @@ function initializeGame() {
   });
   
   console.log('🔧 DEBUG: initializeGame() concluída');
+  
+  // Force mobile positioning after DOM is fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.innerWidth <= 768) {
+        setTimeout(forceMobileCanvasPosition, 200);
+      }
+    });
+  } else {
+    if (window.innerWidth <= 768) {
+      setTimeout(forceMobileCanvasPosition, 200);
+    }
+  }
 }
 
 function initializeLobby() {
@@ -1818,6 +1840,11 @@ function create() {
   // Initial resize to ensure proper scaling
   setTimeout(() => {
     resizeGameElements(this);
+    
+    // Force mobile canvas positioning
+    if (window.innerWidth <= 768) {
+      forceMobileCanvasPosition();
+    }
   }, 100);
 }
 
@@ -4630,6 +4657,34 @@ function adicionarIndicadoresContinentes(scene) {
   
   // Marcar que os indicadores foram criados
   indicadoresContinentesCriados = true;
+}
+
+// Função para forçar posicionamento correto do canvas no mobile
+function forceMobileCanvasPosition() {
+  const isMobile = window.innerWidth <= 768;
+  if (!isMobile) return;
+
+  const hudTop = document.querySelector('.hud-top');
+  const canvasElement = document.querySelector('canvas');
+  
+  if (hudTop && canvasElement) {
+    // Calcular posição exata do HUD
+    const hudRect = hudTop.getBoundingClientRect();
+    const hudBottom = hudRect.bottom;
+    
+    // Aplicar posicionamento correto
+    canvasElement.style.position = 'absolute';
+    canvasElement.style.top = `${hudBottom}px`;
+    canvasElement.style.left = '0';
+    canvasElement.style.right = '0';
+    canvasElement.style.bottom = '0';
+    canvasElement.style.width = '100%';
+    canvasElement.style.height = `calc(100vh - ${hudBottom}px)`;
+    canvasElement.style.objectFit = 'fill';
+    canvasElement.style.zIndex = '1';
+    
+    console.log('📱 Mobile canvas positioned at:', hudBottom, 'px from top');
+  }
 }
 
 // Função para atualizar as linhas dos continentes com a nova escala
