@@ -803,6 +803,9 @@ function initializeGame() {
     console.log('👤 Meu nome:', estado.meuNome);
     console.log('📊 Estado completo:', estado);
     
+    // Hide global loading overlay when any new state arrives
+    hideGlobalLoading();
+
     const gameState = getGameState();
     if (!gameState) {
       console.error('❌ Game state não disponível para atualizar estado');
@@ -932,6 +935,7 @@ function initializeGame() {
 
   socket.on('mostrarEfeitoAtaque', (dados) => {
     mostrarEfeitoAtaque(dados.origem, dados.destino, currentScene, dados.sucesso);
+    hideGlobalLoading();
   });
 
   socket.on('mostrarEfeitoReforco', (dados) => {
@@ -969,6 +973,7 @@ function initializeGame() {
 
   socket.on('tocarSomMovimento', () => {
     tocarSomMovimento();
+    hideGlobalLoading();
   });
 
   socket.on('tocarSomTakeCard', () => {
@@ -1011,12 +1016,14 @@ function initializeGame() {
 
   socket.on('mostrarObjetivo', (objetivo) => {
     mostrarObjetivo(objetivo, currentScene);
+    hideGlobalLoading();
   });
 
   socket.on('mostrarCartasTerritorio', (cartas) => {
     // Não abrir se já estiver aberto
     if (modalCartasTerritorioAberto) return;
     mostrarCartasTerritorio(cartas, currentScene);
+    hideGlobalLoading();
   });
 
   socket.on('forcarTrocaCartas', (dados) => {
@@ -1027,6 +1034,7 @@ function initializeGame() {
     const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
       mostrarCartasTerritorio(dados.cartas, currentScene, true);
+      hideGlobalLoading();
     }
   });
 
@@ -1053,6 +1061,7 @@ function initializeGame() {
 
   socket.on('iniciarFaseRemanejamento', () => {
     mostrarMensagem('🔄 Fase de remanejamento iniciada. Clique em um território para mover tropas.');
+    hideGlobalLoading();
   });
 
   socket.on('resultadoVerificacaoMovimento', (resultado) => {
@@ -1514,6 +1523,80 @@ function getSocket() {
   return window.socket;
 }
 
+// Global loading overlay control
+let loadingOverlayContainer = null;
+let loadingOverlayTimer = null;
+const uiBlockingEvents = new Set([
+  'atacar',
+  'verificarMovimentoRemanejamento',
+  'transferirTropasConquista',
+  'colocarReforco',
+  'trocarCartasTerritorio',
+  'passarTurno',
+  'forceTurnChange',
+  'consultarObjetivo',
+  'consultarCartasTerritorio'
+]);
+
+function showGlobalLoading(message = 'Sincronizando com o servidor...') {
+  try {
+    if (!currentScene || !currentScene.add) return;
+    const canvas = currentScene.sys.game.canvas;
+    const largura = canvas.width;
+    const altura = canvas.height;
+    if (loadingOverlayContainer) return; // already shown
+    loadingOverlayContainer = currentScene.add.container(largura / 2, altura / 2);
+    loadingOverlayContainer.setDepth(1000);
+    // Block input by placing an interactive full-screen rectangle behind the container center-relative
+    const blocker = currentScene.add.rectangle(-largura / 2, -altura / 2, largura, altura, 0x000000, 0.55).setOrigin(0, 0);
+    blocker.setInteractive(new Phaser.Geom.Rectangle(0, 0, largura, altura), Phaser.Geom.Rectangle.Contains);
+    loadingOverlayContainer.add(blocker);
+
+    const box = currentScene.add.rectangle(0, 0, Math.min(400, largura * 0.7), 120, 0x1a1a1a, 0.95);
+    box.setStrokeStyle(2, 0x0077cc);
+    loadingOverlayContainer.add(box);
+
+    const text = currentScene.add.text(0, -10, message, {
+      fontSize: getResponsiveFontSize(18),
+      fill: '#ffffff',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
+    loadingOverlayContainer.add(text);
+
+    const dots = currentScene.add.text(0, 28, '...', {
+      fontSize: getResponsiveFontSize(16),
+      fill: '#cccccc',
+      align: 'center'
+    }).setOrigin(0.5);
+    loadingOverlayContainer.add(dots);
+
+    // Animate dots
+    let step = 0;
+    loadingOverlayTimer = setInterval(() => {
+      step = (step + 1) % 4;
+      dots.setText('.'.repeat(step));
+    }, 350);
+  } catch (e) {
+    console.warn('Falha ao mostrar loading overlay:', e);
+  }
+}
+
+function hideGlobalLoading() {
+  try {
+    if (loadingOverlayTimer) {
+      clearInterval(loadingOverlayTimer);
+      loadingOverlayTimer = null;
+    }
+    if (loadingOverlayContainer) {
+      loadingOverlayContainer.destroy();
+      loadingOverlayContainer = null;
+    }
+  } catch (e) {
+    console.warn('Falha ao esconder loading overlay:', e);
+  }
+}
+
 // Helper function to emit events with room ID
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
@@ -1523,6 +1606,19 @@ function emitWithRoom(event, data = {}) {
   console.log(`📤 Data:`, data);
   
   if (socket && currentRoomId) {
+    // Show loading overlay for blocking events
+    if (uiBlockingEvents.has(event)) {
+      showGlobalLoading();
+      // Safety: auto-hide after 12s with a hint if nothing arrives
+      setTimeout(() => {
+        if (loadingOverlayContainer) {
+          // Keep overlay, but update text to indicate delay
+          // Find text child (second child is box, third is text by our build; safer to recreate message)
+          hideGlobalLoading();
+          showGlobalLoading('Servidor lento... aguardando resposta');
+        }
+      }, 12000);
+    }
     // Handle different data types
     if (typeof data === 'string') {
       // If data is a string (like country name), send it directly
@@ -1793,10 +1889,35 @@ function create() {
         }
       }
       
-      // Verificar se há modais abertos (objetivo ou cartas território)
+      // Verificar modais (Objetivo/Cartas) e fechar ao clicar fora
       if (modalObjetivoAberto || modalCartasTerritorioAberto) {
-        cliqueEmInterface = true;
-        console.log('DEBUG: Clique detectado dentro de modal aberto');
+        // Containers de modais são criados com depth 21
+        const modalContainers = this.children.list.filter(child => child.type === 'Container' && child.depth === 21);
+        let clickDentroDeAlgumaModal = false;
+        if (modalContainers && modalContainers.length > 0) {
+          clickDentroDeAlgumaModal = modalContainers.some(container => {
+            if (typeof container.getBounds === 'function') {
+              const bounds = container.getBounds();
+              return Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y);
+            }
+            return false;
+          });
+        }
+
+        if (clickDentroDeAlgumaModal) {
+          cliqueEmInterface = true;
+          console.log('DEBUG: Clique detectado dentro da modal aberta');
+        } else {
+          console.log('DEBUG: Clique fora da modal - fechando modais');
+          fecharTodasModais();
+        }
+      }
+
+      // Se o popup de histórico/chat estiver aberto e clicou no canvas, fecha
+      const gameStateLocal = getGameState();
+      if (gameStateLocal && gameStateLocal.historyPopupVisible) {
+        console.log('DEBUG: Clique no canvas com chat/histórico aberto - fechando');
+        fecharTodasModais();
       }
       
       // Se clicou em uma interface, não fazer nada mais
