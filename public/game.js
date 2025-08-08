@@ -657,6 +657,30 @@ function resizeGameElements(scene) {
       pais.troopText.setScale(Math.min(scaleX, scaleY));
     }
   });
+
+  // Update modals if they are open
+  if (modalObjetivoAberto || modalCartasTerritorioAberto) {
+    // Find and update overlay and container
+    const overlay = scene.children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
+    const container = scene.children.list.find(child => child.type === 'Container' && child.depth === 21);
+    
+    if (overlay) {
+      overlay.setPosition(canvas.width / 2, canvas.height / 2);
+      overlay.setDisplaySize(canvas.width, canvas.height);
+    }
+    
+    if (container) {
+      container.setPosition(canvas.width / 2, canvas.height / 2);
+    }
+  }
+
+  // Update turn indication if open
+  if (window.indicacaoInicioTurno && window.indicacaoInicioTurno.container) {
+    window.indicacaoInicioTurno.container.setPosition(canvas.width / 2, canvas.height / 2);
+  }
+
+  // Update continent indicator lines
+  atualizarLinhasContinentes(scene, scaleX, scaleY);
 }
 
 function initializeGame() {
@@ -2058,7 +2082,7 @@ function atualizarPaises(novosPaises, scene) {
 
     // Criar texto com apenas o nome do território (inicialmente invisível)
     obj.text = scene.add.text(centroX, centroY + 10, getTextoPais(pais), {
-        fontSize: '14px',
+        fontSize: getResponsiveFontSize(14, 0.8, 0.6),
         fill: '#ffffff',
         align: 'center',
         wordWrap: { width: 100 },
@@ -3830,9 +3854,10 @@ function mostrarObjetivo(objetivo, scene) {
   
   modalObjetivoAberto = true; // Marca que o modal está aberto
   
-  // Obter dimensões da tela
-  const largura = scene.sys.game.config.width;
-  const altura = scene.sys.game.config.height;
+  // Obter dimensões reais do canvas
+  const canvas = scene.sys.game.canvas;
+  const largura = canvas.width;
+  const altura = canvas.height;
   
   // Criar overlay com blur effect
   const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.7);
@@ -3981,9 +4006,10 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   
   modalCartasTerritorioAberto = true; // Marca que o modal está aberto
   
-  // Obter dimensões da tela
-  const largura = scene.sys.game.config.width;
-  const altura = scene.sys.game.config.height;
+  // Obter dimensões reais do canvas
+  const canvas = scene.sys.game.canvas;
+  const largura = canvas.width;
+  const altura = canvas.height;
   
   // Criar overlay com blur effect
   const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.7);
@@ -4254,6 +4280,21 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
 
 // Variável global para controlar se os indicadores já foram criados
 let indicadoresContinentesCriados = false;
+let linhasContinentes = []; // Array para armazenar as linhas dos continentes
+
+// Função utilitária para calcular tamanhos de fonte responsivos
+function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  
+  if (isSmallMobile) {
+    return Math.floor(baseSize * smallMobileMultiplier) + 'px';
+  } else if (isMobile) {
+    return Math.floor(baseSize * mobileMultiplier) + 'px';
+  } else {
+    return baseSize + 'px';
+  }
+}
 
 // Helper function to get player color class
 function getPlayerColorClass(playerName) {
@@ -4476,7 +4517,7 @@ function adicionarIndicadoresContinentes(scene) {
   // Criar indicadores para cada continente
   indicadoresContinentes.forEach(indicador => {
     const textoIndicador = scene.add.text(indicador.x, indicador.y, indicador.texto, {
-      fontSize: '14px',
+      fontSize: getResponsiveFontSize(14, 0.7, 0.5),
       fill: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3,
@@ -4486,6 +4527,15 @@ function adicionarIndicadoresContinentes(scene) {
     }).setOrigin(0.5);
     
     textoIndicador.setDepth(3); // Colocar acima dos territórios mas abaixo da UI
+
+    // Armazenar referência do texto para poder redimensionar depois
+    linhasContinentes.push({
+      texto: textoIndicador,
+      indicadorX: indicador.x,
+      indicadorY: indicador.y,
+      nome: indicador.nome,
+      tipo: 'texto'
+    });
 
     // Adicionar linha conectando o território representativo ao indicador
     // Primeiro, precisamos encontrar as coordenadas do território representativo
@@ -4512,6 +4562,17 @@ function adicionarIndicadoresContinentes(scene) {
       linha.lineTo(indicador.x, indicador.y);
       linha.strokePath();
       linha.setDepth(2); // Colocar abaixo dos indicadores mas acima dos territórios
+      
+      // Armazenar referência da linha para poder redimensionar depois
+      linhasContinentes.push({
+        linha: linha,
+        territorioX: territorio.x,
+        territorioY: territorio.y,
+        indicadorX: indicador.x,
+        indicadorY: indicador.y,
+        nome: indicador.nome,
+        tipo: 'linha'
+      });
     } else {
       console.warn(`Território representativo não encontrado para ${indicador.nome}: ${indicador.territorioRepresentativo}`);
     }
@@ -4519,6 +4580,52 @@ function adicionarIndicadoresContinentes(scene) {
   
   // Marcar que os indicadores foram criados
   indicadoresContinentesCriados = true;
+}
+
+// Função para atualizar as linhas dos continentes com a nova escala
+function atualizarLinhasContinentes(scene, scaleX, scaleY) {
+  if (!linhasContinentes || linhasContinentes.length === 0) return;
+
+  linhasContinentes.forEach(item => {
+    if (item.tipo === 'texto') {
+      // Atualizar posição e escala do texto
+      if (item.texto && !item.texto.destroyed) {
+        const novoIndicadorX = item.indicadorX * scaleX;
+        const novoIndicadorY = item.indicadorY * scaleY;
+        
+        item.texto.setPosition(novoIndicadorX, novoIndicadorY);
+        
+        // Ajustar escala baseado no tamanho da tela
+        const isMobile = window.innerWidth <= 768;
+        const isSmallMobile = window.innerWidth <= 480;
+        
+        let escalaTexto;
+        if (isSmallMobile) {
+          escalaTexto = Math.min(scaleX, scaleY) * 0.6; // 60% da escala normal para mobile pequeno
+        } else if (isMobile) {
+          escalaTexto = Math.min(scaleX, scaleY) * 0.8; // 80% da escala normal para mobile
+        } else {
+          escalaTexto = Math.min(scaleX, scaleY); // Escala normal para desktop
+        }
+        
+        item.texto.setScale(escalaTexto);
+      }
+    } else if (item.linha && !item.linha.destroyed) {
+      // Calcular novas coordenadas escaladas
+      const novoTerritorioX = item.territorioX * scaleX;
+      const novoTerritorioY = item.territorioY * scaleY;
+      const novoIndicadorX = item.indicadorX * scaleX;
+      const novoIndicadorY = item.indicadorY * scaleY;
+
+      // Limpar e redesenhar a linha
+      item.linha.clear();
+      item.linha.lineStyle(2, 0xffffff, 0.7);
+      item.linha.beginPath();
+      item.linha.moveTo(novoTerritorioX, novoTerritorioY);
+      item.linha.lineTo(novoIndicadorX, novoIndicadorY);
+      item.linha.strokePath();
+    }
+  });
 }
 
 // Função para fechar todas as modais
@@ -5884,9 +5991,10 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
     return;
   }
   
-  // Obter dimensões da tela
-  const largura = scene.sys.game.config.width;
-  const altura = scene.sys.game.config.height;
+  // Obter dimensões reais do canvas
+  const canvas = scene.sys.game.canvas;
+  const largura = canvas.width;
+  const altura = canvas.height;
   
   // Container principal - estilo similar ao chat
   const container = scene.add.container(largura/2, altura/2);

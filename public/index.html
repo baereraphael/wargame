@@ -458,7 +458,7 @@
     height: 100vh;
     position: relative;
     overflow: hidden;
-    padding-top: 45px; /* Space for HUD */
+    padding-top: 0; /* Remove padding, canvas will be positioned absolutely */
   }
   
   /* Ensure Phaser canvas is visible */
@@ -472,7 +472,7 @@
     display: block !important;
     visibility: visible !important;
     width: 100% !important;
-    height: calc(100% - 45px) !important; /* Account for HUD height */
+    height: calc(100vh - 45px) !important; /* Use viewport height minus HUD */
     object-fit: fill !important; /* Stretch to fill entire area */
   }
 
@@ -481,12 +481,12 @@
     .game-container {
       height: 100vh;
       width: 100vw;
-      padding-top: 25px; /* Space for mobile HUD */
+      padding-top: 0; /* Remove padding, canvas will be positioned absolutely */
     }
     
     .game-container canvas {
       width: 100% !important;
-      height: calc(100% - 25px) !important; /* Account for mobile HUD height */
+      height: calc(100vh - 25px) !important; /* Use viewport height minus mobile HUD */
       top: 25px !important; /* Position below mobile HUD */
       object-fit: fill !important; /* Stretch to fill entire area */
     }
@@ -501,12 +501,12 @@
       top: 0;
       left: 0;
       overflow: hidden;
-      padding-top: 25px; /* Space for HUD on iPhone */
+      padding-top: 0; /* Remove padding, canvas will be positioned absolutely */
     }
     
     .game-container canvas {
       width: 100% !important;
-      height: calc(100% - 25px) !important; /* Account for HUD height on iPhone */
+      height: calc(100vh - 25px) !important; /* Use viewport height minus HUD on iPhone */
       top: 25px !important; /* Position below HUD on iPhone */
       object-fit: fill !important; /* Stretch to fill entire area */
       touch-action: none;
@@ -520,13 +520,13 @@
   @supports (-webkit-touch-callout: none) {
     @media (orientation: landscape) and (max-height: 500px) {
       .game-container {
-        padding-top: 22px !important;
+        padding-top: 0 !important;
       }
       
       .game-container canvas {
         top: 22px !important;
         width: 100% !important;
-        height: calc(100% - 22px) !important;
+        height: calc(100vh - 22px) !important;
         object-fit: fill !important;
       }
       
@@ -537,13 +537,13 @@
     
     @media (orientation: landscape) and (max-height: 400px) {
       .game-container {
-        padding-top: 18px !important;
+        padding-top: 0 !important;
       }
       
       .game-container canvas {
         top: 18px !important;
         width: 100% !important;
-        height: calc(100% - 18px) !important;
+        height: calc(100vh - 18px) !important;
         object-fit: fill !important;
       }
       
@@ -1780,12 +1780,12 @@
   /* Extra Small Mobile Devices */
   @media (max-width: 480px) {
     .game-container {
-      padding-top: 20px; /* Space for extra small mobile HUD */
+      padding-top: 0; /* Remove padding, canvas will be positioned absolutely */
     }
     
     .game-container canvas {
       top: 20px !important; /* Position below extra small mobile HUD */
-      max-height: calc(100% - 20px) !important; /* Account for extra small mobile HUD height */
+      height: calc(100vh - 20px) !important; /* Use viewport height minus extra small mobile HUD */
     }
     
     .hud-top {
@@ -1856,12 +1856,12 @@
     }
     
     .game-container {
-      padding-top: 18px;
+      padding-top: 0;
     }
     
     .game-container canvas {
       top: 18px !important;
-      max-height: calc(100% - 18px) !important;
+      height: calc(100vh - 18px) !important;
     }
   }
 
@@ -1911,13 +1911,13 @@
     }
     
     .game-container {
-      padding-top: 22px !important;
+      padding-top: 0 !important;
     }
     
     .game-container canvas {
       top: 22px !important;
       width: 100% !important;
-      height: calc(100% - 22px) !important;
+      height: calc(100vh - 22px) !important;
       object-fit: fill !important;
     }
   }
@@ -1955,13 +1955,13 @@
     }
     
     .game-container {
-      padding-top: 18px !important;
+      padding-top: 0 !important;
     }
     
     .game-container canvas {
       top: 18px !important;
       width: 100% !important;
-      height: calc(100% - 18px) !important;
+      height: calc(100vh - 18px) !important;
       object-fit: fill !important;
     }
   }
