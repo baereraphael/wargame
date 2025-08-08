@@ -668,6 +668,37 @@
     gap: 2px;
   }
 
+  /* Game Instructions Section */
+  .game-instructions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    margin: 0 20px;
+  }
+
+  .instruction-text {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    padding: 8px 16px;
+    background: rgba(74, 144, 226, 0.2);
+    border: 1px solid rgba(74, 144, 226, 0.4);
+    border-radius: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+    transition: all 0.3s ease;
+  }
+
+  .instruction-text.highlight {
+    background: rgba(74, 144, 226, 0.4);
+    border-color: rgba(74, 144, 226, 0.8);
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+  }
+
   .player-name {
     font-size: 14px;
     font-weight: bold;
@@ -1001,6 +1032,16 @@
     
     .continent-status {
       display: none;
+    }
+    
+    .game-instructions {
+      margin: 0 10px;
+    }
+    
+    .instruction-text {
+      font-size: 12px;
+      padding: 6px 12px;
+      max-width: 200px;
     }
   }
 
@@ -2027,6 +2068,108 @@
       padding: 10px 14px;
     }
   }
+
+  /* Responsive improvements for all game elements */
+  @media (max-width: 768px) {
+    /* Improve touch targets for all interactive elements */
+    .hud-button, .login-button, .mode-option, .back-button {
+      min-height: 44px;
+      min-width: 44px;
+      touch-action: manipulation;
+    }
+    
+    /* Improve text readability on small screens */
+    .instruction-text, .player-name, .player-stats {
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    
+    /* Optimize spacing for mobile */
+    .action-buttons {
+      gap: 4px;
+    }
+    
+    .player-info {
+      gap: 6px;
+    }
+  }
+
+  /* Ultra-compact mode for very small screens */
+  @media (max-width: 360px) {
+    .hud-top {
+      height: 16px;
+      padding: 0 2px;
+    }
+    
+    .player-avatar {
+      width: 10px;
+      height: 10px;
+      font-size: 5px;
+    }
+    
+    .player-name {
+      font-size: 6px;
+    }
+    
+    .player-stats {
+      font-size: 4px;
+    }
+    
+    .hud-button {
+      padding: 1px 2px;
+      font-size: 5px;
+      min-height: 20px;
+      min-width: 20px;
+    }
+    
+    .hud-button span:first-child {
+      font-size: 8px;
+    }
+    
+    .timer-display {
+      font-size: 6px;
+      padding: 1px 2px;
+      min-width: 20px;
+    }
+    
+    .game-container canvas {
+      top: 16px !important;
+      height: calc(100vh - 16px) !important;
+    }
+  }
+
+  /* High DPI display optimizations */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .hud-button, .login-button, .mode-option, .back-button {
+      border-width: 0.5px;
+    }
+    
+    .hud-top, .hud-bottom {
+      border-width: 0.5px;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    /* The game already uses dark theme, but we can optimize for system dark mode */
+    .login-container, .mode-selection-container, .lobby-container {
+      background: rgba(0, 0, 0, 0.9);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .hud-button:hover, .login-button:hover, .mode-option:hover {
+      transform: none;
+    }
+    
+    .turn-indicator:hover {
+      transform: none;
+    }
+    
+    .player-card:hover {
+      transform: none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -2132,6 +2275,10 @@
           <div class="player-name" id="player-name">Carregando...</div>
           <div class="player-stats" id="player-stats">Tropas: 0 | Reforço: 0</div>
         </div>
+      </div>
+      
+      <div class="game-instructions">
+        <div class="instruction-text" id="instruction-text">Aguardando início do jogo...</div>
       </div>
       
       <div class="game-phase">

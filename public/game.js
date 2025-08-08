@@ -577,6 +577,39 @@ function backToLogin() {
   }
 }
 
+function backToModeSelection() {
+  console.log('🎯 Voltando para tela de seleção de modos');
+  
+  // Limpar estado do jogo
+  const gameState = getGameState();
+  if (gameState) {
+    clearGameState(gameState.roomId);
+  }
+  
+  // Parar timers
+  stopTurnTimer();
+  
+  // Esconder tela de vitória
+  esconderTelaVitoria();
+  
+  // Esconder jogo e mostrar seleção de modos
+  const gameContainer = document.getElementById('game-container');
+  const modeSelectionScreen = document.getElementById('mode-selection-screen');
+  
+  if (gameContainer) {
+    gameContainer.style.display = 'none';
+    console.log('✅ Container do jogo ocultado');
+  }
+  
+  if (modeSelectionScreen) {
+    modeSelectionScreen.style.display = 'flex';
+    console.log('✅ Tela de seleção de modos exibida');
+  }
+  
+  // Resetar estado de login (mantém o usuário logado)
+  playerLoggedIn = true;
+}
+
 // Function to resize game elements based on screen size
 function resizeGameElements(scene) {
   const gameState = getGameState();
@@ -599,7 +632,10 @@ function resizeGameElements(scene) {
   }
 
   // Mobile-specific adjustments for viewport height
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
+  
   if (isMobile) {
     // Get the actual available height by checking the HUD position
     const hudTop = document.querySelector('.hud-top');
@@ -619,6 +655,17 @@ function resizeGameElements(scene) {
         canvasElement.style.bottom = '0';
         canvasElement.style.width = '100%';
         canvasElement.style.objectFit = 'fill';
+        
+        // Additional mobile optimizations
+        if (isSmallMobile) {
+          canvasElement.style.touchAction = 'none';
+          canvasElement.style.userSelect = 'none';
+        }
+        
+        if (isLandscape) {
+          // Landscape-specific adjustments
+          canvasElement.style.height = `${Math.max(availableHeight, window.innerHeight * 0.8)}px`;
+        }
       }
     }
   }
@@ -704,32 +751,7 @@ function resizeGameElements(scene) {
     window.indicacaoInicioTurno.container.setPosition(canvas.width / 2, canvas.height / 2);
   }
 
-  // Update victory screen if visible
-  // Buscar elementos da tela de vitória de forma mais robusta
-  const victoryOverlay = scene.children.list.find(child => 
-    child.type === 'Rectangle' && 
-    child.depth === 10 && 
-    child.visible && 
-    child.width === canvas.width && 
-    child.height === canvas.height
-  );
-  
-  const victoryContainer = scene.children.list.find(child => 
-    child.type === 'Container' && 
-    child.depth === 15 && 
-    child.visible
-  );
-  
-  if (victoryOverlay) {
-    console.log('🎯 Atualizando posição da tela de vitória - overlay');
-    victoryOverlay.setPosition(canvas.width / 2, canvas.height / 2);
-    victoryOverlay.setDisplaySize(canvas.width, canvas.height);
-  }
-  
-  if (victoryContainer) {
-    console.log('🎯 Atualizando posição da tela de vitória - container');
-    victoryContainer.setPosition(canvas.width / 2, canvas.height / 2);
-  }
+
 
   // Update continent indicator lines
   atualizarLinhasContinentes(scene, scaleX, scaleY);
@@ -877,19 +899,7 @@ function initializeGame() {
 
     const jogadorLocal = gameState.jogadores.find(j => j.nome === gameState.meuNome);
 
-    if (jogadorLocal && !jogadorLocal.ativo) {
-      perdeuJogo(`Você perdeu!`, this);
-      return;
-    } else if (jogadorLocal) {
-      desbloquearJogo();
-    }
 
-    if (gameState.vitoria) {
-      bloquearJogo(`Jogador ${gameState.turno} venceu!`, this);
-      return;
-    } else {
-      desbloquearJogo();
-    }
   });
   
   // Other game event listeners
@@ -936,15 +946,21 @@ function initializeGame() {
     mostrarEfeitoExplosaoConquista(dados.territorio, dados.jogador, currentScene);
   });
 
-  socket.on('vitoria', (nomeJogador) => {
+  socket.on('vitoria', (nomeJogador, resumoJogo) => {
     console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
-    mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
-    bloquearJogo(`Jogador ${nomeJogador} venceu!`, currentScene);
+    console.log('📊 Resumo do jogo:', resumoJogo);
+    
+    // Mostrar tela de vitória moderna
+    if (currentScene) {
+      mostrarTelaVitoria(nomeJogador, resumoJogo, currentScene);
+    } else {
+      console.log('❌ Scene não disponível para mostrar tela de vitória');
+      mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
+    }
   });
 
   socket.on('derrota', () => {
     mostrarMensagem(`Você perdeu!`);
-    perdeuJogo(`Você perdeu!`, currentScene);
   });
 
   socket.on('tocarSomTiro', () => {
@@ -1105,6 +1121,7 @@ function initializeGame() {
     if (canvas && window.game && window.game.scene.scenes[0]) {
       const scene = window.game.scene.scenes[0];
       resizeGameElements(scene);
+      updateAllResponsiveElements();
     }
   });
 
@@ -1116,6 +1133,7 @@ function initializeGame() {
         const scene = window.game.scene.scenes[0];
         resizeGameElements(scene);
         forceMobileCanvasPosition();
+        updateAllResponsiveElements();
         console.log('📱 Game elements adjusted for orientation change');
       }
     }, 100);
@@ -1124,7 +1142,7 @@ function initializeGame() {
   // Add viewport height change listener for mobile (address bar show/hide)
   let lastViewportHeight = window.innerHeight;
   window.addEventListener('resize', () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isMobileDevice();
     if (isMobile && Math.abs(window.innerHeight - lastViewportHeight) > 50) {
       // Significant height change detected (likely address bar show/hide)
       setTimeout(() => {
@@ -1133,6 +1151,7 @@ function initializeGame() {
           const scene = window.game.scene.scenes[0];
           resizeGameElements(scene);
           forceMobileCanvasPosition();
+          updateAllResponsiveElements();
           console.log('📱 Game elements adjusted for viewport height change');
         }
       }, 100);
@@ -1474,12 +1493,7 @@ function processarEstadoPendente() {
     desbloquearJogo();
   }
   
-  if (gameState.vitoria) {
-    bloquearJogo(`Jogador ${gameState.turno} venceu!`, this);
-    return;
-  } else {
-    desbloquearJogo();
-  }
+
   
   // Verificar se é o primeiro turno do jogador e mostrar indicação
   if (gameState.meuNome === gameState.turno && currentScene) {
@@ -1544,10 +1558,8 @@ const coresDosDonos = {
 let botaoTurno;
 let currentScene = null; // Global reference to current Phaser scene
 
-let overlay;
-let containerVitoria;
-let textoVitoriaGrande;
-let botaoReiniciar;
+
+
 
 // Variáveis para sons
 let somTiro;
@@ -1698,97 +1710,30 @@ function create() {
   });
 
   botaoCartasTerritorio.addEventListener('click', () => {
+    const gameState = getGameState();
+    
+    // Verificar se está na fase de remanejamento
+    if (gameState && gameState.faseRemanejamento) {
+      console.log('❌ Tentativa de trocar cartas durante fase de remanejamento - bloqueado');
+      return;
+    }
+    
     tocarSomClick();
     emitWithRoom('consultarCartasTerritorio');
   });
 
   // CSS HUD handles positioning automatically
   // No need for manual positioning anymore
-
-  // Tela de vitória - Overlay com gradiente escuro - Centralizado na tela
-  overlay = this.add.rectangle(largura / 2, altura / 2, largura, altura, 0x000000, 0.85);
-  overlay.setVisible(false);
-  overlay.setDepth(10);
-
-  // Container principal da tela de vitória - Centralizado na tela
-  containerVitoria = this.add.container(largura / 2, altura / 2);
-  containerVitoria.setDepth(15);
-  containerVitoria.setVisible(false);
-
-  // Background do container com bordas arredondadas
-  const bgContainer = this.add.rectangle(0, 0, getResponsiveSize(600, 0.9, 0.8), getResponsiveSize(400, 0.9, 0.8), 0x1a1a2e, 0.95);
-  bgContainer.setStrokeStyle(3, 0x4a90e2);
-  containerVitoria.add(bgContainer);
-
-  // Título "VITÓRIA!" com ícone integrado
-  const tituloVitoria = this.add.text(0, -120, '🏆 VITÓRIA! 🏆', {
-    fontSize: getResponsiveFontSize(42, 0.7, 0.5),
-    fill: '#ffd700',
-    fontStyle: 'bold',
-    stroke: '#8b4513',
-    strokeThickness: 4,
-    align: 'center',
-    fontFamily: 'Arial Black'
-  }).setOrigin(0.5);
-  containerVitoria.add(tituloVitoria);
-
-  // Texto do jogador vencedor
-  textoVitoriaGrande = this.add.text(0, -50, '', {
-    fontSize: getResponsiveFontSize(32, 0.7, 0.5),
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#2c3e50',
-    strokeThickness: 3,
-    align: 'center',
-    wordWrap: { width: 500 },
-    fontFamily: 'Arial'
-  }).setOrigin(0.5);
-  containerVitoria.add(textoVitoriaGrande);
-
-  // Linha decorativa
-  const linhaDecorativa = this.add.rectangle(0, 0, 400, 2, 0x4a90e2, 1);
-  containerVitoria.add(linhaDecorativa);
-
-  // Botão reiniciar com design moderno
-  botaoReiniciar = this.add.text(0, 80, '🔄 REINICIAR JOGO', {
-    fontSize: getResponsiveFontSize(24, 0.8, 0.6),
-    fill: '#ffffff',
-    backgroundColor: '#4a90e2',
-    padding: { x: 30, y: 15 },
-    fontFamily: 'Arial Black',
-    align: 'center',
-    stroke: '#2c3e50',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-  containerVitoria.add(botaoReiniciar);
-
-  // Efeitos hover do botão
-  botaoReiniciar.on('pointerover', () => {
-    botaoReiniciar.setStyle({ 
-      backgroundColor: '#5ba0f2',
-      fill: '#ffffff',
-      stroke: '#2c3e50',
-      strokeThickness: 2
-    });
-    botaoReiniciar.setScale(1.05);
-  });
   
-  botaoReiniciar.on('pointerout', () => {
-    botaoReiniciar.setStyle({ 
-      backgroundColor: '#4a90e2',
-      fill: '#ffffff',
-      stroke: '#2c3e50',
-      strokeThickness: 2
-    });
-    botaoReiniciar.setScale(1);
+  // Adicionar listener para redimensionamento da janela
+  window.addEventListener('resize', () => {
+    if (game && game.scene && game.scene.getScene('GameScene')) {
+      const currentScene = game.scene.getScene('GameScene');
+      resizeGameElements(currentScene);
+    }
   });
 
-  botaoReiniciar.on('pointerdown', () => {
-    const gameState = getGameState();
-    if (!gameState || gameState.vitoria || gameState.derrota) return;
-    tocarSomClick();
-    emitWithRoom('reiniciarJogo');
-  });
+
    
        // DEBUG: Detectar cliques fora dos territórios
     this.input.on('pointerdown', (pointer) => {
@@ -1875,6 +1820,8 @@ function create() {
     }
   }, 100);
 }
+
+
 
 function atualizarPaises(novosPaises, scene) {
   console.log('🔧 DEBUG: atualizarPaises() iniciada');
@@ -2657,148 +2604,381 @@ function mostrarMensagem(texto) {
   }
 }
 
-function bloquearJogo(mensagem, scene) {
-  console.log('🎯 bloquearJogo chamado com mensagem:', mensagem);
+// Função para mostrar tela de vitória moderna e visualmente atraente
+function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
+  console.log('🏆 Mostrando tela de vitória para:', nomeJogador);
+  console.log('📊 Resumo do jogo:', resumoJogo);
+  
+  if (!scene || !scene.add) {
+    console.error('❌ Scene não disponível para mostrar tela de vitória');
+    return;
+  }
   
   const gameState = getGameState();
-  if (!gameState) return;
+  if (!gameState) {
+    console.error('❌ Game state não disponível');
+    return;
+  }
   
-  // Stop turn timer
+  // Parar timers e limpar interfaces
   stopTurnTimer();
+  hideTurnConfirmationPopup();
+  esconderInterfaceReforco();
+  esconderInterfaceTransferenciaConquista();
+  esconderInterfaceRemanejamento();
+  fecharTodasModais();
   
-  // Limpar todas as animações de salto quando o jogo termina
-  limparTodasAnimacoesSalto();
+  const largura = scene.scale.width;
+  const altura = scene.scale.height;
   
-  try {
-    // botaoTurno é um elemento HTML, não Phaser
-    botaoTurno.disabled = true;
-    botaoTurno.style.backgroundColor = '#555';
-    botaoTurno.style.cursor = 'not-allowed';
-    console.log('✅ Botão turno desabilitado');
+  // Criar overlay com blur effect
+  const overlay = scene.add.rectangle(largura/2, altura/2, largura, altura, 0x000000, 0.8);
+  overlay.setDepth(30);
+  
+  // Container principal com estilo moderno como o chat
+  const containerVitoria = scene.add.container(largura/2, altura/2);
+  containerVitoria.setDepth(31);
+  
+  // Background do container - estilo moderno como o chat (maior para acomodar os cards)
+  const background = scene.add.rectangle(0, 0, 600, 700, 0x1a1a1a, 0.95);
+  background.setStrokeStyle(3, 0x0077cc);
+  background.setDepth(0);
+  containerVitoria.add(background);
+  
+  // Header com estilo moderno como o chat
+  const headerBg = scene.add.rectangle(0, -300, 600, 80, 0x0077cc, 0.9);
+  headerBg.setDepth(1);
+  containerVitoria.add(headerBg);
+  
+  // Ícone de vitória
+  const victoryIcon = scene.add.text(-250, -300, '🏆', {
+    fontSize: '40px',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(2);
+  containerVitoria.add(victoryIcon);
+  
+  // Título principal
+  const title = scene.add.text(-200, -300, 'VITÓRIA!', {
+    fontSize: '28px',
+    fill: '#ffffff',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0, 0.5).setDepth(2);
+  containerVitoria.add(title);
+  
+  // Linha decorativa
+  const linhaDecorativa = scene.add.rectangle(0, -260, 550, 2, 0x444444, 0.8);
+  linhaDecorativa.setDepth(1);
+  containerVitoria.add(linhaDecorativa);
+  
+  // Container de conteúdo
+  const contentContainer = scene.add.container(0, -150);
+  contentContainer.setDepth(2);
+  containerVitoria.add(contentContainer);
+  
+  // Verificar se é vitória do jogador atual
+  const isPlayerVictory = nomeJogador === gameState.meuNome;
+  
+  // Mensagem principal
+  const mainMessage = scene.add.text(0, -50, isPlayerVictory ? 'Parabéns! Você venceu!' : `${nomeJogador} venceu o jogo!`, {
+    fontSize: '20px',
+    fill: isPlayerVictory ? '#33cc33' : '#ffcc00',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(mainMessage);
+  
+  // Cards dos jogadores
+  const playersTitle = scene.add.text(0, -30, 'RESULTADO FINAL', {
+    fontSize: '18px',
+    fill: '#0077cc',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(playersTitle);
+  
+  // Obter informações de todos os jogadores
+  const jogadores = gameState.jogadores || [];
+  const paises = gameState.paises || [];
+  
+  // Calcular estatísticas de cada jogador
+  const jogadoresStats = jogadores.map(jogador => {
+    const territoriosJogador = paises.filter(pais => pais.dono === jogador.nome);
+    const totalTropas = territoriosJogador.reduce((sum, pais) => sum + pais.tropas, 0);
+    const totalTerritorios = territoriosJogador.length;
     
-    gameState.paises.forEach(pais => pais.polygon.disableInteractive());
-    console.log('✅ Territórios desabilitados');
+    return {
+      nome: jogador.nome,
+      ativo: jogador.ativo,
+      totalTropas: totalTropas,
+      totalTerritorios: totalTerritorios,
+      vencedor: jogador.nome === nomeJogador
+    };
+  });
+  
+  // Criar cards dos jogadores
+  const cardWidth = 120;
+  const cardHeight = 140;
+  const cardSpacing = 20;
+  const totalWidth = (jogadoresStats.length * cardWidth) + ((jogadoresStats.length - 1) * cardSpacing);
+  const startX = -totalWidth / 2 + cardWidth / 2;
+  
+  jogadoresStats.forEach((jogador, index) => {
+    const cardX = startX + index * (cardWidth + cardSpacing);
+    const cardY = 20;
     
-    // Mostrar overlay e container de vitória
-    console.log('🎯 Buscando elementos da tela de vitória na scene...');
+    // Container do card
+    const cardContainer = scene.add.container(cardX, cardY);
+    cardContainer.setDepth(2);
+    contentContainer.add(cardContainer);
     
-    // Buscar elementos da tela de vitória de forma robusta
-    const victoryOverlay = scene.children.list.find(child => 
-      child.type === 'Rectangle' && 
-      child.depth === 10
-    );
+    // Background do card
+    const cardBg = scene.add.rectangle(0, 0, cardWidth, cardHeight, 0x2a2a2a, 0.9);
+    cardBg.setStrokeStyle(2, jogador.vencedor ? 0x33cc33 : 0x444444);
+    cardContainer.add(cardBg);
     
-    const victoryContainer = scene.children.list.find(child => 
-      child.type === 'Container' && 
-      child.depth === 15
-    );
+    // Header do card com cor do jogador
+    const headerBg = scene.add.rectangle(0, -55, cardWidth, 30, coresDosDonos[jogador.nome] || 0x666666, 0.8);
+    cardContainer.add(headerBg);
     
-    console.log('🎯 Elementos encontrados:');
-    console.log('🎯 victoryOverlay:', victoryOverlay);
-    console.log('🎯 victoryContainer:', victoryContainer);
+    // Nome do jogador
+    const playerName = scene.add.text(0, -55, jogador.nome, {
+      fontSize: '12px',
+      fill: '#ffffff',
+      align: 'center',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1
+    }).setOrigin(0.5).setDepth(2);
+    cardContainer.add(playerName);
     
-    if (victoryOverlay) {
-      victoryOverlay.setVisible(true);
-      console.log('✅ Overlay definido como visível');
-    } else {
-      console.error('❌ Overlay não encontrado!');
-    }
+    // Status (Vencedor/Perdedor)
+    const statusText = jogador.vencedor ? '🏆 VENCEDOR' : '❌ PERDEU';
+    const statusColor = jogador.vencedor ? '#33cc33' : '#ff3333';
+    const status = scene.add.text(0, -35, statusText, {
+      fontSize: '10px',
+      fill: statusColor,
+      align: 'center',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1
+    }).setOrigin(0.5).setDepth(2);
+    cardContainer.add(status);
     
-    if (victoryContainer) {
-      victoryContainer.setVisible(true);
-      console.log('✅ Container de vitória definido como visível');
-    } else {
-      console.error('❌ Container de vitória não encontrado!');
-    }
+    // Tropas
+    const troopsIcon = scene.add.text(-30, -10, '⚔️', {
+      fontSize: '14px'
+    }).setOrigin(0.5).setDepth(2);
+    cardContainer.add(troopsIcon);
     
-    // Atualizar texto do jogador vencedor
-    if (victoryContainer) {
-      // Buscar o texto dentro do container
-      const victoryText = victoryContainer.list.find(child => 
-        child.type === 'Text' && 
-        child.depth === 2 &&
-        child.y === -50 // Posição Y do texto de vitória
-      );
+    const troopsText = scene.add.text(-15, -10, `${jogador.totalTropas}`, {
+      fontSize: '12px',
+      fill: '#ffffff',
+      align: 'left',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1
+    }).setOrigin(0, 0.5).setDepth(2);
+    cardContainer.add(troopsText);
+    
+    // Territórios
+    const territoriesIcon = scene.add.text(-30, 10, '🗺️', {
+      fontSize: '14px'
+    }).setOrigin(0.5).setDepth(2);
+    cardContainer.add(territoriesIcon);
+    
+    const territoriesText = scene.add.text(-15, 10, `${jogador.totalTerritorios}`, {
+      fontSize: '12px',
+      fill: '#ffffff',
+      align: 'left',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1
+    }).setOrigin(0, 0.5).setDepth(2);
+    cardContainer.add(territoriesText);
+    
+    // Objetivo (se disponível)
+    if (resumoJogo && resumoJogo.objetivos && resumoJogo.objetivos[jogador.nome]) {
+      const objectiveIcon = scene.add.text(-30, 30, '🎯', {
+        fontSize: getResponsiveFontSize(14)
+      }).setOrigin(0.5).setDepth(2);
+      cardContainer.add(objectiveIcon);
       
-      if (victoryText) {
-        victoryText.setText(mensagem);
-        console.log('✅ Texto de vitória atualizado:', mensagem);
-      } else {
-        console.error('❌ Texto de vitória não encontrado no container!');
+      const objectiveText = scene.add.text(-15, 30, resumoJogo.objetivos[jogador.nome].substring(0, 8) + '...', {
+        fontSize: getResponsiveFontSize(10),
+        fill: '#cccccc',
+        align: 'left',
+        wordWrap: { width: getResponsiveSize(80) },
+        stroke: '#000000',
+        strokeThickness: 1
+      }).setOrigin(0, 0.5).setDepth(2);
+      cardContainer.add(objectiveText);
+    }
+    
+    // Efeito especial para o vencedor
+    if (jogador.vencedor) {
+      // Borda dourada animada
+      const goldenBorder = scene.add.rectangle(0, 0, cardWidth + 4, cardHeight + 4, 0xffd700, 0.8);
+      goldenBorder.setStrokeStyle(3, 0xffd700);
+      cardContainer.addAt(goldenBorder, 0);
+      
+      // Animação de brilho
+      scene.tweens.add({
+        targets: goldenBorder,
+        alpha: 0.3,
+        duration: 1000,
+        yoyo: true,
+        repeat: -1
+      });
+    }
+  });
+  
+  // Informações adicionais do resumo do jogo
+  if (resumoJogo) {
+    let yOffset = getResponsiveSize(100);
+    
+    // Tipo de vitória
+    if (resumoJogo.tipoVitoria) {
+      const victoryType = scene.add.text(0, yOffset, `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`, {
+        fontSize: getResponsiveFontSize(14),
+        fill: '#cccccc',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 1
+      }).setOrigin(0.5).setDepth(2);
+      contentContainer.add(victoryType);
+      yOffset += getResponsiveSize(25);
+    }
+    
+    // Estatísticas do jogo
+    if (resumoJogo.estatisticas) {
+      // Duração do jogo
+      if (resumoJogo.estatisticas.duracao) {
+        const duration = scene.add.text(0, yOffset, `Duração: ${resumoJogo.estatisticas.duracao}`, {
+          fontSize: getResponsiveFontSize(12),
+          fill: '#888888',
+          align: 'center',
+          stroke: '#000000',
+          strokeThickness: 1
+        }).setOrigin(0.5).setDepth(2);
+        contentContainer.add(duration);
+        yOffset += getResponsiveSize(20);
       }
       
-      // Animação de entrada
-      victoryContainer.setScale(0);
-      if (scene && scene.tweens) {
-        scene.tweens.add({
-          targets: victoryContainer,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 500,
-          ease: 'Back.easeOut'
-        });
-      } else {
-        // Fallback se scene não estiver disponível
-        victoryContainer.setScale(1);
+      // Total de ataques
+      if (resumoJogo.estatisticas.totalAtaques !== undefined) {
+        const attacks = scene.add.text(0, yOffset, `Total de Ataques: ${resumoJogo.estatisticas.totalAtaques}`, {
+          fontSize: getResponsiveFontSize(12),
+          fill: '#888888',
+          align: 'center',
+          stroke: '#000000',
+          strokeThickness: 1
+        }).setOrigin(0.5).setDepth(2);
+        contentContainer.add(attacks);
+        yOffset += getResponsiveSize(20);
       }
     }
-    
-    console.log('🎯 Tela de vitória exibida com sucesso!');
-  } catch (error) {
-    console.error('❌ Erro ao exibir tela de vitória:', error);
+  }
+  
+  // Container de botões
+  const buttonContainer = scene.add.container(0, getResponsiveSize(200));
+  buttonContainer.setDepth(2);
+  containerVitoria.add(buttonContainer);
+  
+  // Botão "Voltar ao Menu" - estilo verde moderno centralizado
+  const menuButton = scene.add.text(0, 0, 'VOLTAR AO MENU', {
+    fontSize: getResponsiveFontSize(16),
+    fill: '#ffffff',
+    backgroundColor: '#33cc33',
+    padding: { x: getResponsivePadding(20), y: getResponsivePadding(12) },
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
+  
+  // Efeito hover do botão
+  menuButton.on('pointerover', () => {
+    menuButton.setBackgroundColor('#28a745');
+  });
+  
+  menuButton.on('pointerout', () => {
+    menuButton.setBackgroundColor('#33cc33');
+  });
+  
+  menuButton.on('pointerdown', () => {
+    tocarSomClick();
+    // Voltar ao menu de seleção de modos
+    backToModeSelection();
+  });
+  
+  buttonContainer.add(menuButton);
+  
+  // Animação de entrada
+  containerVitoria.setScale(0.8);
+  scene.tweens.add({
+    targets: containerVitoria,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 400,
+    ease: 'Back.easeOut'
+  });
+  
+  // Animação do overlay
+  overlay.setAlpha(0);
+  scene.tweens.add({
+    targets: overlay,
+    alpha: 0.8,
+    duration: 300,
+    ease: 'Power2'
+  });
+  
+  // Criar efeito de partículas douradas para celebrar a vitória
+  if (isPlayerVictory) {
+    setTimeout(() => {
+      criarPartículasDouradas(largura/2, altura/2, scene);
+    }, 500);
+  }
+  
+  // Tocar som de vitória (se disponível)
+  tocarSomTerritoryWin();
+  
+  // Armazenar referências para poder esconder depois
+  window.overlay = overlay;
+  window.containerVitoria = containerVitoria;
+}
+
+// Função para esconder tela de vitória
+function esconderTelaVitoria() {
+  if (window.overlay) {
+    window.overlay.destroy();
+    window.overlay = null;
+  }
+  
+  if (window.containerVitoria) {
+    window.containerVitoria.destroy();
+    window.containerVitoria = null;
   }
 }
 
-function perdeuJogo(mensagem, scene) {
-  const gameState = getGameState();
-  if (!gameState) return;
-  
-  // Stop turn timer
-  stopTurnTimer();
-  
-  // Limpar todas as animações de salto quando o jogador perde
-  limparTodasAnimacoesSalto();
-  
-  // botaoTurno é um elemento HTML, não Phaser
-  botaoTurno.disabled = true;
-  botaoTurno.style.backgroundColor = '#555';
-  botaoTurno.style.cursor = 'not-allowed';
-  
-  gameState.paises.forEach(pais => pais.polygon.disableInteractive());
-  
-  // Mostrar overlay e container de derrota
-  overlay.setVisible(true);
-  containerVitoria.setVisible(true);
-  
-  // Atualizar título e texto para derrota
-  const tituloVitoria = containerVitoria.getAt(1); // Título "🏆 VITÓRIA! 🏆"
-  tituloVitoria.setText('💀 DERROTA! 💀');
-  tituloVitoria.setStyle({ 
-    fill: '#ff6b6b',
-    stroke: '#8b0000',
-    strokeThickness: 4
-  });
-  
-  textoVitoriaGrande.setText(mensagem);
-  
-  // Esconder botão reiniciar na derrota
-  botaoReiniciar.setVisible(false);
-  
-  // Animação de entrada
-  containerVitoria.setScale(0);
-  if (scene && scene.tweens) {
-    scene.tweens.add({
-      targets: containerVitoria,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 500,
-      ease: 'Back.easeOut'
-    });
-  } else {
-    // Fallback se scene não estiver disponível
-    containerVitoria.setScale(1);
+// Função para tocar som de vitória
+function tocarSomTerritoryWin() {
+  try {
+    const audio = new Audio('assets/territorywin.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log('Erro ao tocar som de vitória:', e));
+  } catch (e) {
+    console.log('Erro ao criar áudio de vitória:', e);
   }
 }
+
+
+
+
 
 function desbloquearJogo() {
   const gameState = getGameState();
@@ -2821,32 +3001,7 @@ function desbloquearJogo() {
     });
   }
   
-  // Verificar se os elementos Phaser existem
-  // Só esconder a tela de vitória se o jogo não estiver em estado de vitória ou derrota
-  if (gameState.vitoria || gameState.derrota) {
-    console.log('🎯 Jogo em estado de vitória/derrota - mantendo tela de vitória visível');
-  } else {
-    // Buscar elementos da tela de vitória de forma robusta
-    const currentScene = game.scene.getScene('GameScene');
-    if (currentScene) {
-      const victoryOverlay = currentScene.children.list.find(child => 
-        child.type === 'Rectangle' && 
-        child.depth === 10
-      );
-      
-      const victoryContainer = currentScene.children.list.find(child => 
-        child.type === 'Container' && 
-        child.depth === 15
-      );
-      
-      if (victoryOverlay) {
-        victoryOverlay.setVisible(false);
-      }
-      if (victoryContainer) {
-        victoryContainer.setVisible(false);
-      }
-    }
-  }
+
 }
 
 // Funções para tocar sons
@@ -3169,19 +3324,19 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   interfaceReforco.setDepth(20);
   
   // Background principal com gradiente
-  const background = scene.add.rectangle(0, 0, getResponsiveSize(350, 0.9, 0.8), getResponsiveSize(200, 0.9, 0.8), 0x1a1a1a, 0.95);
+  const background = scene.add.rectangle(0, 0, getResponsiveSize(350), getResponsiveSize(200), 0x1a1a1a, 0.95);
   background.setStrokeStyle(3, 0x33cc33);
   background.setDepth(0);
   interfaceReforco.add(background);
   
   // Header com gradiente
-  const headerBg = scene.add.rectangle(0, -80, getResponsiveSize(350, 0.9, 0.8), getResponsiveSize(40, 0.9, 0.8), 0x33cc33, 0.9);
+  const headerBg = scene.add.rectangle(0, -getResponsiveSize(80), getResponsiveSize(350), getResponsiveSize(40), 0x33cc33, 0.9);
   headerBg.setDepth(1);
   interfaceReforco.add(headerBg);
   
   // Ícone de reforço
-  const reforcoIcon = scene.add.text(-150, -80, '🛡️', {
-    fontSize: '20px',
+  const reforcoIcon = scene.add.text(-getResponsiveSize(150), -getResponsiveSize(80), '🛡️', {
+    fontSize: getResponsiveFontSize(20),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   interfaceReforco.add(reforcoIcon);
@@ -3192,8 +3347,8 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
     tituloTexto = `BÔNUS ${gameState.continentePrioritario.nome.toUpperCase()}`;
   }
   
-  const titulo = scene.add.text(-120, -80, tituloTexto, {
-    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
+  const titulo = scene.add.text(-getResponsiveSize(120), -getResponsiveSize(80), tituloTexto, {
+    fontSize: getResponsiveFontSize(16),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
@@ -3202,66 +3357,66 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   interfaceReforco.add(titulo);
   
   // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -60, 300, 2, 0x444444, 0.8);
+  const linhaDecorativa = scene.add.rectangle(0, -getResponsiveSize(60), getResponsiveSize(300), 2, 0x444444, 0.8);
   linhaDecorativa.setDepth(1);
   interfaceReforco.add(linhaDecorativa);
   
   // Container para informações do território
-  const territorioContainer = scene.add.container(0, -30);
+  const territorioContainer = scene.add.container(0, -getResponsiveSize(30));
   territorioContainer.setDepth(2);
   interfaceReforco.add(territorioContainer);
   
   // Background do território
-  const territorioBg = scene.add.rectangle(0, 0, 280, 35, 0x2a2a2a, 0.9);
+  const territorioBg = scene.add.rectangle(0, 0, getResponsiveSize(280), getResponsiveSize(35), 0x2a2a2a, 0.9);
   territorioBg.setStrokeStyle(2, 0x33cc33);
   territorioContainer.add(territorioBg);
   
   // Ícone do território
-  const territorioIcon = scene.add.text(-120, 0, '🗺️', {
-    fontSize: '16px'
+  const territorioIcon = scene.add.text(-getResponsiveSize(120), 0, '🗺️', {
+    fontSize: getResponsiveFontSize(16)
   }).setOrigin(0.5).setDepth(2);
   territorioContainer.add(territorioIcon);
   
   // Nome do território
-  const territorioText = scene.add.text(-100, 0, territorio.nome, {
-    fontSize: getResponsiveFontSize(14, 0.8, 0.6),
+  const territorioText = scene.add.text(-getResponsiveSize(100), 0, territorio.nome, {
+    fontSize: getResponsiveFontSize(14),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
   territorioContainer.add(territorioText);
   
   // Tropas atuais
-  const tropasAtuaisText = scene.add.text(80, 0, `Tropas: ${territorio.tropas}`, {
-    fontSize: getResponsiveFontSize(12, 0.8, 0.6),
+  const tropasAtuaisText = scene.add.text(getResponsiveSize(80), 0, `Tropas: ${territorio.tropas}`, {
+    fontSize: getResponsiveFontSize(12),
     fill: '#cccccc',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   territorioContainer.add(tropasAtuaisText);
   
   // Container para controles de quantidade
-  const controlesContainer = scene.add.container(0, 20);
+  const controlesContainer = scene.add.container(0, getResponsiveSize(20));
   controlesContainer.setDepth(2);
   interfaceReforco.add(controlesContainer);
   
   // Background dos controles
-  const controlesBg = scene.add.rectangle(0, 0, 280, 50, 0x2a2a2a, 0.9);
+  const controlesBg = scene.add.rectangle(0, 0, getResponsiveSize(280), getResponsiveSize(50), 0x2a2a2a, 0.9);
   controlesBg.setStrokeStyle(2, 0x444444);
   controlesContainer.add(controlesBg);
   
   // Título dos controles
-  const controlesTitulo = scene.add.text(0, -15, 'Quantidade a Adicionar', {
-    fontSize: '12px',
+  const controlesTitulo = scene.add.text(0, -getResponsiveSize(15), 'Quantidade a Adicionar', {
+    fontSize: getResponsiveFontSize(12),
     fill: '#cccccc',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   controlesContainer.add(controlesTitulo);
   
   // Botão menos com decremento progressivo
-  const botaoMenos = scene.add.text(-70, 8, '-', {
-    fontSize: '18px',
+  const botaoMenos = scene.add.text(-getResponsiveSize(70), getResponsiveSize(8), '-', {
+    fontSize: getResponsiveFontSize(18),
     fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 8, y: 4 },
+    padding: { x: getResponsivePadding(8), y: getResponsivePadding(4) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -3337,8 +3492,8 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   controlesContainer.add(botaoMenos);
   
   // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 8, `${gameState.tropasParaColocar}/${tropasDisponiveis}`, {
-    fontSize: '18px',
+  const textoQuantidade = scene.add.text(0, getResponsiveSize(8), `${gameState.tropasParaColocar}/${tropasDisponiveis}`, {
+    fontSize: getResponsiveFontSize(18),
     fill: '#ffffff',
     align: 'center',
     fontStyle: 'bold',
@@ -3348,11 +3503,11 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   controlesContainer.add(textoQuantidade);
   
   // Botão mais com incremento progressivo
-  const botaoMais = scene.add.text(70, 8, '+', {
-    fontSize: '18px',
+  const botaoMais = scene.add.text(getResponsiveSize(70), getResponsiveSize(8), '+', {
+    fontSize: getResponsiveFontSize(18),
     fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 8, y: 4 },
+    padding: { x: getResponsivePadding(8), y: getResponsivePadding(4) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -3614,14 +3769,14 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Ícone de conquista
   const conquistaIcon = scene.add.text(-170, -100, '⚔️', {
-    fontSize: '24px',
+    fontSize: getResponsiveFontSize(24),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   interfaceTransferenciaConquista.add(conquistaIcon);
   
   // Título
   const titulo = scene.add.text(-140, -100, 'TRANSFERIR TROPAS', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
@@ -3645,12 +3800,12 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   territoriosContainer.add(atacanteBg);
   
   const atacanteIcon = scene.add.text(-170, 0, '⚔️', {
-    fontSize: '18px'
+    fontSize: getResponsiveFontSize(18)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(atacanteIcon);
   
   const atacanteText = scene.add.text(-130, 0, dados.territorioAtacante, {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -3658,7 +3813,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Seta de direção
   const seta = scene.add.text(0, 0, '➡️', {
-    fontSize: '20px'
+    fontSize: getResponsiveFontSize(20)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(seta);
   
@@ -3668,12 +3823,12 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   territoriosContainer.add(conquistadoBg);
   
   const conquistadoIcon = scene.add.text(30, 0, '🏆', {
-    fontSize: '18px'
+    fontSize: getResponsiveFontSize(18)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(conquistadoIcon);
   
   const conquistadoText = scene.add.text(70, 0, dados.territorioConquistado, {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -3691,7 +3846,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Título dos controles
   const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#cccccc',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
@@ -3699,10 +3854,10 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Botão menos
   const botaoMenos = scene.add.text(-80, 10, '-', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 10, y: 5 },
+    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -3769,7 +3924,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Texto da quantidade
   const textoQuantidade = scene.add.text(0, 10, `${tropasParaTransferir}/${dados.tropasDisponiveis}`, {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     align: 'center',
     fontStyle: 'bold',
@@ -3780,10 +3935,10 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Botão mais
   const botaoMais = scene.add.text(80, 10, '+', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 10, y: 5 },
+    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -3845,15 +4000,15 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   controlesContainer.add(botaoMais);
   
   // Container para botões de ação
-  const botoesContainer = scene.add.container(0, 100);
+  const botoesContainer = scene.add.container(0, getResponsiveSize(100));
   botoesContainer.setDepth(2);
   interfaceTransferenciaConquista.add(botoesContainer);
   
   // Detectar se é dispositivo móvel
   const isMobile = window.innerWidth <= 768;
-  const buttonWidth = isMobile ? 160 : 140;
-  const buttonHeight = isMobile ? 50 : 40;
-  const buttonFontSize = isMobile ? '18px' : '14px';
+  const buttonWidth = isMobile ? getResponsiveSize(160) : getResponsiveSize(140);
+  const buttonHeight = isMobile ? getResponsiveSize(50) : getResponsiveSize(40);
+  const buttonFontSize = isMobile ? getResponsiveFontSize(18) : getResponsiveFontSize(14);
   
   // Botão confirmar
   const botaoConfirmarBg = scene.add.rectangle(0, 0, buttonWidth, buttonHeight, 0xcc6633, 0.9);
@@ -3919,6 +4074,26 @@ function esconderInterfaceTransferenciaConquista(manterDados = false) {
   }
 }
 
+function esconderInterfaceRemanejamento() {
+  console.log('DEBUG: esconderInterfaceRemanejamento chamada');
+  
+  if (interfaceRemanejamento) {
+    interfaceRemanejamento.destroy();
+    interfaceRemanejamento = null;
+    console.log('DEBUG: Interface de remanejamento destruída');
+  }
+  
+  // Limpar intervalos de incremento/decremento se existirem
+  if (window.incrementoIntervalRemanejamento) {
+    clearInterval(window.incrementoIntervalRemanejamento);
+    window.incrementoIntervalRemanejamento = null;
+  }
+  if (window.decrementoIntervalRemanejamento) {
+    clearInterval(window.decrementoIntervalRemanejamento);
+    window.decrementoIntervalRemanejamento = null;
+  }
+}
+
 function confirmarTransferenciaConquista() {
   console.log('DEBUG: confirmarTransferenciaConquista chamada');
   console.log('DEBUG: dadosConquista =', dadosConquista);
@@ -3971,14 +4146,14 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Ícone de movimento
   const movimentoIcon = scene.add.text(-170, -100, '🔄', {
-    fontSize: '24px',
+    fontSize: getResponsiveFontSize(24),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   interfaceRemanejamento.add(movimentoIcon);
   
   // Título
   const titulo = scene.add.text(-140, -100, 'MOVER TROPAS', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
@@ -4002,12 +4177,12 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   territoriosContainer.add(origemBg);
   
   const origemIcon = scene.add.text(-170, 0, '📤', {
-    fontSize: '18px'
+    fontSize: getResponsiveFontSize(18)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(origemIcon);
   
   const origemText = scene.add.text(-130, 0, origem.nome, {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -4015,7 +4190,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Seta de direção
   const seta = scene.add.text(0, 0, '➡️', {
-    fontSize: '20px'
+    fontSize: getResponsiveFontSize(20)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(seta);
   
@@ -4025,12 +4200,12 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   territoriosContainer.add(destinoBg);
   
   const destinoIcon = scene.add.text(30, 0, '📥', {
-    fontSize: '18px'
+    fontSize: getResponsiveFontSize(18)
   }).setOrigin(0.5).setDepth(2);
   territoriosContainer.add(destinoIcon);
   
   const destinoText = scene.add.text(70, 0, destino.nome, {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
@@ -4048,7 +4223,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Título dos controles
   const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
-    fontSize: '14px',
+    fontSize: getResponsiveFontSize(14),
     fill: '#cccccc',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
@@ -4056,10 +4231,10 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Botão menos
   const botaoMenos = scene.add.text(-80, 10, '-', {
-    fontSize: '28px',
+    fontSize: getResponsiveFontSize(28),
     fill: '#ffffff',
     backgroundColor: '#ff3333',
-    padding: { x: 15, y: 8 },
+    padding: { x: getResponsivePadding(15), y: getResponsivePadding(8) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -4126,7 +4301,7 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Texto da quantidade
   const textoQuantidade = scene.add.text(0, 10, `${tropasParaMover}/${maxTropas}`, {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     align: 'center',
     fontStyle: 'bold',
@@ -4137,10 +4312,10 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Botão mais
   const botaoMais = scene.add.text(80, 10, '+', {
-    fontSize: '20px',
+    fontSize: getResponsiveFontSize(20),
     fill: '#ffffff',
     backgroundColor: '#33ff33',
-    padding: { x: 10, y: 5 },
+    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
   
@@ -4202,15 +4377,15 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   controlesContainer.add(botaoMais);
   
   // Container para botões de ação
-  const botoesContainer = scene.add.container(0, 100);
+  const botoesContainer = scene.add.container(0, getResponsiveSize(100));
   botoesContainer.setDepth(2);
   interfaceRemanejamento.add(botoesContainer);
   
   // Detectar se é dispositivo móvel
   const isMobile = window.innerWidth <= 768;
-  const buttonWidth = isMobile ? 160 : 140;
-  const buttonHeight = isMobile ? 50 : 40;
-  const buttonFontSize = isMobile ? '18px' : '14px';
+  const buttonWidth = isMobile ? getResponsiveSize(160) : getResponsiveSize(140);
+  const buttonHeight = isMobile ? getResponsiveSize(50) : getResponsiveSize(40);
+  const buttonFontSize = isMobile ? getResponsiveFontSize(18) : getResponsiveFontSize(14);
   
   // Botão confirmar
   const botaoConfirmarBg = scene.add.rectangle(-80, 0, buttonWidth, buttonHeight, 0x0077cc, 0.9);
@@ -4343,7 +4518,7 @@ function mostrarObjetivo(objetivo, scene) {
   
   // Ícone do objetivo
   const objetivoIcon = scene.add.text(-250, -170, '🎯', {
-    fontSize: '24px',
+    fontSize: getResponsiveFontSize(24, 0.8, 0.6),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   container.add(objetivoIcon);
@@ -4379,7 +4554,7 @@ function mostrarObjetivo(objetivo, scene) {
   }
   
   const iconeObjetivo = scene.add.text(0, -60, objetivoIcone, {
-    fontSize: '36px',
+    fontSize: getResponsiveFontSize(36, 0.8, 0.6),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   contentContainer.add(iconeObjetivo);
@@ -4389,7 +4564,7 @@ function mostrarObjetivo(objetivo, scene) {
     fontSize: getResponsiveFontSize(18, 0.8, 0.6),
     fill: '#ffffff',
     align: 'center',
-    wordWrap: { width: 500 },
+    wordWrap: { width: getResponsiveSize(500, 0.8, 0.6) },
     lineSpacing: 6
   }).setOrigin(0.5).setDepth(2);
   contentContainer.add(descricao);
@@ -4399,7 +4574,7 @@ function mostrarObjetivo(objetivo, scene) {
     fontSize: getResponsiveFontSize(14, 0.8, 0.6),
     fill: '#cccccc',
     align: 'center',
-    wordWrap: { width: 450 },
+    wordWrap: { width: getResponsiveSize(450, 0.8, 0.6) },
     fontStyle: 'italic'
   }).setOrigin(0.5).setDepth(2);
   contentContainer.add(dica);
@@ -4494,14 +4669,14 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   
   // Ícone das cartas
   const cartasIcon = scene.add.text(-350, -250, forcarTroca ? '⚠️' : '🎴', {
-    fontSize: '32px',
+    fontSize: getResponsiveFontSize(32),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   container.add(cartasIcon);
   
   // Título principal
   const titulo = scene.add.text(-300, -250, forcarTroca ? 'TROCA OBRIGATÓRIA' : 'SUAS CARTAS TERRITÓRIO', {
-    fontSize: '28px',
+    fontSize: getResponsiveFontSize(28),
     fill: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
@@ -4522,16 +4697,16 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   if (cartas.length === 0) {
     // Mensagem quando não há cartas
     const iconeVazio = scene.add.text(0, -80, '📭', {
-      fontSize: '48px',
+      fontSize: getResponsiveFontSize(48),
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(2);
     contentContainer.add(iconeVazio);
     
     const mensagem = scene.add.text(0, -20, 'Você ainda não possui cartas território.\nConquiste territórios de outros jogadores para ganhar cartas!', {
-      fontSize: '18px',
+      fontSize: getResponsiveFontSize(18),
       fill: '#ffffff',
       align: 'center',
-      wordWrap: { width: 600 },
+      wordWrap: { width: getResponsiveSize(600) },
       stroke: '#000000',
       strokeThickness: 2,
       lineSpacing: 8
@@ -4539,17 +4714,17 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     contentContainer.add(mensagem);
     
     const dica = scene.add.text(0, 60, '💡 Dica: Conquiste territórios de outros jogadores para ganhar cartas território!', {
-      fontSize: '16px',
+      fontSize: getResponsiveFontSize(16),
       fill: '#cccccc',
       align: 'center',
-      wordWrap: { width: 550 },
+      wordWrap: { width: getResponsiveSize(550) },
       fontStyle: 'italic'
     }).setOrigin(0.5).setDepth(2);
     contentContainer.add(dica);
   } else {
     // Mostrar as cartas
     const cartasTexto = scene.add.text(0, -140, `Você possui ${cartas.length} carta(s):`, {
-      fontSize: '20px',
+      fontSize: getResponsiveFontSize(20),
       fill: '#ffffff',
       align: 'center',
       stroke: '#000000',
@@ -4559,7 +4734,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     
     // Instruções
     const instrucoesText = scene.add.text(0, -100, 'Clique nas cartas para selecionar (máximo 3)', {
-      fontSize: '16px',
+      fontSize: getResponsiveFontSize(16),
       fill: '#cccccc',
       align: 'center',
       stroke: '#000000',
@@ -4586,7 +4761,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
       
       // Símbolo da carta (maior e centralizado)
       const simbolo = scene.add.text(0, -30, carta.simbolo, {
-        fontSize: '36px',
+        fontSize: getResponsiveFontSize(36),
         fill: '#ffaa00',
         stroke: '#000000',
         strokeThickness: 2
@@ -4595,10 +4770,10 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
       
       // Nome do território (menor, na parte inferior)
       const nomeTerritorio = scene.add.text(0, 20, carta.territorio, {
-        fontSize: '10px',
+        fontSize: getResponsiveFontSize(10),
         fill: '#ffffff',
         align: 'center',
-        wordWrap: { width: 90 },
+        wordWrap: { width: getResponsiveSize(90) },
         stroke: '#000000',
         strokeThickness: 1
       }).setOrigin(0.5);
@@ -4649,7 +4824,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     container.add(botaoTrocarBg);
     
     const botaoTrocar = scene.add.text(0, 80, '🔄 Trocar Cartas', {
-      fontSize: '18px',
+      fontSize: getResponsiveFontSize(18),
       fill: '#ffffff',
       fontStyle: 'bold',
       stroke: '#000000',
@@ -4692,7 +4867,7 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     container.add(botaoFecharBg);
     
     const botaoFechar = scene.add.text(0, 160, '✅ Entendi', {
-      fontSize: '18px',
+      fontSize: getResponsiveFontSize(18),
       fill: '#ffffff',
       fontStyle: 'bold',
       stroke: '#000000',
@@ -4748,8 +4923,11 @@ let linhasContinentes = []; // Array para armazenar as linhas dos continentes
 function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
   const isMobile = window.innerWidth <= 768;
   const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
   
-  if (isSmallMobile) {
+  if (isLandscape) {
+    return Math.floor(baseSize * 0.7) + 'px';
+  } else if (isSmallMobile) {
     return Math.floor(baseSize * smallMobileMultiplier) + 'px';
   } else if (isMobile) {
     return Math.floor(baseSize * mobileMultiplier) + 'px';
@@ -4762,14 +4940,169 @@ function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMult
 function getResponsiveSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
   const isMobile = window.innerWidth <= 768;
   const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
   
-  if (isSmallMobile) {
+  if (isLandscape) {
+    return Math.floor(baseSize * 0.7);
+  } else if (isSmallMobile) {
     return Math.floor(baseSize * smallMobileMultiplier);
   } else if (isMobile) {
     return Math.floor(baseSize * mobileMultiplier);
   } else {
     return baseSize;
   }
+}
+
+// Nova função para calcular posições responsivas
+function getResponsivePosition(baseX, baseY, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  
+  let multiplier = 1;
+  if (isLandscape) {
+    multiplier = 0.7;
+  } else if (isSmallMobile) {
+    multiplier = smallMobileMultiplier;
+  } else if (isMobile) {
+    multiplier = mobileMultiplier;
+  }
+  
+  return {
+    x: Math.floor(baseX * multiplier),
+    y: Math.floor(baseY * multiplier)
+  };
+}
+
+// Nova função para calcular padding responsivo
+function getResponsivePadding(basePadding, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  
+  let multiplier = 1;
+  if (isLandscape) {
+    multiplier = 0.7;
+  } else if (isSmallMobile) {
+    multiplier = smallMobileMultiplier;
+  } else if (isMobile) {
+    multiplier = mobileMultiplier;
+  }
+  
+  return Math.floor(basePadding * multiplier);
+}
+
+// Nova função para detectar dispositivo móvel
+function isMobileDevice() {
+  return window.innerWidth <= 768;
+}
+
+// Nova função para detectar dispositivo muito pequeno
+function isSmallMobileDevice() {
+  return window.innerWidth <= 480;
+}
+
+// Nova função para detectar orientação landscape em mobile
+function isMobileLandscape() {
+  return window.innerHeight <= 500 && window.innerWidth > window.innerHeight && isMobileDevice();
+}
+
+// Nova função para calcular tamanho de botões responsivos
+function getResponsiveButtonSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  
+  let multiplier = 1;
+  if (isLandscape) {
+    multiplier = 0.7;
+  } else if (isSmallMobile) {
+    multiplier = smallMobileMultiplier;
+  } else if (isMobile) {
+    multiplier = mobileMultiplier;
+  }
+  
+  return Math.floor(baseSize * multiplier);
+}
+
+// Nova função para calcular espaçamento responsivo
+function getResponsiveSpacing(baseSpacing, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  
+  let multiplier = 1;
+  if (isLandscape) {
+    multiplier = 0.7;
+  } else if (isSmallMobile) {
+    multiplier = smallMobileMultiplier;
+  } else if (isMobile) {
+    multiplier = mobileMultiplier;
+  }
+  
+  return Math.floor(baseSpacing * multiplier);
+}
+
+// Nova função para atualizar todos os elementos responsivos
+function updateAllResponsiveElements() {
+  console.log('🔄 Atualizando todos os elementos responsivos...');
+  
+  // Atualizar HUD CSS
+  updateCSSHUD();
+  
+  // Atualizar posicionamento do canvas
+  forceMobileCanvasPosition();
+  
+  // Atualizar elementos do jogo se a scene estiver disponível
+  if (window.game && window.game.scene && window.game.scene.scenes[0]) {
+    const scene = window.game.scene.scenes[0];
+    
+    // Atualizar linhas de continentes
+    const canvas = scene.sys.game.canvas;
+    const originalWidth = 1280;
+    const originalHeight = 720;
+    const scaleX = canvas.width / originalWidth;
+    const scaleY = canvas.height / originalHeight;
+    atualizarLinhasContinentes(scene, scaleX, scaleY);
+    
+    // Atualizar interfaces abertas
+    if (interfaceReforco) {
+      // Reposicionar interface de reforço se estiver aberta
+      const gameState = getGameState();
+      if (gameState && gameState.territorioSelecionadoParaReforco) {
+        // Recalcular posição baseada no novo tamanho da tela
+        const newX = Math.min(Math.max(canvas.width / 2, getResponsiveSize(200)), canvas.width - getResponsiveSize(200));
+        const newY = Math.min(Math.max(canvas.height / 2, getResponsiveSize(150)), canvas.height - getResponsiveSize(150));
+        interfaceReforco.setPosition(newX, newY);
+      }
+    }
+    
+    if (interfaceTransferenciaConquista) {
+      // Reposicionar interface de transferência se estiver aberta
+      const newX = Math.min(Math.max(canvas.width / 2, getResponsiveSize(200)), canvas.width - getResponsiveSize(200));
+      const newY = Math.min(Math.max(canvas.height / 2, getResponsiveSize(150)), canvas.height - getResponsiveSize(150));
+      interfaceTransferenciaConquista.setPosition(newX, newY);
+    }
+    
+    if (interfaceRemanejamento) {
+      // Reposicionar interface de remanejamento se estiver aberta
+      const newX = Math.min(Math.max(canvas.width / 2, getResponsiveSize(200)), canvas.width - getResponsiveSize(200));
+      const newY = Math.min(Math.max(canvas.height / 2, getResponsiveSize(150)), canvas.height - getResponsiveSize(150));
+      interfaceRemanejamento.setPosition(newX, newY);
+    }
+  }
+  
+  // Atualizar popup de histórico se estiver aberto
+  const historyPopup = document.querySelector('.history-popup');
+  if (historyPopup && historyPopup.style.display !== 'none') {
+    // O popup já é responsivo via CSS, mas podemos forçar um recálculo
+    historyPopup.style.display = 'none';
+    setTimeout(() => {
+      historyPopup.style.display = 'block';
+    }, 10);
+  }
+  
+  console.log('✅ Elementos responsivos atualizados');
 }
 
 // Helper function to get player color class
@@ -4878,15 +5211,75 @@ function updateCSSHUD() {
       turnTextEl.textContent = '⏳';
     }
 
-    // Update global turn timer
-    const globalTimerEl = document.getElementById('global-turn-timer');
-    if (globalTimerEl) {
-      // Show timer for all human players' turns (not CPU)
-      const currentPlayer = gameState.jogadores.find(j => j.nome === gameState.turno);
-      const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
+      // Update game instructions
+  const instructionEl = document.getElementById('instruction-text');
+  if (instructionEl) {
+    let instruction = '';
+    let shouldHighlight = false;
+    
+    // Verificar se é o turno do jogador
+    if (gameState.meuNome === gameState.turno) {
+      shouldHighlight = true;
       
-      if (isHumanPlayer && !gameState.vitoria && !gameState.derrota) {
-        // Show timer for all players to see
+      if (gameState.vitoria) {
+        instruction = '🎉 Parabéns! Você venceu!';
+      } else if (gameState.derrota) {
+        instruction = '💀 Você perdeu o jogo!';
+      } else if (gameState.faseRemanejamento) {
+        instruction = '🔄 Selecione territórios para mover tropas';
+      } else {
+        // Fase de ataque
+        const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
+        const totalReforco = gameState.tropasReforco + totalBonus;
+        
+        if (totalReforco > 0) {
+          // Verificar se há tropas bônus de continente prioritário
+          if (totalBonus > 0 && gameState.continentePrioritario) {
+            instruction = `🎯 Coloque ${totalBonus} tropas bônus no continente ${gameState.continentePrioritario.nome}`;
+          } else {
+            instruction = '🎯 Selecione um território para reforçar tropas';
+          }
+        } else {
+          instruction = '⚔️ Selecione um território seu e um inimigo para atacar';
+        }
+      }
+    } else {
+      // Não é o turno do jogador
+      if (gameState.vitoria) {
+        instruction = '🎉 Jogo finalizado!';
+      } else if (gameState.derrota) {
+        instruction = '💀 Jogo finalizado!';
+      } else {
+        const currentPlayer = gameState.jogadores.find(j => j.nome === gameState.turno);
+        const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
+        
+        if (isHumanPlayer) {
+          instruction = `⏳ Aguardando ${gameState.turno}...`;
+        } else {
+          instruction = `🤖 ${gameState.turno} está jogando...`;
+        }
+      }
+    }
+    
+    instructionEl.textContent = instruction;
+    
+    // Aplicar destaque quando necessário
+    if (shouldHighlight && !gameState.vitoria && !gameState.derrota) {
+      instructionEl.classList.add('highlight');
+    } else {
+      instructionEl.classList.remove('highlight');
+    }
+  }
+
+  // Update global turn timer
+  const globalTimerEl = document.getElementById('global-turn-timer');
+  if (globalTimerEl) {
+    // Show timer for all human players' turns (not CPU)
+    const currentPlayer = gameState.jogadores.find(j => j.nome === gameState.turno);
+    const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
+    
+    if (isHumanPlayer && !gameState.vitoria && !gameState.derrota) {
+      // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
         // Start turn timer when it's the player's turn and not already running
@@ -4922,7 +5315,18 @@ function updateCSSHUD() {
     botaoObjetivo.disabled = gameState.vitoria || gameState.derrota;
   }
   if (botaoCartasTerritorio) {
-    botaoCartasTerritorio.disabled = gameState.vitoria || gameState.derrota;
+    // Bloquear cartas durante vitória/derrota ou durante fase de remanejamento
+    const deveBloquear = gameState.vitoria || gameState.derrota || gameState.faseRemanejamento;
+    botaoCartasTerritorio.disabled = deveBloquear;
+    
+    // Adicionar visual feedback quando bloqueado
+    if (deveBloquear) {
+      botaoCartasTerritorio.style.opacity = '0.5';
+      botaoCartasTerritorio.style.cursor = 'not-allowed';
+    } else {
+      botaoCartasTerritorio.style.opacity = '1';
+      botaoCartasTerritorio.style.cursor = 'pointer';
+    }
   }
   
   // Atualizar cards dos jogadores se estiverem visíveis
@@ -5060,7 +5464,10 @@ function adicionarIndicadoresContinentes(scene) {
 
 // Função para forçar posicionamento correto do canvas no mobile
 function forceMobileCanvasPosition() {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
+  
   if (!isMobile) return;
 
   const hudTop = document.querySelector('.hud-top');
@@ -6562,53 +6969,69 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   const largura = canvas.width;
   const altura = canvas.height;
   
+  // Detectar se é dispositivo móvel
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
+  
+  // Calcular tamanhos responsivos
+  const containerWidth = isSmallMobile ? getResponsiveSize(300) : isMobile ? getResponsiveSize(350) : getResponsiveSize(400);
+  const containerHeight = isSmallMobile ? getResponsiveSize(80) : isMobile ? getResponsiveSize(100) : getResponsiveSize(120);
+  const headerHeight = isSmallMobile ? getResponsiveSize(30) : isMobile ? getResponsiveSize(35) : getResponsiveSize(40);
+  
   // Container principal - estilo similar ao chat
   const container = scene.add.container(largura/2, altura/2);
   container.setDepth(31);
   
   // Background do container - estilo preto como o chat
-  const background = scene.add.rectangle(0, 0, getResponsiveSize(400, 0.9, 0.8), getResponsiveSize(120, 0.9, 0.8), 0x000000, 0.95);
+  const background = scene.add.rectangle(0, 0, containerWidth, containerHeight, 0x000000, 0.95);
   background.setStrokeStyle(2, 0x444444);
   background.setDepth(0);
   container.add(background);
   
   // Header com estilo similar ao chat
-  const headerBg = scene.add.rectangle(0, -45, getResponsiveSize(400, 0.9, 0.8), getResponsiveSize(40, 0.9, 0.8), 0x000000, 0.95);
+  const headerBg = scene.add.rectangle(0, -(containerHeight/2 - headerHeight/2), containerWidth, headerHeight, 0x000000, 0.95);
   headerBg.setStrokeStyle(1, 0x444444);
   headerBg.setDepth(1);
   container.add(headerBg);
   
+  // Calcular posições responsivas
+  const iconX = -(containerWidth/2 - getResponsiveSize(30));
+  const titleX = -(containerWidth/2 - getResponsiveSize(60));
+  const closeX = containerWidth/2 - getResponsiveSize(30);
+  const headerY = -(containerHeight/2 - headerHeight/2);
+  
   // Ícone de turno
-  const turnoIcon = scene.add.text(-170, -45, '🎯', {
-    fontSize: '20px',
+  const turnoIcon = scene.add.text(iconX, headerY, '🎯', {
+    fontSize: getResponsiveFontSize(isSmallMobile ? 16 : isMobile ? 18 : 20),
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   container.add(turnoIcon);
   
   // Título
-  const titulo = scene.add.text(-140, -45, 'SEU TURNO!', {
-    fontSize: getResponsiveFontSize(18, 0.8, 0.6),
+  const titulo = scene.add.text(titleX, headerY, 'SEU TURNO!', {
+    fontSize: getResponsiveFontSize(isSmallMobile ? 14 : isMobile ? 16 : 18),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0, 0.5).setDepth(2);
   container.add(titulo);
   
   // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -25, 350, 1, 0x444444, 0.8);
+  const linhaDecorativa = scene.add.rectangle(0, -(containerHeight/2 - headerHeight - 5), containerWidth - 20, 1, 0x444444, 0.8);
   linhaDecorativa.setDepth(1);
   container.add(linhaDecorativa);
   
   // Mensagem principal
-  const mensagem = scene.add.text(0, 10, `É a vez de ${nomeJogador} jogar!`, {
-    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
+  const mensagem = scene.add.text(0, 5, `É a vez de ${nomeJogador} jogar!`, {
+    fontSize: getResponsiveFontSize(isSmallMobile ? 12 : isMobile ? 14 : 16),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(2);
   container.add(mensagem);
   
   // Botão de fechar
-  const botaoFechar = scene.add.text(170, -45, '✕', {
-    fontSize: '18px',
+  const botaoFechar = scene.add.text(closeX, headerY, '✕', {
+    fontSize: getResponsiveFontSize(isSmallMobile ? 14 : isMobile ? 16 : 18),
     fill: '#ffffff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);

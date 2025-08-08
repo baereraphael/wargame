@@ -32,6 +32,7 @@ class GameRoom {
     this.turno = this.jogadores[this.indiceTurno].nome;
     this.vitoria = false;
     this.derrota = false;
+    this.jogadorVencedor = null;
     
     // Game data will be initialized in initializeGameData()
   }
@@ -1502,14 +1503,27 @@ function getEstado(socketId = null, room = null) {
   // Calcular continente com prioridade para reforço
   const continentePrioritario = calcularContinentePrioritario(room);
 
+  // Determinar vitória/derrota específica para este jogador
+  let vitoria = false;
+  let derrota = false;
+  
+  if (room.vitoria && meuNome) {
+    // Se há um vencedor, verificar se é este jogador
+    const jogadorVencedor = room.jogadorVencedor;
+    if (jogadorVencedor) {
+      vitoria = (meuNome === jogadorVencedor);
+      derrota = (meuNome !== jogadorVencedor);
+    }
+  }
+
   const estado = {
     jogadores: room.jogadores,
     turno: room.turno,
     paises: room.paises,
     tropasReforco: room.tropasReforco,
     tropasBonusContinente: room.tropasBonusContinente,
-    vitoria: room.vitoria,
-    derrota: room.derrota,
+    vitoria: vitoria,
+    derrota: derrota,
     meuNome,
     continentes: controleContinentes,
     objetivos: room.objetivos,
@@ -1736,7 +1750,11 @@ function checarVitoria(room) {
   if (ativos.length === 1) {
     console.log(`🏆 Vitória por eliminação: ${ativos[0].nome}`);
     room.vitoria = true;
-    io.to(room.roomId).emit('vitoria', ativos[0].nome);
+    room.jogadorVencedor = ativos[0].nome;
+    
+    // Preparar dados completos do resumo do jogo
+    const resumoJogo = gerarResumoJogo(room, ativos[0].nome, 'eliminacao');
+    io.to(room.roomId).emit('vitoria', ativos[0].nome, resumoJogo);
     return;
   }
   
@@ -1750,13 +1768,75 @@ function checarVitoria(room) {
       if (verificarObjetivo(jogador.nome, room)) {
         console.log(`🏆 Vitória por objetivo: ${jogador.nome}`);
         room.vitoria = true;
-        io.to(room.roomId).emit('vitoria', jogador.nome);
+        room.jogadorVencedor = jogador.nome;
+        
+        // Preparar dados completos do resumo do jogo
+        const resumoJogo = gerarResumoJogo(room, jogador.nome, 'objetivo');
+        io.to(room.roomId).emit('vitoria', jogador.nome, resumoJogo);
         return;
       }
     }
   }
   
   console.log('❌ Nenhuma vitória encontrada');
+}
+
+// Função para gerar resumo completo do jogo
+function gerarResumoJogo(room, jogadorVencedor, tipoVitoria) {
+  console.log(`📊 Gerando resumo do jogo para ${jogadorVencedor} (${tipoVitoria})`);
+  
+  // Calcular estatísticas de cada jogador
+  const estatisticasJogadores = {};
+  room.jogadores.forEach(jogador => {
+    const territorios = room.paises.filter(p => p.dono === jogador.nome);
+    const totalTropas = territorios.reduce((sum, p) => sum + p.tropas, 0);
+    const continentesControlados = Object.values(room.continentes).filter(continente => {
+      return continente.territorios.every(territorio => {
+        const pais = room.paises.find(p => p.nome === territorio);
+        return pais && pais.dono === jogador.nome;
+      });
+    });
+    
+    estatisticasJogadores[jogador.nome] = {
+      ativo: jogador.ativo,
+      territorios: territorios.length,
+      totalTropas: totalTropas,
+      continentesControlados: continentesControlados.map(c => c.nome),
+      objetivo: room.objetivos[jogador.nome] || null,
+      cartasTerritorio: (room.cartasTerritorio[jogador.nome] || []).length
+    };
+  });
+  
+  // Calcular estatísticas gerais do jogo
+  const totalTerritorios = room.paises.length;
+  const totalTropasJogo = room.paises.reduce((sum, p) => sum + p.tropas, 0);
+  const jogadoresAtivos = room.jogadores.filter(j => j.ativo).length;
+  const jogadoresEliminados = room.jogadores.filter(j => !j.ativo).length;
+  
+  // Determinar tipo de vitória
+  let descricaoVitoria = '';
+  if (tipoVitoria === 'eliminacao') {
+    descricaoVitoria = `${jogadorVencedor} eliminou todos os outros jogadores!`;
+  } else if (tipoVitoria === 'objetivo') {
+    const objetivo = room.objetivos[jogadorVencedor];
+    descricaoVitoria = `${jogadorVencedor} completou seu objetivo: ${objetivo.descricao}`;
+  }
+  
+  return {
+    jogadorVencedor: jogadorVencedor,
+    tipoVitoria: tipoVitoria,
+    descricaoVitoria: descricaoVitoria,
+    estatisticasJogadores: estatisticasJogadores,
+    estatisticasGerais: {
+      totalTerritorios: totalTerritorios,
+      totalTropasJogo: totalTropasJogo,
+      jogadoresAtivos: jogadoresAtivos,
+      jogadoresEliminados: jogadoresEliminados,
+      numeroTrocasRealizadas: room.numeroTrocasRealizadas
+    },
+    objetivos: room.objetivos,
+    continentes: room.continentes
+  };
 }
 
 // Inicializar o jogo
@@ -1796,6 +1876,7 @@ function inicializarJogo(room) {
   room.turno = room.jogadores[room.indiceTurno].nome;
   room.vitoria = false;
   room.derrota = false;
+  room.jogadorVencedor = null;
   console.log(`🔧 DEBUG: Estado inicial definido - turno: ${room.turno}, indiceTurno: ${room.indiceTurno}`);
   
   // Limpar cartas território e territórios conquistados
@@ -2067,17 +2148,17 @@ function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCP
   }, 1000);
 }
 
-// Função para executar remanejamento inteligente da CPU
+// Função para executar remanejamento inteligente da CPU - ESTRATÉGIA AVANÇADA
 function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
   if (room.vitoria || room.derrota) return;
   
-  console.log(`🔄 CPU ${jogadorCPU.nome} executando remanejamento estratégico na sala ${room.roomId}...`);
-  io.to(room.roomId).emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} executando remanejamento estratégico...`);
+  console.log(`🧠 CPU ${jogadorCPU.nome} executando REMANEJAMENTO ESTRATÉGICO AVANÇADO na sala ${room.roomId}...`);
+  io.to(room.roomId).emit('adicionarAoHistorico', `🧠 CPU ${jogadorCPU.nome} executando remanejamento estratégico avançado...`);
   
   const territoriosDoJogador = room.paises.filter(p => p.dono === jogadorCPU.nome);
   const movimentos = [];
   
-  // ESTRATÉGIA AVANÇADA: Análise completa do mapa
+  // ANÁLISE ESTRATÉGICA COMPLETA DO MAPA
   territoriosDoJogador.forEach(territorio => {
     const pais = room.paises.find(p => p.nome === territorio.nome);
     const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
@@ -2090,32 +2171,67 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
       return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
     });
     
-    // 1. TERRITÓRIOS VULNERÁVEIS (prioridade máxima)
-    if (vizinhosInimigos.length > 0 && pais.tropas <= 2) {
+    // Calcular pontuação estratégica do território
+    const pontuacaoTerritorio = calcularPontuacaoEstrategicaTerritorio(pais, jogadorCPU, objetivo, room);
+    
+    // 1. DEFESA CRÍTICA - Territórios extremamente vulneráveis (PRIORIDADE MÁXIMA)
+    if (vizinhosInimigos.length >= 4 && pais.tropas <= 1) {
+      console.log(`🛡️ DEFESA CRÍTICA: ${territorio.nome} tem ${vizinhosInimigos.length} inimigos e apenas ${pais.tropas} tropa`);
       vizinhosProprios.forEach(vizinho => {
         const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        if (paisVizinho.tropas > 3) {
-          const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
+        if (paisVizinho.tropas >= 3) {
+          const tropasParaMover = Math.min(paisVizinho.tropas - 1, 3);
           if (tropasParaMover > 0) {
             movimentos.push({
               origem: paisVizinho,
               destino: pais,
               quantidade: tropasParaMover,
-              prioridade: 1000 + vizinhosInimigos.length * 100 + (3 - pais.tropas) * 50
+              prioridade: 2000 + vizinhosInimigos.length * 200 + (2 - pais.tropas) * 100,
+              tipo: 'defesa_critica',
+              razao: `Defesa crítica: ${vizinhosInimigos.length} inimigos vs ${pais.tropas} tropa`
             });
           }
         }
       });
     }
     
-    // 2. CONCENTRAÇÃO PARA ATAQUE (se tem objetivo de conquista)
-    if (objetivo?.tipo === 'conquistar3Continentes' && vizinhosInimigos.length > 0) {
-      const continente = Object.keys(room.continentes).find(cont => 
-        room.continentes[cont].territorios.includes(territorio.nome)
-      );
+    // 2. CONCENTRAÇÃO ESTRATÉGICA - Territórios com alta pontuação estratégica
+    if (pontuacaoTerritorio > 150 && vizinhosInimigos.length > 0) {
+      console.log(`🎯 CONCENTRAÇÃO ESTRATÉGICA: ${territorio.nome} tem pontuação ${pontuacaoTerritorio}`);
+      vizinhosProprios.forEach(vizinho => {
+        const paisVizinho = room.paises.find(p => p.nome === vizinho);
+        const pontuacaoVizinho = calcularPontuacaoEstrategicaTerritorio(paisVizinho, jogadorCPU, objetivo, room);
+        
+        // Mover tropas de territórios menos estratégicos para mais estratégicos
+        if (pontuacaoVizinho < pontuacaoTerritorio * 0.7 && paisVizinho.tropas > 2) {
+          const tropasParaMover = Math.min(paisVizinho.tropas - 1, 2);
+          if (tropasParaMover > 0) {
+            movimentos.push({
+              origem: paisVizinho,
+              destino: pais,
+              quantidade: tropasParaMover,
+              prioridade: 1500 + pontuacaoTerritorio * 10,
+              tipo: 'concentracao_estrategica',
+              razao: `Concentração estratégica: ${pontuacaoTerritorio} vs ${pontuacaoVizinho}`
+            });
+          }
+        }
+      });
+    }
+    
+    // 3. PREPARAÇÃO PARA ATAQUE - Territórios com alvos fracos próximos
+    if (vizinhosInimigos.length > 0) {
+      const alvosFracos = vizinhosInimigos.filter(vizinho => {
+        const paisVizinho = room.paises.find(p => p.nome === vizinho);
+        return paisVizinho.tropas <= 2;
+      });
       
-      if (continente === objetivo.continente1 || continente === objetivo.continente2) {
-        // Concentrar tropas em territórios do continente objetivo
+      const alvosMedios = vizinhosInimigos.filter(vizinho => {
+        const paisVizinho = room.paises.find(p => p.nome === vizinho);
+        return paisVizinho.tropas <= 4;
+      });
+      
+      if ((alvosFracos.length > 0 || alvosMedios.length >= 2) && pais.tropas <= 4) {
         vizinhosProprios.forEach(vizinho => {
           const paisVizinho = room.paises.find(p => p.nome === vizinho);
           const vizinhosInimigosVizinho = paisVizinho.vizinhos.filter(v => {
@@ -2123,15 +2239,18 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
             return paisV && paisV.dono !== jogadorCPU.nome;
           });
           
-          // Se o vizinho tem menos inimigos, pode doar tropas
-          if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 2) {
-            const tropasParaMover = Math.min(paisVizinho.tropas - 1, 3);
+          // Se o vizinho tem menos oportunidades de ataque, pode doar tropas
+          if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 3) {
+            const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
             if (tropasParaMover > 0) {
+              const prioridade = 1200 + alvosFracos.length * 100 + alvosMedios.length * 50;
               movimentos.push({
                 origem: paisVizinho,
                 destino: pais,
                 quantidade: tropasParaMover,
-                prioridade: 800 + vizinhosInimigos.length * 80
+                prioridade: prioridade,
+                tipo: 'preparacao_ataque',
+                razao: `Preparação ataque: ${alvosFracos.length} alvos fracos, ${alvosMedios.length} alvos médios`
               });
             }
           }
@@ -2139,8 +2258,8 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
       }
     }
     
-    // 3. DEFESA ESTRATÉGICA (territórios com muitos inimigos)
-    if (vizinhosInimigos.length >= 3 && pais.tropas <= 3) {
+    // 4. DEFESA ESTRATÉGICA - Territórios com muitos inimigos mas não críticos
+    if (vizinhosInimigos.length >= 3 && pais.tropas <= 2) {
       vizinhosProprios.forEach(vizinho => {
         const paisVizinho = room.paises.find(p => p.nome === vizinho);
         const vizinhosInimigosVizinho = paisVizinho.vizinhos.filter(v => {
@@ -2149,42 +2268,91 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
         });
         
         // Se o vizinho tem menos inimigos e mais tropas, pode doar
-        if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 4) {
+        if (vizinhosInimigosVizinho.length < vizinhosInimigos.length && paisVizinho.tropas > 3) {
           const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
           if (tropasParaMover > 0) {
             movimentos.push({
               origem: paisVizinho,
               destino: pais,
               quantidade: tropasParaMover,
-              prioridade: 600 + vizinhosInimigos.length * 60
+              prioridade: 800 + vizinhosInimigos.length * 80,
+              tipo: 'defesa_estrategica',
+              razao: `Defesa estratégica: ${vizinhosInimigos.length} inimigos vs ${vizinhosInimigosVizinho.length}`
             });
           }
         }
       });
     }
     
-    // 4. OPORTUNIDADES DE ATAQUE (territórios com alvos fracos próximos)
-    if (vizinhosInimigos.length > 0) {
-      const alvosFracos = vizinhosInimigos.filter(vizinho => {
-        const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        return paisVizinho.tropas <= 2;
-      });
+    // 5. CONSOLIDAÇÃO DE CONTINENTES - Se tem objetivo de conquista
+    if (objetivo?.tipo === 'conquistar3Continentes') {
+      const continente = Object.keys(room.continentes).find(cont => 
+        room.continentes[cont].territorios.includes(territorio.nome)
+      );
       
-      if (alvosFracos.length > 0 && pais.tropas <= 3) {
-        vizinhosProprios.forEach(vizinho => {
-          const paisVizinho = room.paises.find(p => p.nome === vizinho);
-          if (paisVizinho.tropas > 3) {
-            const tropasParaMover = Math.min(paisVizinho.tropas - 2, 2);
-            if (tropasParaMover > 0) {
-              movimentos.push({
-                origem: paisVizinho,
-                destino: pais,
-                quantidade: tropasParaMover,
-                prioridade: 400 + alvosFracos.length * 40
-              });
-            }
-          }
+      if (continente === objetivo.continente1 || continente === objetivo.continente2) {
+        const territoriosDoContinente = room.continentes[continente].territorios;
+        const territoriosConquistados = territoriosDoContinente.filter(territorioNome => {
+          const paisContinente = room.paises.find(p => p.nome === territorioNome);
+          return paisContinente && paisContinente.dono === jogadorCPU.nome;
         });
+        
+        // Se controla a maioria do continente, consolidar posição
+        if (territoriosConquistados.length >= territoriosDoContinente.length * 0.7) {
+          vizinhosProprios.forEach(vizinho => {
+            const paisVizinho = room.paises.find(p => p.nome === vizinho);
+            const continenteVizinho = Object.keys(room.continentes).find(cont => 
+              room.continentes[cont].territorios.includes(vizinho)
+            );
+            
+            // Mover tropas de territórios fora do continente objetivo
+            if (continenteVizinho !== continente && paisVizinho.tropas > 2) {
+              const tropasParaMover = Math.min(paisVizinho.tropas - 1, 2);
+              if (tropasParaMover > 0) {
+                movimentos.push({
+                  origem: paisVizinho,
+                  destino: pais,
+                  quantidade: tropasParaMover,
+                  prioridade: 1000 + territoriosConquistados.length * 50,
+                  tipo: 'consolidacao_continente',
+                  razao: `Consolidação ${continente}: ${territoriosConquistados.length}/${territoriosDoContinente.length}`
+                });
+              }
+            }
+          });
+        }
+      }
+    }
+    
+    // 6. ELIMINAÇÃO DE JOGADOR - Se tem objetivo de eliminar jogador específico
+    if (objetivo?.tipo === 'eliminarJogador') {
+      const jogadorAlvo = objetivo.jogadorAlvo;
+      const territoriosDoAlvo = room.paises.filter(p => p.dono === jogadorAlvo);
+      
+      if (territoriosDoAlvo.length > 0) {
+        // Encontrar território mais próximo do alvo
+        const distanciaAoAlvo = Math.min(...territoriosDoAlvo.map(territorioAlvo => {
+          return calcularDistanciaTerritorios(territorio.nome, territorioAlvo.nome, room);
+        }));
+        
+        if (distanciaAoAlvo <= 2 && vizinhosInimigos.length > 0) {
+          vizinhosProprios.forEach(vizinho => {
+            const paisVizinho = room.paises.find(p => p.nome === vizinho);
+            if (paisVizinho.tropas > 2) {
+              const tropasParaMover = Math.min(paisVizinho.tropas - 1, 2);
+              if (tropasParaMover > 0) {
+                movimentos.push({
+                  origem: paisVizinho,
+                  destino: pais,
+                  quantidade: tropasParaMover,
+                  prioridade: 1400 + (3 - distanciaAoAlvo) * 100,
+                  tipo: 'eliminacao_jogador',
+                  razao: `Eliminação ${jogadorAlvo}: distância ${distanciaAoAlvo}`
+                });
+              }
+            }
+          });
+        }
       }
     }
   });
@@ -2192,13 +2360,114 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
   // Ordenar movimentos por prioridade
   movimentos.sort((a, b) => b.prioridade - a.prioridade);
   
-  // Limitar a 3 movimentos por turno para não sobrecarregar
-  const movimentosLimitados = movimentos.slice(0, 3);
+  // Limitar a 4 movimentos por turno para estratégia mais complexa
+  const movimentosLimitados = movimentos.slice(0, 4);
   
-  console.log(`🎯 CPU ${jogadorCPU.nome} planejou ${movimentosLimitados.length} movimentos de remanejamento`);
+  console.log(`🎯 CPU ${jogadorCPU.nome} planejou ${movimentosLimitados.length} movimentos estratégicos:`);
+  movimentosLimitados.forEach((mov, index) => {
+    console.log(`  ${index + 1}. ${mov.origem.nome} → ${mov.destino.nome} (${mov.quantidade} tropas) - ${mov.tipo}: ${mov.razao}`);
+  });
   
   // Executar movimentos sequencialmente
   executarMovimentoRemanejamento(jogadorCPU, movimentosLimitados, 0, objetivo, room);
+}
+
+// Função para calcular pontuação estratégica de um território
+function calcularPontuacaoEstrategicaTerritorio(pais, jogadorCPU, objetivo, room) {
+  let pontuacao = 0;
+  
+  const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
+    const paisVizinho = room.paises.find(p => p.nome === vizinho);
+    return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
+  });
+  
+  const vizinhosProprios = pais.vizinhos.filter(vizinho => {
+    const paisVizinho = room.paises.find(p => p.nome === vizinho);
+    return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
+  });
+  
+  // 1. FRONTEIRAS COM INIMIGOS (muito importante)
+  pontuacao += vizinhosInimigos.length * 100;
+  
+  // 2. VULNERABILIDADE ATUAL
+  if (pais.tropas <= 1) pontuacao += 200;
+  else if (pais.tropas <= 2) pontuacao += 150;
+  else if (pais.tropas <= 3) pontuacao += 100;
+  
+  // 3. OBJETIVO ESTRATÉGICO
+  if (objetivo?.tipo === 'conquistar3Continentes') {
+    const continente = Object.keys(room.continentes).find(cont => 
+      room.continentes[cont].territorios.includes(pais.nome)
+    );
+    if (continente === objetivo.continente1 || continente === objetivo.continente2) {
+      pontuacao += 300; // Prioridade absoluta
+    }
+  }
+  
+  // 4. ELIMINAÇÃO DE JOGADOR
+  if (objetivo?.tipo === 'eliminarJogador') {
+    const jogadorAlvo = objetivo.jogadorAlvo;
+    const territoriosDoAlvo = room.paises.filter(p => p.dono === jogadorAlvo);
+    if (territoriosDoAlvo.length > 0) {
+      const distanciaAoAlvo = Math.min(...territoriosDoAlvo.map(territorioAlvo => {
+        return calcularDistanciaTerritorios(pais.nome, territorioAlvo.nome, room);
+      }));
+      pontuacao += (4 - distanciaAoAlvo) * 150; // Mais próximo = mais pontos
+    }
+  }
+  
+  // 5. OPORTUNIDADES DE ATAQUE
+  vizinhosInimigos.forEach(vizinho => {
+    const paisVizinho = room.paises.find(p => p.nome === vizinho);
+    if (paisVizinho.tropas <= 1) pontuacao += 80;
+    else if (paisVizinho.tropas <= 2) pontuacao += 60;
+    else if (paisVizinho.tropas <= 3) pontuacao += 40;
+  });
+  
+  // 6. POSIÇÃO CENTRAL (muitos vizinhos próprios para defesa)
+  pontuacao += vizinhosProprios.length * 30;
+  
+  // 7. EXPANSÃO ESTRATÉGICA (mais vizinhos inimigos = mais oportunidades)
+  pontuacao += vizinhosInimigos.length * 50;
+  
+  return pontuacao;
+}
+
+// Função para calcular distância entre territórios
+function calcularDistanciaTerritorios(territorio1, territorio2, room) {
+  const pais1 = room.paises.find(p => p.nome === territorio1);
+  const pais2 = room.paises.find(p => p.nome === territorio2);
+  
+  if (!pais1 || !pais2) return 999;
+  
+  // Se são vizinhos diretos
+  if (pais1.vizinhos.includes(territorio2)) return 1;
+  
+  // Busca em largura para encontrar caminho mais curto
+  const visitados = new Set();
+  const fila = [{ territorio: territorio1, distancia: 0 }];
+  
+  while (fila.length > 0) {
+    const atual = fila.shift();
+    
+    if (atual.territorio === territorio2) {
+      return atual.distancia;
+    }
+    
+    if (visitados.has(atual.territorio)) continue;
+    visitados.add(atual.territorio);
+    
+    const paisAtual = room.paises.find(p => p.nome === atual.territorio);
+    if (!paisAtual) continue;
+    
+    paisAtual.vizinhos.forEach(vizinho => {
+      if (!visitados.has(vizinho)) {
+        fila.push({ territorio: vizinho, distancia: atual.distancia + 1 });
+      }
+    });
+  }
+  
+  return 999; // Não encontrou caminho
 }
 
 // Função para executar movimentos de remanejamento
@@ -2207,9 +2476,9 @@ function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo,
   
   if (index >= movimentos.length) {
     // Finalizar turno da CPU após remanejamento
-    console.log(`🔄 CPU ${jogadorCPU.nome} finalizando turno após remanejamento na sala ${room.roomId}...`);
+    console.log(`🧠 CPU ${jogadorCPU.nome} finalizando turno após remanejamento estratégico na sala ${room.roomId}...`);
     console.log(`📋 Territórios conquistados por ${jogadorCPU.nome} no final do turno:`, room.territoriosConquistadosNoTurno[jogadorCPU.nome] || []);
-    io.to(room.roomId).emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} finalizando turno após remanejamento`);
+    io.to(room.roomId).emit('adicionarAoHistorico', `🧠 CPU ${jogadorCPU.nome} finalizando turno após remanejamento estratégico`);
     
     // Processar cartas da CPU ANTES de passar o turno
     processarCartasJogador(jogadorCPU.nome, room);
@@ -2226,8 +2495,33 @@ function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo,
     movimento.origem.tropas -= movimento.quantidade;
     movimento.destino.tropas += movimento.quantidade;
     
-    console.log(`🔄 CPU ${jogadorCPU.nome} moveu ${movimento.quantidade} tropas de ${movimento.origem.nome} para ${movimento.destino.nome}`);
-    io.to(room.roomId).emit('adicionarAoHistorico', `🔄 CPU ${jogadorCPU.nome} moveu ${movimento.quantidade} tropas de ${movimento.origem.nome} para ${movimento.destino.nome}`);
+    // Criar mensagem detalhada baseada no tipo de movimento
+    let mensagemDetalhada = '';
+    switch (movimento.tipo) {
+      case 'defesa_critica':
+        mensagemDetalhada = `🛡️ ${jogadorCPU.nome} reforçou defesa crítica em ${movimento.destino.nome}`;
+        break;
+      case 'concentracao_estrategica':
+        mensagemDetalhada = `🎯 ${jogadorCPU.nome} concentrou tropas estrategicamente em ${movimento.destino.nome}`;
+        break;
+      case 'preparacao_ataque':
+        mensagemDetalhada = `⚔️ ${jogadorCPU.nome} preparou ataque a partir de ${movimento.destino.nome}`;
+        break;
+      case 'defesa_estrategica':
+        mensagemDetalhada = `🛡️ ${jogadorCPU.nome} reforçou defesa estratégica em ${movimento.destino.nome}`;
+        break;
+      case 'consolidacao_continente':
+        mensagemDetalhada = `🌍 ${jogadorCPU.nome} consolidou posição no continente via ${movimento.destino.nome}`;
+        break;
+      case 'eliminacao_jogador':
+        mensagemDetalhada = `🎯 ${jogadorCPU.nome} posicionou tropas para eliminar jogador via ${movimento.destino.nome}`;
+        break;
+      default:
+        mensagemDetalhada = `🔄 ${jogadorCPU.nome} moveu ${movimento.quantidade} tropas de ${movimento.origem.nome} para ${movimento.destino.nome}`;
+    }
+    
+    console.log(`🧠 ${mensagemDetalhada} - ${movimento.razao}`);
+    io.to(room.roomId).emit('adicionarAoHistorico', mensagemDetalhada);
     io.to(room.roomId).emit('tocarSomMovimento');
     
     // Atualizar estado para todos os jogadores
@@ -2237,7 +2531,7 @@ function executarMovimentoRemanejamento(jogadorCPU, movimentos, index, objetivo,
   // Processar próximo movimento após delay
   setTimeout(() => {
     executarMovimentoRemanejamento(jogadorCPU, movimentos, index + 1, objetivo, room);
-  }, 500);
+  }, 800); // Delay maior para movimentos estratégicos
 }
 
 // Função para executar ataques sequencialmente - ESTRATÉGIA DE CAMPEÃO MUNDIAL
