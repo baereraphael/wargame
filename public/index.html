@@ -492,6 +492,38 @@
     }
   }
 
+  /* Mobile portrait specific adjustments */
+  @media (max-width: 768px) and (orientation: portrait) {
+    .game-container canvas {
+      height: calc(100vh - 25px - env(safe-area-inset-top)) !important; /* Account for safe area */
+      top: calc(25px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area */
+    }
+  }
+
+  /* Extra mobile adjustments to eliminate top spacing */
+  @media (max-width: 768px) {
+    .game-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      height: 100vh !important;
+      width: 100vw !important;
+    }
+    
+    .game-container canvas {
+      position: absolute !important;
+      top: 25px !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: calc(100vh - 25px) !important;
+      object-fit: fill !important;
+    }
+  }
+
   /* iPhone-specific adjustments */
   @supports (-webkit-touch-callout: none) {
     .game-container {
@@ -506,8 +538,8 @@
     
     .game-container canvas {
       width: 100% !important;
-      height: calc(100vh - 25px) !important; /* Use viewport height minus HUD on iPhone */
-      top: 25px !important; /* Position below HUD on iPhone */
+      height: calc(100vh - 25px - env(safe-area-inset-top)) !important; /* Use viewport height minus HUD and safe area on iPhone */
+      top: calc(25px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area on iPhone */
       object-fit: fill !important; /* Stretch to fill entire area */
       touch-action: none;
       -webkit-user-select: none;

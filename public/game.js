@@ -598,6 +598,24 @@ function resizeGameElements(scene) {
     mapaImage.setPosition(0, 0);
   }
 
+  // Mobile-specific adjustments for viewport height
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Get the actual available height by checking the HUD position
+    const hudTop = document.querySelector('.hud-top');
+    if (hudTop) {
+      const hudHeight = hudTop.offsetHeight;
+      const availableHeight = window.innerHeight - hudHeight;
+      
+      // Update canvas style to use actual available height
+      const canvasElement = document.querySelector('canvas');
+      if (canvasElement) {
+        canvasElement.style.height = `${availableHeight}px`;
+        canvasElement.style.top = `${hudHeight}px`;
+      }
+    }
+  }
+
   // Update territories
   gameState.paises.forEach(pais => {
     if (pais.polygon) {
@@ -1066,6 +1084,24 @@ function initializeGame() {
         console.log('📱 Game elements adjusted for orientation change');
       }
     }, 100);
+  });
+
+  // Add viewport height change listener for mobile (address bar show/hide)
+  let lastViewportHeight = window.innerHeight;
+  window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile && Math.abs(window.innerHeight - lastViewportHeight) > 50) {
+      // Significant height change detected (likely address bar show/hide)
+      setTimeout(() => {
+        const canvas = document.querySelector('canvas');
+        if (canvas && window.game && window.game.scene.scenes[0]) {
+          const scene = window.game.scene.scenes[0];
+          resizeGameElements(scene);
+          console.log('📱 Game elements adjusted for viewport height change');
+        }
+      }, 100);
+      lastViewportHeight = window.innerHeight;
+    }
   });
   
   console.log('🔧 DEBUG: initializeGame() concluída');
