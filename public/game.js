@@ -577,6 +577,88 @@ function backToLogin() {
   }
 }
 
+// Function to resize game elements based on screen size
+function resizeGameElements(scene) {
+  const gameState = getGameState();
+  if (!gameState || !gameState.paises) return;
+
+  // Calculate scale factor based on canvas size vs original size
+  const canvas = scene.sys.game.canvas;
+  const originalWidth = 1280;
+  const originalHeight = 720;
+  const scaleX = canvas.width / originalWidth;
+  const scaleY = canvas.height / originalHeight;
+
+  console.log(`🔧 Resizing elements: canvas ${canvas.width}x${canvas.height}, scale ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+
+  // Update map image
+  const mapaImage = scene.children.list.find(child => child.texture && child.texture.key === 'mapa');
+  if (mapaImage) {
+    mapaImage.setDisplaySize(canvas.width, canvas.height);
+    mapaImage.setPosition(0, 0);
+  }
+
+  // Update territories
+  gameState.paises.forEach(pais => {
+    if (pais.polygon) {
+      // Scale polygon position
+      const originalX = pais.polygon.getData('originalX') || pais.polygon.x;
+      const originalY = pais.polygon.getData('originalY') || pais.polygon.y;
+      
+      // Store original positions if not already stored
+      if (!pais.polygon.getData('originalX')) {
+        pais.polygon.setData('originalX', pais.polygon.x);
+        pais.polygon.setData('originalY', pais.polygon.y);
+      }
+
+      pais.polygon.setPosition(originalX * scaleX, originalY * scaleY);
+      pais.polygon.setScale(scaleX, scaleY);
+    }
+
+    // Update text position
+    if (pais.text) {
+      const originalX = pais.text.getData('originalX') || pais.text.x;
+      const originalY = pais.text.getData('originalY') || pais.text.y;
+      
+      if (!pais.text.getData('originalX')) {
+        pais.text.setData('originalX', pais.text.x);
+        pais.text.setData('originalY', pais.text.y);
+      }
+
+      pais.text.setPosition(originalX * scaleX, originalY * scaleY);
+      pais.text.setScale(Math.min(scaleX, scaleY)); // Keep text readable
+    }
+
+    // Update troop circle position
+    if (pais.troopCircle) {
+      const originalX = pais.troopCircle.getData('originalX') || pais.troopCircle.x;
+      const originalY = pais.troopCircle.getData('originalY') || pais.troopCircle.y;
+      
+      if (!pais.troopCircle.getData('originalX')) {
+        pais.troopCircle.setData('originalX', pais.troopCircle.x);
+        pais.troopCircle.setData('originalY', pais.troopCircle.y);
+      }
+
+      pais.troopCircle.setPosition(originalX * scaleX, originalY * scaleY);
+      pais.troopCircle.setScale(Math.min(scaleX, scaleY));
+    }
+
+    // Update troop text position
+    if (pais.troopText) {
+      const originalX = pais.troopText.getData('originalX') || pais.troopText.x;
+      const originalY = pais.troopText.getData('originalY') || pais.troopText.y;
+      
+      if (!pais.troopText.getData('originalX')) {
+        pais.troopText.setData('originalX', pais.troopText.x);
+        pais.troopText.setData('originalY', pais.troopText.y);
+      }
+
+      pais.troopText.setPosition(originalX * scaleX, originalY * scaleY);
+      pais.troopText.setScale(Math.min(scaleX, scaleY));
+    }
+  });
+}
+
 function initializeGame() {
   console.log('🔧 DEBUG: initializeGame() iniciada');
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
@@ -924,16 +1006,10 @@ function initializeGame() {
     backgroundColor: '#1a1a1a',
     parent: 'game-container',
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      min: {
-        width: 800,
-        height: 450
-      },
-      max: {
-        width: 1920,
-        height: 1080
-      }
+      width: '100%',
+      height: '100%'
     },
     scene: {
       preload,
@@ -947,19 +1023,12 @@ function initializeGame() {
   window.game = game; // Make game globally available
   console.log('✅ Phaser criado com sucesso!');
   
-  // Add resize listener for mobile devices
+  // Add resize listener for responsive scaling
   window.addEventListener('resize', () => {
     const canvas = document.querySelector('canvas');
-    if (canvas) {
-      const isMobile = window.innerWidth <= 768;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
-      if (isMobile || isIOS) {
-        canvas.style.width = 'auto';
-        canvas.style.height = 'auto';
-        canvas.style.maxWidth = '100%';
-        canvas.style.maxHeight = '100%';
-      }
+    if (canvas && window.game && window.game.scene.scenes[0]) {
+      const scene = window.game.scene.scenes[0];
+      resizeGameElements(scene);
     }
   });
 
@@ -967,17 +1036,10 @@ function initializeGame() {
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
       const canvas = document.querySelector('canvas');
-      if (canvas) {
-        const isMobile = window.innerWidth <= 768;
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        
-        if (isMobile || isIOS) {
-          canvas.style.width = 'auto';
-          canvas.style.height = 'auto';
-          canvas.style.maxWidth = '100%';
-          canvas.style.maxHeight = '100%';
-          console.log('📱 Canvas adjusted for orientation change');
-        }
+      if (canvas && window.game && window.game.scene.scenes[0]) {
+        const scene = window.game.scene.scenes[0];
+        resizeGameElements(scene);
+        console.log('📱 Game elements adjusted for orientation change');
       }
     }, 100);
   });
@@ -1449,10 +1511,10 @@ function create() {
     console.log('🎨 Canvas left:', canvasInDOM.style.left);
   }
 
-  // Add map image centered and scaled properly
-  const mapaImage = this.add.image(largura / 2, altura / 2, 'mapa')
-    .setOrigin(0.5, 0.5)
-    .setDisplaySize(largura, altura);
+  // Add map image with full stretch to fill screen
+  const mapaImage = this.add.image(0, 0, 'mapa')
+    .setOrigin(0, 0)
+    .setDisplaySize(this.sys.game.canvas.width, this.sys.game.canvas.height);
   console.log('🗺️ Imagem do mapa adicionada!');
   console.log('🗺️ Mapa image object:', mapaImage);
   console.log('🗺️ Mapa visible:', mapaImage.visible);
@@ -1692,6 +1754,11 @@ function create() {
     console.log('🔄 Processando estado pendente...');
     processarEstadoPendente();
   }
+
+  // Initial resize to ensure proper scaling
+  setTimeout(() => {
+    resizeGameElements(this);
+  }, 100);
 }
 
 function atualizarPaises(novosPaises, scene) {
