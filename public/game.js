@@ -1697,6 +1697,9 @@ function create() {
 
   // Add event listeners for CSS buttons
   botaoTurno.addEventListener('click', () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     const gameState = getGameState();
     if (!gameState || gameState.vitoria || gameState.derrota) return;
     tocarSomClick();
@@ -1705,11 +1708,17 @@ function create() {
   });
 
   botaoObjetivo.addEventListener('click', () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     emitWithRoom('consultarObjetivo');
   });
 
   botaoCartasTerritorio.addEventListener('click', () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     const gameState = getGameState();
     
     // Verificar se está na fase de remanejamento
@@ -1737,6 +1746,9 @@ function create() {
    
        // DEBUG: Detectar cliques fora dos territórios
     this.input.on('pointerdown', (pointer) => {
+      // Fechar indicação de início de turno automaticamente em qualquer interação
+      fecharIndicacaoInicioTurnoAutomatico();
+      
       const gameState = getGameState();
       if (!gameState) return;
       
@@ -2157,6 +2169,9 @@ function atualizarPaises(novosPaises, scene) {
              });
              
              obj.polygon.on('pointerdown', (pointer) => {
+         // Fechar indicação de início de turno automaticamente em qualquer interação
+         fecharIndicacaoInicioTurnoAutomatico();
+         
          // DEBUG: Mostrar coordenadas exatas do clique
          console.log(`DEBUG: Clicou em ${obj.nome} nas coordenadas (${pointer.x}, ${pointer.y})`);
          
@@ -2639,8 +2654,8 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
   const containerVitoria = scene.add.container(largura/2, altura/2);
   containerVitoria.setDepth(31);
   
-  // Background do container - estilo moderno como o chat (maior para acomodar os cards)
-  const background = scene.add.rectangle(0, 0, 600, 700, 0x1a1a1a, 0.95);
+  // Background do container - estilo moderno como o chat (maior para acomodar os cards e resumo)
+  const background = scene.add.rectangle(0, 0, 600, 800, 0x1a1a1a, 0.95);
   background.setStrokeStyle(3, 0x0077cc);
   background.setDepth(0);
   containerVitoria.add(background);
@@ -2702,23 +2717,85 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
   }).setOrigin(0.5).setDepth(2);
   contentContainer.add(playersTitle);
   
-  // Obter informações de todos os jogadores
+  // Obter informações de todos os jogadores (incluindo CPUs eliminadas)
   const jogadores = gameState.jogadores || [];
   const paises = gameState.paises || [];
   
-  // Calcular estatísticas de cada jogador
-  const jogadoresStats = jogadores.map(jogador => {
-    const territoriosJogador = paises.filter(pais => pais.dono === jogador.nome);
+  // Obter todos os nomes de jogadores que já participaram do jogo
+  const todosJogadores = new Set();
+  
+  // Adicionar jogadores atuais
+  jogadores.forEach(jogador => todosJogadores.add(jogador.nome));
+  
+  // Adicionar jogadores que possuem territórios (incluindo CPUs eliminadas)
+  paises.forEach(pais => {
+    if (pais.dono) {
+      todosJogadores.add(pais.dono);
+    }
+  });
+  
+  // Adicionar jogadores do histórico de ações (para pegar CPUs que foram eliminadas)
+  if (gameState.actionHistory) {
+    gameState.actionHistory.forEach(entry => {
+      // Extrair nomes de jogadores das mensagens do histórico
+      const playerMatches = entry.message.match(/([A-Za-z0-9]+)\s+(?:atacou|reforçou|moveu|conquistou|eliminou|foi eliminado|venceu|perdeu)/g);
+      if (playerMatches) {
+        playerMatches.forEach(match => {
+          const playerName = match.split(' ')[0];
+          todosJogadores.add(playerName);
+        });
+      }
+      
+      // Extrair nomes de jogadores que foram eliminados
+      const eliminatedMatches = entry.message.match(/([A-Za-z0-9]+)\s+foi eliminado/g);
+      if (eliminatedMatches) {
+        eliminatedMatches.forEach(match => {
+          const playerName = match.split(' ')[0];
+          todosJogadores.add(playerName);
+        });
+      }
+      
+      // Extrair nomes de jogadores que eliminaram outros
+      const eliminatorMatches = entry.message.match(/([A-Za-z0-9]+)\s+eliminou/g);
+      if (eliminatorMatches) {
+        eliminatorMatches.forEach(match => {
+          const playerName = match.split(' ')[0];
+          todosJogadores.add(playerName);
+        });
+      }
+    });
+  }
+  
+  // Converter para array e criar estatísticas completas
+  const jogadoresStats = Array.from(todosJogadores).map(nomeJogador => {
+    const territoriosJogador = paises.filter(pais => pais.dono === nomeJogador);
     const totalTropas = territoriosJogador.reduce((sum, pais) => sum + pais.tropas, 0);
     const totalTerritorios = territoriosJogador.length;
     
+    // Verificar se o jogador ainda está ativo
+    const jogadorAtivo = jogadores.find(j => j.nome === nomeJogador);
+    const ativo = jogadorAtivo ? jogadorAtivo.ativo !== false : false;
+    
+    // Verificar se é CPU (não está na lista de jogadores ativos)
+    const isCPU = !jogadores.find(j => j.nome === nomeJogador);
+    
     return {
-      nome: jogador.nome,
-      ativo: jogador.ativo,
+      nome: nomeJogador,
+      ativo: ativo,
       totalTropas: totalTropas,
       totalTerritorios: totalTerritorios,
-      vencedor: jogador.nome === nomeJogador
+      vencedor: nomeJogador === nomeJogador,
+      isCPU: isCPU,
+      eliminado: !ativo && totalTerritorios === 0
     };
+  });
+  
+  // Ordenar: vencedor primeiro, depois por total de territórios, depois por nome
+  jogadoresStats.sort((a, b) => {
+    if (a.vencedor && !b.vencedor) return -1;
+    if (!a.vencedor && b.vencedor) return 1;
+    if (a.totalTerritorios !== b.totalTerritorios) return b.totalTerritorios - a.totalTerritorios;
+    return a.nome.localeCompare(b.nome);
   });
   
   // Criar cards dos jogadores
@@ -2757,9 +2834,27 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     }).setOrigin(0.5).setDepth(2);
     cardContainer.add(playerName);
     
-    // Status (Vencedor/Perdedor)
-    const statusText = jogador.vencedor ? '🏆 VENCEDOR' : '❌ PERDEU';
-    const statusColor = jogador.vencedor ? '#33cc33' : '#ff3333';
+    // Status (Vencedor/Perdedor/Eliminado/CPU)
+    let statusText = '';
+    let statusColor = '#ff3333';
+    
+    if (jogador.vencedor) {
+      statusText = '🏆 VENCEDOR';
+      statusColor = '#33cc33';
+    } else if (jogador.eliminado) {
+      statusText = '💀 ELIMINADO';
+      statusColor = '#ff3333';
+    } else if (jogador.isCPU) {
+      statusText = '🤖 CPU';
+      statusColor = '#ffaa00';
+    } else if (!jogador.ativo) {
+      statusText = '❌ INATIVO';
+      statusColor = '#ff3333';
+    } else {
+      statusText = '⚔️ ATIVO';
+      statusColor = '#33cc33';
+    }
+    
     const status = scene.add.text(0, -35, statusText, {
       fontSize: '10px',
       fill: statusColor,
@@ -2885,8 +2980,95 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     }
   }
   
+  // Adicionar seção de resumo das ações principais (incluindo CPUs)
+  if (gameState.actionHistory && gameState.actionHistory.length > 0) {
+    let yOffset = getResponsiveSize(180);
+    
+    // Título da seção de resumo
+    const summaryTitle = scene.add.text(0, yOffset, 'RESUMO DAS AÇÕES PRINCIPAIS', {
+      fontSize: getResponsiveFontSize(16),
+      fill: '#0077cc',
+      align: 'center',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 1
+    }).setOrigin(0.5).setDepth(2);
+    contentContainer.add(summaryTitle);
+    yOffset += getResponsiveSize(25);
+    
+    // Filtrar ações importantes (ataques, conquistas, eliminações)
+    const acoesImportantes = gameState.actionHistory.filter(entry => {
+      const message = entry.message.toLowerCase();
+      return message.includes('atacou') || 
+             message.includes('conquistou') || 
+             message.includes('eliminou') ||
+             message.includes('venceu') ||
+             message.includes('perdeu');
+    });
+    
+    // Mostrar as últimas 5 ações importantes
+    const ultimasAcoes = acoesImportantes.slice(-5);
+    
+    ultimasAcoes.forEach((acao, index) => {
+      const actionText = scene.add.text(0, yOffset, acao.message, {
+        fontSize: getResponsiveFontSize(11),
+        fill: '#cccccc',
+        align: 'center',
+        wordWrap: { width: getResponsiveSize(500) },
+        stroke: '#000000',
+        strokeThickness: 1
+      }).setOrigin(0.5).setDepth(2);
+      contentContainer.add(actionText);
+      yOffset += getResponsiveSize(18);
+    });
+    
+    // Se não há ações importantes, mostrar mensagem
+    if (ultimasAcoes.length === 0) {
+      const noActionsText = scene.add.text(0, yOffset, 'Nenhuma ação importante registrada', {
+        fontSize: getResponsiveFontSize(11),
+        fill: '#888888',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 1
+      }).setOrigin(0.5).setDepth(2);
+      contentContainer.add(noActionsText);
+      yOffset += getResponsiveSize(18);
+    }
+  }
+  
+  // Adicionar estatísticas gerais do jogo
+  const totalJogadores = jogadoresStats.length;
+  const jogadoresAtivos = jogadoresStats.filter(j => j.ativo).length;
+  const cpus = jogadoresStats.filter(j => j.isCPU).length;
+  const eliminados = jogadoresStats.filter(j => j.eliminado).length;
+  
+  let yOffset = getResponsiveSize(280);
+  
+  // Título das estatísticas
+  const statsTitle = scene.add.text(0, yOffset, 'ESTATÍSTICAS GERAIS', {
+    fontSize: getResponsiveFontSize(14),
+    fill: '#0077cc',
+    align: 'center',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(statsTitle);
+  yOffset += getResponsiveSize(20);
+  
+  // Estatísticas
+  const statsText = scene.add.text(0, yOffset, `Total de Jogadores: ${totalJogadores} | Ativos: ${jogadoresAtivos} | CPUs: ${cpus} | Eliminados: ${eliminados}`, {
+    fontSize: getResponsiveFontSize(11),
+    fill: '#cccccc',
+    align: 'center',
+    wordWrap: { width: getResponsiveSize(500) },
+    stroke: '#000000',
+    strokeThickness: 1
+  }).setOrigin(0.5).setDepth(2);
+  contentContainer.add(statsText);
+  
   // Container de botões
-  const buttonContainer = scene.add.container(0, getResponsiveSize(200));
+  const buttonContainer = scene.add.container(0, getResponsiveSize(320));
   buttonContainer.setDepth(2);
   containerVitoria.add(buttonContainer);
   
@@ -3449,6 +3631,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Função para decremento progressivo
   function decrementoProgressivo() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.decrementoInterval) return; // Já está rodando
     
     window.decrementoInterval = setInterval(() => {
@@ -3540,6 +3725,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Função para incremento progressivo
   function incrementoProgressivo() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.incrementoInterval) return; // Já está rodando
     
     window.incrementoInterval = setInterval(() => {
@@ -3609,6 +3797,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Função para confirmar reforço
   const confirmarAcao = () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     confirmarReforco();
   };
@@ -3633,6 +3824,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   
   // Função para cancelar reforço
   const cancelarAcao = () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     esconderInterfaceReforco();
   };
@@ -3867,6 +4061,9 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Função para decremento progressivo
   function decrementoProgressivoTransferencia() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.decrementoIntervalTransferencia) return; // Já está rodando
     
     window.decrementoIntervalTransferencia = setInterval(() => {
@@ -3944,6 +4141,9 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Função para incremento progressivo
   function incrementoProgressivoTransferencia() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.incrementoIntervalTransferencia) return; // Já está rodando
     
     window.incrementoIntervalTransferencia = setInterval(() => {
@@ -4026,6 +4226,9 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
   
   // Função para confirmar transferência
   const confirmarTransferenciaAcao = () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     setTimeout(() => {
       confirmarTransferenciaConquista();
@@ -4244,6 +4447,9 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Função para decremento progressivo
   function decrementoProgressivoRemanejamento() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.decrementoIntervalRemanejamento) return; // Já está rodando
     
     window.decrementoIntervalRemanejamento = setInterval(() => {
@@ -4321,6 +4527,9 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Função para incremento progressivo
   function incrementoProgressivoRemanejamento() {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     if (window.incrementoIntervalRemanejamento) return; // Já está rodando
     
     window.incrementoIntervalRemanejamento = setInterval(() => {
@@ -4403,6 +4612,9 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Função para confirmar remanejamento
   const confirmarRemanejamentoAcao = () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     console.log('🔧 DEBUG: Confirmando movimento de remanejamento');
     
@@ -4447,6 +4659,9 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   // Função para cancelar remanejamento
   const cancelarRemanejamentoAcao = () => {
+    // Fechar indicação de início de turno automaticamente
+    fecharIndicacaoInicioTurnoAutomatico();
+    
     tocarSomClick();
     console.log('🔧 DEBUG: Cancelando movimento de remanejamento');
     
@@ -5172,14 +5387,24 @@ function updateCSSHUD() {
     
     if (totalMarks > 0) {
       let currentAngle = 0;
-      let playerAngles = {}; // Store the angle for each player's first mark
+      let playerAngles = {}; // Store the angle for each player's center mark
       
       players.forEach(player => {
         const territoryCount = playerTerritories[player];
         const colorClass = getPlayerColorClass(player);
         
-        // Store the angle of the center of this player's section
-        playerAngles[player] = currentAngle + (360 / totalMarks * territoryCount / 2);
+        // Calculate the center angle for this player's marks
+        if (territoryCount === 1) {
+          // For single mark, use the mark's angle directly
+          playerAngles[player] = currentAngle;
+          console.log(`🎯 ${player}: 1 tracinho, ângulo = ${currentAngle}°`);
+        } else {
+          // For multiple marks, calculate the center between first and last mark
+          const firstMarkAngle = currentAngle;
+          const lastMarkAngle = currentAngle + (360 / totalMarks * (territoryCount - 1));
+          playerAngles[player] = (firstMarkAngle + lastMarkAngle) / 2;
+          console.log(`🎯 ${player}: ${territoryCount} tracinhos, ângulo centro = ${playerAngles[player]}° (primeiro: ${firstMarkAngle}°, último: ${lastMarkAngle}°)`);
+        }
         
         for (let i = 0; i < territoryCount; i++) {
           const mark = document.createElement('div');
@@ -5190,13 +5415,15 @@ function updateCSSHUD() {
         }
       });
 
-      // Update pointer to point to current player's section
+      // Update pointer to point to current player's center mark
       if (gameState.turno && playerAngles[gameState.turno] !== undefined) {
         turnPointerEl.style.display = 'block';
         turnPointerEl.className = `turn-pointer ${getPlayerColorClass(gameState.turno)}`;
         turnPointerEl.style.transform = `rotate(${playerAngles[gameState.turno]}deg)`;
+        console.log(`👆 Ponteiro apontando para ${gameState.turno} no ângulo ${playerAngles[gameState.turno]}°`);
       } else {
         turnPointerEl.style.display = 'none';
+        console.log(`❌ Ponteiro oculto - turno: ${gameState.turno}, ângulos:`, playerAngles);
       }
     } else {
       turnPointerEl.style.display = 'none';
@@ -7117,5 +7344,13 @@ function fecharIndicacaoInicioTurno() {
     
     // Restaurar animações de salto para territórios bônus após fechar indicação
     restaurarAnimacoesTerritoriosBonus();
+  }
+}
+
+// Função para fechar indicação de início de turno automaticamente em qualquer interação
+function fecharIndicacaoInicioTurnoAutomatico() {
+  if (window.indicacaoInicioTurno && window.indicacaoInicioTurno.container) {
+    console.log('🚫 Fechando indicação de início de turno automaticamente devido a interação');
+    fecharIndicacaoInicioTurno();
   }
 }

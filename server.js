@@ -129,6 +129,9 @@ class GameRoom {
 
 // Sistema de controle de movimentação de tropas durante remanejamento
     this.movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
+    
+    // Sistema de rastreamento de tropas individuais movidas
+    this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y } } }
 
 // Sistema de cartas território
     this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
@@ -850,6 +853,11 @@ io.on('connection', (socket) => {
       delete playerRoom.movimentosRemanejamento[playerRoom.turno];
     }
     
+    // Limpar o rastreamento de tropas movidas do jogador atual
+    if (playerRoom.tropasMovidas[playerRoom.turno]) {
+      delete playerRoom.tropasMovidas[playerRoom.turno];
+    }
+    
     // Ativar CPUs se necessário
     ativarCPUs(playerRoom);
     
@@ -975,6 +983,11 @@ io.on('connection', (socket) => {
     // Clear movement control for current player
     if (playerRoom.movimentosRemanejamento[playerRoom.turno]) {
       delete playerRoom.movimentosRemanejamento[playerRoom.turno];
+    }
+    
+    // Clear troop movement tracking for current player
+    if (playerRoom.tropasMovidas[playerRoom.turno]) {
+      delete playerRoom.tropasMovidas[playerRoom.turno];
     }
     
     // Activate CPUs if needed
@@ -1220,11 +1233,17 @@ io.on('connection', (socket) => {
     const cartasRestantes = playerRoom.cartasTerritorio[jogador.nome] || [];
     if (cartasRestantes.length < 5) {
       // Continuar o turno normalmente com bônus adicional
-      const resultadoReforco = calcularReforco(playerRoom.turno, playerRoom);
-      playerRoom.tropasReforco = resultadoReforco.base + bonusTroca; // Adicionar bônus da troca
-      playerRoom.tropasBonusContinente = resultadoReforco.bonus;
+      // Preservar as tropas de bônus que já foram colocadas
+      const tropasBonusExistentes = { ...playerRoom.tropasBonusContinente };
+      
+      // Calcular apenas as tropas base (sem recalcular bônus de continentes)
+      const territorios = playerRoom.paises.filter(p => p.dono === playerRoom.turno).length;
+      const reforcoBase = Math.max(3, Math.floor(territorios / 2));
+      
+      playerRoom.tropasReforco = reforcoBase + bonusTroca; // Adicionar bônus da troca
+      playerRoom.tropasBonusContinente = tropasBonusExistentes; // Manter as tropas de bônus existentes
 
-      io.to(playerRoom.roomId).emit('mostrarMensagem', `🎮 Turno de ${playerRoom.turno}. Reforços: ${resultadoReforco.base} base + ${bonusTroca} bônus da troca + ${Object.values(playerRoom.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus de continentes`);
+      io.to(playerRoom.roomId).emit('mostrarMensagem', `🎮 Turno de ${playerRoom.turno}. Reforços: ${reforcoBase} base + ${bonusTroca} bônus da troca + ${Object.values(playerRoom.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus de continentes restantes`);
     }
     
     // Atualizar estado para todos os clientes na sala
@@ -1294,22 +1313,34 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Controle refinado de movimentos
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno]) playerRoom.movimentosRemanejamento[playerRoom.turno] = {};
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem] = {};
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino] = {};
-
-    // Verificar se há tropas suficientes para mover (deixar pelo menos 1)
-    const quantidadeMaxima = territorioOrigem.tropas - 1; // Deixar pelo menos 1 tropa
-
-    if (quantidadeMaxima <= 0) {
+    // Inicializar rastreamento de tropas movidas para o jogador
+    if (!playerRoom.tropasMovidas[playerRoom.turno]) {
+      playerRoom.tropasMovidas[playerRoom.turno] = {};
+    }
+    
+    // Inicializar rastreamento para o território de origem se não existir
+    if (!playerRoom.tropasMovidas[playerRoom.turno][dados.origem]) {
+      playerRoom.tropasMovidas[playerRoom.turno][dados.origem] = {
+        tropasOriginais: territorioOrigem.tropas,
+        tropasMovidas: 0
+      };
+    }
+    
+    // Calcular quantas tropas já foram movidas deste território
+    const tropasJaMovidas = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas;
+    const tropasDisponiveis = territorioOrigem.tropas - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
+    
+    if (tropasDisponiveis <= 0) {
       socket.emit('resultadoVerificacaoMovimento', { 
         podeMover: false, 
         quantidadeMaxima: 0, 
-        motivo: `Não é possível mover tropas de ${dados.origem} - precisa deixar pelo menos 1 tropa.` 
+        motivo: `Não é possível mover mais tropas de ${dados.origem} - todas as tropas disponíveis já foram movidas ou precisa deixar pelo menos 1 tropa.` 
       });
       return;
     }
+
+    // A quantidade máxima é o mínimo entre as tropas disponíveis e o que pode ser movido
+    const quantidadeMaxima = Math.min(tropasDisponiveis, territorioOrigem.tropas - 1);
 
     console.log('🔧 DEBUG: Movimento aprovado, quantidade máxima:', quantidadeMaxima);
     const resposta = { 
@@ -1349,19 +1380,44 @@ io.on('connection', (socket) => {
     if (dados.quantidade < 1 || dados.quantidade > territorioOrigem.tropas - 1) return; // Deixar pelo menos 1 tropa
     if (!territorioOrigem.vizinhos.includes(territorioDestino.nome)) return; // Deve ser vizinho
 
-    // Controle refinado de movimentos
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno]) playerRoom.movimentosRemanejamento[playerRoom.turno] = {};
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem] = {};
-    if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.destino] = {};
-
-    // Verificar se a quantidade é válida (deixar pelo menos 1 tropa)
-    if (dados.quantidade > territorioOrigem.tropas - 1) {
-      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} - precisa deixar pelo menos 1 tropa.`;
+    // Inicializar rastreamento de tropas movidas para o jogador
+    if (!playerRoom.tropasMovidas[playerRoom.turno]) {
+      playerRoom.tropasMovidas[playerRoom.turno] = {};
+    }
+    
+    // Inicializar rastreamento para o território de origem se não existir
+    if (!playerRoom.tropasMovidas[playerRoom.turno][dados.origem]) {
+      playerRoom.tropasMovidas[playerRoom.turno][dados.origem] = {
+        tropasOriginais: territorioOrigem.tropas,
+        tropasMovidas: 0
+      };
+    }
+    
+    // Calcular quantas tropas já foram movidas deste território
+    const tropasJaMovidas = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas;
+    const tropasDisponiveis = territorioOrigem.tropas - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
+    
+    if (tropasDisponiveis <= 0) {
+      const mensagemErro = `Não é possível mover mais tropas de ${dados.origem} - todas as tropas disponíveis já foram movidas ou precisa deixar pelo menos 1 tropa.`;
       socket.emit('mostrarMensagem', mensagemErro);
       return;
     }
 
-    // Registrar o movimento
+
+
+    // Verificar se a quantidade é válida (não exceder tropas disponíveis)
+    if (dados.quantidade > tropasDisponiveis) {
+      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} - apenas ${tropasDisponiveis} tropas estão disponíveis para movimento.`;
+      socket.emit('mostrarMensagem', mensagemErro);
+      return;
+    }
+
+    // Registrar o movimento no sistema de rastreamento de tropas
+    playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas += dados.quantidade;
+    
+    // Manter o registro no sistema antigo para compatibilidade
+    if (!playerRoom.movimentosRemanejamento[playerRoom.turno]) playerRoom.movimentosRemanejamento[playerRoom.turno] = {};
+    if (!playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem]) playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem] = {};
     playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem][dados.destino] = (playerRoom.movimentosRemanejamento[playerRoom.turno][dados.origem][dados.destino] || 0) + dados.quantidade;
 
     // Mover tropas
@@ -1402,6 +1458,7 @@ io.on('connection', (socket) => {
     playerRoom.tropasBonusContinente = {}; // Resetar tropas de bônus
     playerRoom.objetivos = {}; // Resetar objetivos
     playerRoom.movimentosRemanejamento = {}; // Resetar controle de movimentos
+    playerRoom.tropasMovidas = {}; // Resetar rastreamento de tropas movidas
     playerRoom.numeroTrocasRealizadas = 0; // Resetar contador de trocas
     playerRoom.cartasTerritorio = {}; // Resetar cartas território
     playerRoom.inicializarMonteCartas(); // Reinicializar monte de cartas
@@ -1883,6 +1940,7 @@ function inicializarJogo(room) {
   room.cartasTerritorio = {};
   room.territoriosConquistadosNoTurno = {};
   room.numeroTrocasRealizadas = 0; // Resetar contador de trocas
+  room.tropasMovidas = {}; // Resetar rastreamento de tropas movidas
   room.inicializarMonteCartas(); // Inicializar monte de cartas
   console.log(`🔧 DEBUG: Cartas e territórios conquistados limpos, monte inicializado`);
   
