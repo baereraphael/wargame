@@ -514,6 +514,22 @@ io.on('connection', (socket) => {
   });
   
   // Game events (only active after game starts)
+  // Request current state quickly to recover from client lag
+  socket.on('requestEstado', ({ roomId } = {}) => {
+    const room = roomId ? gameRooms.get(roomId) : null;
+    if (!room) {
+      // Try to deduce room by socket
+      for (const [rid, r] of gameRooms) {
+        const j = r.jogadores.find(jg => jg.socketId === socket.id);
+        if (j) {
+          io.to(socket.id).emit('estadoAtualizado', getEstado(socket.id, r));
+          return;
+        }
+      }
+      return;
+    }
+    io.to(socket.id).emit('estadoAtualizado', getEstado(socket.id, room));
+  });
   socket.on('transferirTropasConquista', (dados) => {
     // Find which room this socket belongs to
     let playerRoom = null;

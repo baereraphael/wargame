@@ -788,6 +788,9 @@ function initializeGame() {
   // Game state update listener
   socket.on('estadoAtualizado', (estado) => {
     console.log('🔄 Estado atualizado recebido!');
+    // Atualiza watchdog de lag
+    lastEstadoTimestamp = Date.now();
+    clearLagWatchdog();
     console.log('🔧 DEBUG: Estado recebido:', {
       turno: estado.turno,
       meuNome: estado.meuNome,
@@ -803,9 +806,6 @@ function initializeGame() {
     console.log('👤 Meu nome:', estado.meuNome);
     console.log('📊 Estado completo:', estado);
     
-    // Hide global loading overlay when any new state arrives
-    hideGlobalLoading();
-
     const gameState = getGameState();
     if (!gameState) {
       console.error('❌ Game state não disponível para atualizar estado');
@@ -935,7 +935,6 @@ function initializeGame() {
 
   socket.on('mostrarEfeitoAtaque', (dados) => {
     mostrarEfeitoAtaque(dados.origem, dados.destino, currentScene, dados.sucesso);
-    hideGlobalLoading();
   });
 
   socket.on('mostrarEfeitoReforco', (dados) => {
@@ -973,7 +972,6 @@ function initializeGame() {
 
   socket.on('tocarSomMovimento', () => {
     tocarSomMovimento();
-    hideGlobalLoading();
   });
 
   socket.on('tocarSomTakeCard', () => {
@@ -1016,14 +1014,12 @@ function initializeGame() {
 
   socket.on('mostrarObjetivo', (objetivo) => {
     mostrarObjetivo(objetivo, currentScene);
-    hideGlobalLoading();
   });
 
   socket.on('mostrarCartasTerritorio', (cartas) => {
     // Não abrir se já estiver aberto
     if (modalCartasTerritorioAberto) return;
     mostrarCartasTerritorio(cartas, currentScene);
-    hideGlobalLoading();
   });
 
   socket.on('forcarTrocaCartas', (dados) => {
@@ -1034,7 +1030,6 @@ function initializeGame() {
     const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
       mostrarCartasTerritorio(dados.cartas, currentScene, true);
-      hideGlobalLoading();
     }
   });
 
@@ -1061,7 +1056,6 @@ function initializeGame() {
 
   socket.on('iniciarFaseRemanejamento', () => {
     mostrarMensagem('🔄 Fase de remanejamento iniciada. Clique em um território para mover tropas.');
-    hideGlobalLoading();
   });
 
   socket.on('resultadoVerificacaoMovimento', (resultado) => {
@@ -1523,103 +1517,6 @@ function getSocket() {
   return window.socket;
 }
 
-// Global loading overlay control
-let loadingOverlayContainer = null;
-let loadingOverlayTimer = null;
-let delayedLoadingShowTimer = null;
-let loadingOverlaySlowTimer = null;
-const uiBlockingEvents = new Set([
-  'atacar',
-  'verificarMovimentoRemanejamento',
-  'transferirTropasConquista',
-  'colocarReforco',
-  'trocarCartasTerritorio',
-  'passarTurno',
-  'forceTurnChange',
-  'consultarObjetivo',
-  'consultarCartasTerritorio'
-]);
-
-function showGlobalLoading(message = 'Sincronizando com o servidor...') {
-  try {
-    if (!currentScene || !currentScene.add) return;
-    const canvas = currentScene.sys.game.canvas;
-    const largura = canvas.width;
-    const altura = canvas.height;
-    if (loadingOverlayContainer) return; // already shown
-    loadingOverlayContainer = currentScene.add.container(largura / 2, altura / 2);
-    loadingOverlayContainer.setDepth(1000);
-    // Block input by placing an interactive full-screen rectangle behind the container center-relative
-    const blocker = currentScene.add.rectangle(-largura / 2, -altura / 2, largura, altura, 0x000000, 0.55).setOrigin(0, 0);
-    blocker.setInteractive(new Phaser.Geom.Rectangle(0, 0, largura, altura), Phaser.Geom.Rectangle.Contains);
-    loadingOverlayContainer.add(blocker);
-
-    const box = currentScene.add.rectangle(0, 0, Math.min(400, largura * 0.7), 120, 0x1a1a1a, 0.95);
-    box.setStrokeStyle(2, 0x0077cc);
-    loadingOverlayContainer.add(box);
-
-    const text = currentScene.add.text(0, -10, message, {
-      fontSize: getResponsiveFontSize(18),
-      fill: '#ffffff',
-      fontStyle: 'bold',
-      align: 'center'
-    }).setOrigin(0.5);
-    loadingOverlayContainer.add(text);
-    if (typeof loadingOverlayContainer.setData === 'function') {
-      loadingOverlayContainer.setData('messageText', text);
-    }
-
-    const dots = currentScene.add.text(0, 28, '...', {
-      fontSize: getResponsiveFontSize(16),
-      fill: '#cccccc',
-      align: 'center'
-    }).setOrigin(0.5);
-    loadingOverlayContainer.add(dots);
-
-    // Animate dots
-    let step = 0;
-    loadingOverlayTimer = setInterval(() => {
-      step = (step + 1) % 4;
-      dots.setText('.'.repeat(step));
-    }, 350);
-
-    // Slow response escalation after 12s
-    loadingOverlaySlowTimer = setTimeout(() => {
-      if (loadingOverlayContainer && typeof loadingOverlayContainer.getData === 'function') {
-        const msgText = loadingOverlayContainer.getData('messageText');
-        if (msgText && msgText.setText) {
-          msgText.setText('Servidor lento... aguardando resposta');
-        }
-      }
-    }, 12000);
-  } catch (e) {
-    console.warn('Falha ao mostrar loading overlay:', e);
-  }
-}
-
-function hideGlobalLoading() {
-  try {
-    if (delayedLoadingShowTimer) {
-      clearTimeout(delayedLoadingShowTimer);
-      delayedLoadingShowTimer = null;
-    }
-    if (loadingOverlaySlowTimer) {
-      clearTimeout(loadingOverlaySlowTimer);
-      loadingOverlaySlowTimer = null;
-    }
-    if (loadingOverlayTimer) {
-      clearInterval(loadingOverlayTimer);
-      loadingOverlayTimer = null;
-    }
-    if (loadingOverlayContainer) {
-      loadingOverlayContainer.destroy();
-      loadingOverlayContainer = null;
-    }
-  } catch (e) {
-    console.warn('Falha ao esconder loading overlay:', e);
-  }
-}
-
 // Helper function to emit events with room ID
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
@@ -1629,17 +1526,8 @@ function emitWithRoom(event, data = {}) {
   console.log(`📤 Data:`, data);
   
   if (socket && currentRoomId) {
-    // Show loading overlay for blocking events with a slight delay to avoid flicker in fast responses
-    if (uiBlockingEvents.has(event)) {
-      if (!loadingOverlayContainer && !delayedLoadingShowTimer) {
-        delayedLoadingShowTimer = setTimeout(() => {
-          delayedLoadingShowTimer = null;
-          if (!loadingOverlayContainer) {
-            showGlobalLoading();
-          }
-        }, 700); // delay before showing overlay
-      }
-    }
+    // Watchdog de resposta: se nenhum estado chegar em X ms, pedir estado ao servidor
+    startLagWatchdog();
     // Handle different data types
     if (typeof data === 'string') {
       // If data is a string (like country name), send it directly
@@ -1658,6 +1546,36 @@ function emitWithRoom(event, data = {}) {
   } else {
     console.error('❌ Socket ou roomId não disponível para emitir evento:', event);
   }
+}
+
+// Watchdog simples de lag: se o cliente não receber estado em 1.5s após uma ação, requisita sync ao servidor
+let lagWatchdogTimer = null;
+let lastEstadoTimestamp = Date.now();
+function startLagWatchdog(timeoutMs = 1500) {
+  clearLagWatchdog();
+  lagWatchdogTimer = setTimeout(() => {
+    tryRequestEstado();
+  }, timeoutMs);
+}
+function clearLagWatchdog() {
+  if (lagWatchdogTimer) {
+    clearTimeout(lagWatchdogTimer);
+    lagWatchdogTimer = null;
+  }
+}
+function tryRequestEstado() {
+  const socket = getSocket();
+  if (!socket || !currentRoomId) return;
+  console.log('⏱️ Watchdog: solicitando estado ao servidor por lag...');
+  socket.emit('requestEstado', { roomId: currentRoomId });
+  // Se ainda assim não vier nada, tenta de novo em 2s (uma única tentativa extra)
+  setTimeout(() => {
+    const since = Date.now() - lastEstadoTimestamp;
+    if (since > 3000) {
+      console.log('⏱️ Watchdog: segunda tentativa de sincronização...');
+      socket.emit('requestEstado', { roomId: currentRoomId });
+    }
+  }, 2000);
 }
 
 // Cores dos jogadores
