@@ -1526,6 +1526,8 @@ function getSocket() {
 // Global loading overlay control
 let loadingOverlayContainer = null;
 let loadingOverlayTimer = null;
+let delayedLoadingShowTimer = null;
+let loadingOverlaySlowTimer = null;
 const uiBlockingEvents = new Set([
   'atacar',
   'verificarMovimentoRemanejamento',
@@ -1563,6 +1565,9 @@ function showGlobalLoading(message = 'Sincronizando com o servidor...') {
       align: 'center'
     }).setOrigin(0.5);
     loadingOverlayContainer.add(text);
+    if (typeof loadingOverlayContainer.setData === 'function') {
+      loadingOverlayContainer.setData('messageText', text);
+    }
 
     const dots = currentScene.add.text(0, 28, '...', {
       fontSize: getResponsiveFontSize(16),
@@ -1577,6 +1582,16 @@ function showGlobalLoading(message = 'Sincronizando com o servidor...') {
       step = (step + 1) % 4;
       dots.setText('.'.repeat(step));
     }, 350);
+
+    // Slow response escalation after 12s
+    loadingOverlaySlowTimer = setTimeout(() => {
+      if (loadingOverlayContainer && typeof loadingOverlayContainer.getData === 'function') {
+        const msgText = loadingOverlayContainer.getData('messageText');
+        if (msgText && msgText.setText) {
+          msgText.setText('Servidor lento... aguardando resposta');
+        }
+      }
+    }, 12000);
   } catch (e) {
     console.warn('Falha ao mostrar loading overlay:', e);
   }
@@ -1584,6 +1599,14 @@ function showGlobalLoading(message = 'Sincronizando com o servidor...') {
 
 function hideGlobalLoading() {
   try {
+    if (delayedLoadingShowTimer) {
+      clearTimeout(delayedLoadingShowTimer);
+      delayedLoadingShowTimer = null;
+    }
+    if (loadingOverlaySlowTimer) {
+      clearTimeout(loadingOverlaySlowTimer);
+      loadingOverlaySlowTimer = null;
+    }
     if (loadingOverlayTimer) {
       clearInterval(loadingOverlayTimer);
       loadingOverlayTimer = null;
@@ -1606,18 +1629,16 @@ function emitWithRoom(event, data = {}) {
   console.log(`📤 Data:`, data);
   
   if (socket && currentRoomId) {
-    // Show loading overlay for blocking events
+    // Show loading overlay for blocking events with a slight delay to avoid flicker in fast responses
     if (uiBlockingEvents.has(event)) {
-      showGlobalLoading();
-      // Safety: auto-hide after 12s with a hint if nothing arrives
-      setTimeout(() => {
-        if (loadingOverlayContainer) {
-          // Keep overlay, but update text to indicate delay
-          // Find text child (second child is box, third is text by our build; safer to recreate message)
-          hideGlobalLoading();
-          showGlobalLoading('Servidor lento... aguardando resposta');
-        }
-      }, 12000);
+      if (!loadingOverlayContainer && !delayedLoadingShowTimer) {
+        delayedLoadingShowTimer = setTimeout(() => {
+          delayedLoadingShowTimer = null;
+          if (!loadingOverlayContainer) {
+            showGlobalLoading();
+          }
+        }, 700); // delay before showing overlay
+      }
     }
     // Handle different data types
     if (typeof data === 'string') {
