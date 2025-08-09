@@ -788,9 +788,6 @@ function initializeGame() {
   // Game state update listener
   socket.on('estadoAtualizado', (estado) => {
     console.log('🔄 Estado atualizado recebido!');
-    // Atualiza watchdog de lag
-    lastEstadoTimestamp = Date.now();
-    clearLagWatchdog();
     console.log('🔧 DEBUG: Estado recebido:', {
       turno: estado.turno,
       meuNome: estado.meuNome,
@@ -1526,8 +1523,6 @@ function emitWithRoom(event, data = {}) {
   console.log(`📤 Data:`, data);
   
   if (socket && currentRoomId) {
-    // Watchdog de resposta: se nenhum estado chegar em X ms, pedir estado ao servidor
-    startLagWatchdog();
     // Handle different data types
     if (typeof data === 'string') {
       // If data is a string (like country name), send it directly
@@ -1546,36 +1541,6 @@ function emitWithRoom(event, data = {}) {
   } else {
     console.error('❌ Socket ou roomId não disponível para emitir evento:', event);
   }
-}
-
-// Watchdog simples de lag: se o cliente não receber estado em 1.5s após uma ação, requisita sync ao servidor
-let lagWatchdogTimer = null;
-let lastEstadoTimestamp = Date.now();
-function startLagWatchdog(timeoutMs = 1500) {
-  clearLagWatchdog();
-  lagWatchdogTimer = setTimeout(() => {
-    tryRequestEstado();
-  }, timeoutMs);
-}
-function clearLagWatchdog() {
-  if (lagWatchdogTimer) {
-    clearTimeout(lagWatchdogTimer);
-    lagWatchdogTimer = null;
-  }
-}
-function tryRequestEstado() {
-  const socket = getSocket();
-  if (!socket || !currentRoomId) return;
-  console.log('⏱️ Watchdog: solicitando estado ao servidor por lag...');
-  socket.emit('requestEstado', { roomId: currentRoomId });
-  // Se ainda assim não vier nada, tenta de novo em 2s (uma única tentativa extra)
-  setTimeout(() => {
-    const since = Date.now() - lastEstadoTimestamp;
-    if (since > 3000) {
-      console.log('⏱️ Watchdog: segunda tentativa de sincronização...');
-      socket.emit('requestEstado', { roomId: currentRoomId });
-    }
-  }, 2000);
 }
 
 // Cores dos jogadores
@@ -1828,35 +1793,24 @@ function create() {
         }
       }
       
-      // Verificar modais (Objetivo/Cartas) e fechar ao clicar fora
+      // Verificar se há modais abertos (objetivo ou cartas território)
       if (modalObjetivoAberto || modalCartasTerritorioAberto) {
-        // Containers de modais são criados com depth 21
-        const modalContainers = this.children.list.filter(child => child.type === 'Container' && child.depth === 21);
-        let clickDentroDeAlgumaModal = false;
-        if (modalContainers && modalContainers.length > 0) {
-          clickDentroDeAlgumaModal = modalContainers.some(container => {
-            if (typeof container.getBounds === 'function') {
-              const bounds = container.getBounds();
-              return Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y);
+        const scene = currentScene;
+        if (scene && scene.children && scene.children.list) {
+          const modalContainer = scene.children.list.find(child => child.type === 'Container' && child.depth === 21);
+          if (modalContainer && typeof modalContainer.getBounds === 'function') {
+            const bounds = modalContainer.getBounds();
+            const isOutside = pointer.x < bounds.left || pointer.x > bounds.right || pointer.y < bounds.top || pointer.y > bounds.bottom;
+            if (isOutside) {
+              console.log('DEBUG: Clique fora da modal - fechando modais abertas');
+              fecharTodasModais();
+            } else {
+              console.log('DEBUG: Clique dentro da modal aberta');
             }
-            return false;
-          });
+          }
         }
-
-        if (clickDentroDeAlgumaModal) {
-          cliqueEmInterface = true;
-          console.log('DEBUG: Clique detectado dentro da modal aberta');
-        } else {
-          console.log('DEBUG: Clique fora da modal - fechando modais');
-          fecharTodasModais();
-        }
-      }
-
-      // Se o popup de histórico/chat estiver aberto e clicou no canvas, fecha
-      const gameStateLocal = getGameState();
-      if (gameStateLocal && gameStateLocal.historyPopupVisible) {
-        console.log('DEBUG: Clique no canvas com chat/histórico aberto - fechando');
-        fecharTodasModais();
+        // Em qualquer caso, impedir interação com o mapa
+        cliqueEmInterface = true;
       }
       
       // Se clicou em uma interface, não fazer nada mais

@@ -210,9 +210,6 @@ class GameRoom {
 const gameRooms = new Map();
 let nextRoomId = 1;
 
-// Pending disconnect timers: key = `${roomId}:${playerName}` → timeout handle
-const pendingDisconnects = new Map();
-
 // Global Lobby Management
 const globalLobby = {
   players: [],
@@ -404,47 +401,16 @@ app.get('/favicon.ico', (req, res) => {
 
 io.on('connection', (socket) => {
   console.log('Novo jogador conectado');
-  
-  // Attempt to re-associate this socket to a previously disconnected player (reconnect)
-  socket.on('attemptReconnect', ({ roomId, username }) => {
-    const room = gameRooms.get(roomId);
-    if (!room || !username) return;
-    const jogador = room.jogadores.find(j => j.nome === username);
-    if (!jogador) return;
-    
-    // Clear any pending CPU takeover
-    const key = `${roomId}:${username}`;
-    if (pendingDisconnects.has(key)) {
-      clearTimeout(pendingDisconnects.get(key));
-      pendingDisconnects.delete(key);
-    }
-    
-    // Re-associate socket and disable CPU
-    jogador.socketId = socket.id;
-    if (jogador.isCPU) {
-      jogador.isCPU = false;
-    }
-    socket.join(roomId);
-    
-    io.to(roomId).emit('mostrarMensagem', `✅ ${username} reconectou!`);
-    enviarEstadoParaTodos(room);
-  });
 
-  // Handle player joining global lobby (avoid duplicates)
+  // Handle player joining global lobby
   socket.on('playerJoinedGlobalLobby', (data) => {
     console.log(`🌍 ${data.username} entrou no lobby global`);
     
     // Add player to global lobby
-    // Avoid duplicate entries by username: if exists with null/old socketId, update it
-    const existingByName = globalLobby.players.find(p => p.username === data.username);
-    if (existingByName) {
-      existingByName.socketId = socket.id;
-    } else {
-      addPlayerToGlobalLobby(socket.id, data.username);
-    }
+    addPlayerToGlobalLobby(socket.id, data.username);
   });
 
-  // Handle disconnect with 5s grace period before converting to CPU
+  // Handle disconnect
   socket.on('disconnect', () => {
     console.log('Jogador desconectado:', socket.id);
     
@@ -465,46 +431,35 @@ io.on('connection', (socket) => {
       }
     }
     
-    // Handle disconnection during game with grace period
+    // Handle disconnection during game
     if (playerRoom && playerRoom.gameStarted && disconnectedPlayer) {
       console.log(`🔄 Jogador ${disconnectedPlayer.nome} desconectou durante o jogo na sala ${playerRoom.roomId}`);
-
-      // Schedule CPU takeover after 5s if player doesn't reconnect
-      const key = `${playerRoom.roomId}:${disconnectedPlayer.nome}`;
-      if (pendingDisconnects.has(key)) {
-        clearTimeout(pendingDisconnects.get(key));
+      
+      // Notify all players about the disconnection
+      io.to(playerRoom.roomId).emit('mostrarMensagem', `⚠️ ${disconnectedPlayer.nome} desconectou! CPU assumirá o controle.`);
+      io.to(playerRoom.roomId).emit('adicionarAoHistorico', `⚠️ ${disconnectedPlayer.nome} desconectou - CPU assumindo controle`);
+      
+      // If it's the disconnected player's turn, pass the turn immediately
+      if (playerRoom.turno === disconnectedPlayer.nome) {
+        console.log(`🔄 Turno de ${disconnectedPlayer.nome} será passado automaticamente`);
+        io.to(playerRoom.roomId).emit('mostrarMensagem', `🔄 Turno de ${disconnectedPlayer.nome} passado automaticamente devido à desconexão.`);
+        
+        // Pass the turn immediately
+        passarTurno(playerRoom);
       }
-      const timeout = setTimeout(() => {
-        // Double-check still disconnected
-        const stillRoom = gameRooms.get(playerRoom.roomId);
-        if (!stillRoom) return;
-        const jogadorAtual = stillRoom.jogadores.find(j => j.nome === disconnectedPlayer.nome);
-        if (!jogadorAtual || jogadorAtual.socketId) return; // already reconnected
-
-        io.to(playerRoom.roomId).emit('mostrarMensagem', `⚠️ ${disconnectedPlayer.nome} não reconectou. CPU assumirá o controle.`);
-        io.to(playerRoom.roomId).emit('adicionarAoHistorico', `⚠️ ${disconnectedPlayer.nome} não reconectou - CPU assumindo controle`);
-
-        // Pass the turn if it was their turn
-        if (stillRoom.turno === disconnectedPlayer.nome) {
-          io.to(playerRoom.roomId).emit('mostrarMensagem', `🔄 Turno de ${disconnectedPlayer.nome} passado automaticamente devido à desconexão.`);
-          passarTurno(stillRoom);
-        }
-
-        // Activate CPU
-        if (!jogadorAtual.isCPU) {
-          jogadorAtual.isCPU = true;
-          io.to(playerRoom.roomId).emit('mostrarMensagem', `🤖 CPU ativada para ${jogadorAtual.nome}`);
-          verificarTurnoCPU(stillRoom);
-        }
-
-        enviarEstadoParaTodos(stillRoom);
-        pendingDisconnects.delete(key);
-      }, 5000);
-      pendingDisconnects.set(key, timeout);
-
-      // Inform temporarily disconnected (but not CPU yet)
-      io.to(playerRoom.roomId).emit('mostrarMensagem', `⚠️ ${disconnectedPlayer.nome} desconectou. Aguardando reconexão por 5s...`);
-      io.to(playerRoom.roomId).emit('adicionarAoHistorico', `⚠️ ${disconnectedPlayer.nome} desconectou - aguardando reconexão (5s)`);
+      
+      // Activate CPU for the disconnected player
+      if (!disconnectedPlayer.isCPU) {
+        disconnectedPlayer.isCPU = true;
+        console.log(`🤖 CPU ativada para ${disconnectedPlayer.nome}`);
+        io.to(playerRoom.roomId).emit('mostrarMensagem', `🤖 CPU ativada para ${disconnectedPlayer.nome}`);
+        
+        // Check if it's now a CPU turn
+        verificarTurnoCPU(playerRoom);
+      }
+      
+      // Send updated state to all remaining clients
+      enviarEstadoParaTodos(playerRoom);
     }
     
     // Send lobby update to the room if found (for lobby phase)
@@ -514,22 +469,6 @@ io.on('connection', (socket) => {
   });
   
   // Game events (only active after game starts)
-  // Request current state quickly to recover from client lag
-  socket.on('requestEstado', ({ roomId } = {}) => {
-    const room = roomId ? gameRooms.get(roomId) : null;
-    if (!room) {
-      // Try to deduce room by socket
-      for (const [rid, r] of gameRooms) {
-        const j = r.jogadores.find(jg => jg.socketId === socket.id);
-        if (j) {
-          io.to(socket.id).emit('estadoAtualizado', getEstado(socket.id, r));
-          return;
-        }
-      }
-      return;
-    }
-    io.to(socket.id).emit('estadoAtualizado', getEstado(socket.id, room));
-  });
   socket.on('transferirTropasConquista', (dados) => {
     // Find which room this socket belongs to
     let playerRoom = null;
