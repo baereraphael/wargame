@@ -3228,7 +3228,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     color: #000;
     transform: translate(-50%, -50%);
@@ -3240,8 +3240,8 @@
   /* Responsive troop indicators for mobile */
   @media (max-width: 768px) {
     .troop-indicator {
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       font-size: 12px;
       border-width: 1.5px;
     }
@@ -3249,8 +3249,8 @@
 
   @media (max-width: 480px) {
     .troop-indicator {
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       font-size: 11px;
       border-width: 1px;
     }
@@ -3258,8 +3258,8 @@
 
   @media (max-width: 400px) {
     .troop-indicator {
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       font-size: 10px;
       border-width: 1px;
     }
@@ -3267,8 +3267,8 @@
 
   @media (max-width: 360px) {
     .troop-indicator {
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       font-size: 9px;
       border-width: 1px;
     }
@@ -3295,21 +3295,125 @@
 
   .continent-label {
     position: absolute;
-    background: rgba(0,0,0,0.8);
     color: white;
-    border: 2px solid #ffaa00;
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 14px;
     font-weight: bold;
     text-align: center;
     transform: translate(-50%, -50%);
-    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-    backdrop-filter: blur(3px);
-    transition: all 0.3s ease;
     min-width: 80px;
     white-space: nowrap;
+    pointer-events: auto;
   }
+
+  /* Connections Overlay */
+  .connections-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 8; /* Below continent labels and troop indicators */
+  }
+
+  .connection-line {
+    position: absolute;
+    height: 2px; /* line thickness */
+    transform-origin: 0 50%;
+    background: repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.9) 0 10px,
+      rgba(255,255,255,0) 10px 20px
+    );
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+    border-radius: 1px;
+  }
+
+  /* Turn Confirmation Popup (HTML) */
+  .turn-confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+
+  .turn-confirm-modal {
+    width: min(520px, 90vw);
+    background: rgba(26,26,26,0.95);
+    border: 1px solid #0077cc;
+    border-radius: 12px;
+    color: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: transform 250ms ease, opacity 250ms ease;
+  }
+
+  .turn-confirm-modal.show {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .turn-confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(0,119,204,0.9);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    font-weight: 700;
+  }
+
+  .turn-confirm-title {
+    font-size: 16px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  }
+
+  .turn-confirm-body {
+    padding: 16px;
+    text-align: center;
+  }
+
+  .turn-confirm-warning {
+    margin: 8px 0 16px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .turn-timer-label { font-size: 11px; color: #cccccc; }
+  .turn-timer-box {
+    margin: 6px auto 0;
+    width: 130px;
+    height: 36px;
+    background: rgba(42,42,42,0.9);
+    border: 1px solid #0077cc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffff00;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  }
+
+  .turn-confirm-actions { padding: 8px 16px 16px; text-align: center; }
+  .turn-confirm-btn {
+    padding: 10px 18px;
+    background: #33cc33;
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .turn-confirm-btn:hover { background: #44dd44; }
 
   .continent-label .continent-name {
     display: block;
@@ -3534,10 +3638,18 @@
       <!-- Dynamic troop indicators will be created here -->
     </div>
     
+    <!-- HTML Overlay for Connections (lines between territories) -->
+    <div id="connections-overlay" class="connections-overlay">
+      <!-- Dynamic connection lines will be created here -->
+    </div>
+
     <!-- HTML Overlay for Continents -->
     <div id="continents-overlay" class="continents-overlay">
       <!-- Dynamic continent labels will be created here -->
     </div>
+
+    <!-- Turn Confirmation Overlay (HTML) -->
+    <div id="turn-confirm-overlay" class="turn-confirm-overlay" style="display:none;"></div>
     
     <div class="game-hud">
     <!-- Top HUD Bar -->

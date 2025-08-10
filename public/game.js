@@ -15,10 +15,11 @@ let isClockTickingPlaying = false;
 let timerJustExpired = false; // Prevent timer from restarting immediately after expiration
 
 // Turn Confirmation Popup System
-let turnConfirmationPopup = null;
+let turnConfirmationPopup = null; // legacy (Phaser) - kept for compatibility
 let turnConfirmationTimeout = null;
 let turnConfirmationTimeLeft = 30; // 30 seconds to confirm turn
 let turnConfirmationInterval = null;
+let turnConfirmOverlayEl = null; // HTML overlay root
 let forcedTurnCount = 0; // Count of forced turns for this player
 let maxForcedTurns = 2; // Maximum allowed forced turns before disconnect
 let lastTurnForPlayer = null; // Track the last turn that was this player's turn
@@ -148,160 +149,50 @@ function showTurnConfirmationPopup(scene) {
   console.log('🚀 Current forcedTurnCount:', forcedTurnCount);
   console.log('🚀 Current isPlayerTurn:', isPlayerTurn);
   console.log('🚀 Current turnConfirmationPopup:', turnConfirmationPopup);
-  
-  if (!scene || !scene.add) {
-    console.log('❌ Invalid scene in showTurnConfirmationPopup');
-    return;
-  }
-  
   // Hide any existing popup
   hideTurnConfirmationPopup();
-  
+
   // Reset confirmation time
   turnConfirmationTimeLeft = 30;
-  
-  // Get screen dimensions
-  const largura = scene.scale.width;
-  const altura = scene.scale.height;
-  
-  // Create popup container
-  turnConfirmationPopup = scene.add.container(largura/2, altura/2);
-  turnConfirmationPopup.setDepth(25);
-  
-  // Background overlay
-  const overlay = scene.add.rectangle(0, 0, largura, altura, 0x000000, 0.7);
-  overlay.setDepth(0);
-  turnConfirmationPopup.add(overlay);
-  
-  // Main popup background - smaller and more compact
-  const background = scene.add.rectangle(0, 0, 450, 280, 0x1a1a1a, 0.95);
-  background.setStrokeStyle(2, 0x0077cc);
-  background.setDepth(1);
-  turnConfirmationPopup.add(background);
-  
-  // Header - smaller
-  const headerBg = scene.add.rectangle(0, -110, 450, 50, 0x0077cc, 0.9);
-  headerBg.setDepth(2);
-  turnConfirmationPopup.add(headerBg);
-  
-  // Turn icon - smaller
-  const turnIcon = scene.add.text(-180, -110, '⚔️', {
-    fontSize: '20px',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(3);
-  turnConfirmationPopup.add(turnIcon);
-  
-  // Title - smaller and better positioned
-  const title = scene.add.text(-150, -110, 'SEU TURNO COMEÇOU!', {
-    fontSize: '16px',
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 1
-  }).setOrigin(0, 0.5).setDepth(3);
-  turnConfirmationPopup.add(title);
-  
-  // Decorative line
-  const linhaDecorativa = scene.add.rectangle(0, -85, 400, 1, 0x444444, 0.8);
-  linhaDecorativa.setDepth(2);
-  turnConfirmationPopup.add(linhaDecorativa);
-  
-  // Content container
-  const contentContainer = scene.add.container(0, -20);
-  contentContainer.setDepth(3);
-  turnConfirmationPopup.add(contentContainer);
-  
-  // Warning icon - smaller
-  const warningIcon = scene.add.text(0, -30, '⚠️', {
-    fontSize: '28px',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(3);
-  contentContainer.add(warningIcon);
-  
-  // Warning message - more compact
-  const warningText = scene.add.text(0, 10, `Se não confirmar, seu turno será passado automaticamente.\n\nApós ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.`, {
-    fontSize: '13px',
-    fill: '#ffffff',
-    align: 'center',
-    wordWrap: { width: 380 },
-    stroke: '#000000',
-    strokeThickness: 1,
-    lineSpacing: 5
-  }).setOrigin(0.5).setDepth(3);
-  contentContainer.add(warningText);
-  
-  // Timer container
-  const timerContainer = scene.add.container(0, 70);
-  timerContainer.setDepth(3);
-  turnConfirmationPopup.add(timerContainer);
-  
-  // Timer label - above the timer box
-  const timerLabel = scene.add.text(0, -20, 'Tempo Restante', {
-    fontSize: '11px',
-    fill: '#cccccc',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(3);
-  timerContainer.add(timerLabel);
-  
-  // Timer background - smaller
-  const timerBg = scene.add.rectangle(0, 5, 120, 35, 0x2a2a2a, 0.9);
-  timerBg.setStrokeStyle(1, 0x0077cc);
-  timerContainer.add(timerBg);
-  
-  // Timer display - smaller
-  const timerText = scene.add.text(0, 5, `${turnConfirmationTimeLeft}s`, {
-    fontSize: '14px',
-    fill: '#ffff00',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 1
-  }).setOrigin(0.5).setDepth(3);
-  timerContainer.add(timerText);
-  
-  // Button container
-  const buttonContainer = scene.add.container(0, 130);
-  buttonContainer.setDepth(3);
-  turnConfirmationPopup.add(buttonContainer);
-  
-  // Confirm button - smaller
-  const confirmButton = scene.add.text(0, 0, 'CONFIRMAR TURNO', {
-    fontSize: '16px',
-    fill: '#ffffff',
-    backgroundColor: '#33cc33',
-    padding: { x: 20, y: 10 },
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 1
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(3);
-  
-  // Button hover effect
-  confirmButton.on('pointerover', () => {
-    confirmButton.setBackgroundColor('#44dd44');
+
+  // Build HTML overlay
+  const overlay = document.getElementById('turn-confirm-overlay');
+  if (!overlay) return;
+  turnConfirmOverlayEl = overlay;
+  overlay.innerHTML = `
+    <div class="turn-confirm-modal" id="turn-confirm-modal">
+      <div class="turn-confirm-header">
+        <span>⚔️</span>
+        <span class="turn-confirm-title">SEU TURNO COMEÇOU!</span>
+      </div>
+      <div class="turn-confirm-body">
+        <div class="turn-confirm-warning">Se não confirmar, seu turno será passado automaticamente.<br/>Após ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.</div>
+        <div class="turn-timer-label">Tempo Restante</div>
+        <div class="turn-timer-box" id="turn-timer-text">${turnConfirmationTimeLeft}s</div>
+      </div>
+      <div class="turn-confirm-actions">
+        <button class="turn-confirm-btn" id="turn-confirm-btn">CONFIRMAR TURNO</button>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+  // trigger animation
+  requestAnimationFrame(() => {
+    const modal = document.getElementById('turn-confirm-modal');
+    if (modal) modal.classList.add('show');
   });
-  
-  confirmButton.on('pointerout', () => {
-    confirmButton.setBackgroundColor('#33cc33');
-  });
-  
-  confirmButton.on('pointerdown', () => {
-    tocarSomClick();
-    confirmTurn();
-  });
-  
-  buttonContainer.add(confirmButton);
-  
-  // Start countdown
-  startTurnConfirmationCountdown(scene, timerText);
-  
-  // Animation
-  turnConfirmationPopup.setScale(0.8);
-  scene.tweens.add({
-    targets: turnConfirmationPopup,
-    scaleX: 1,
-    scaleY: 1,
-    duration: 300,
-    ease: 'Back.easeOut'
-  });
+
+  // Wire button
+  const btn = document.getElementById('turn-confirm-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      tocarSomClick();
+      confirmTurn();
+    });
+  }
+
+  // Start countdown (HTML)
+  startTurnConfirmationCountdown(scene, null);
 }
 
 function startTurnConfirmationCountdown(scene, timerText) {
@@ -314,16 +205,9 @@ function startTurnConfirmationCountdown(scene, timerText) {
     turnConfirmationTimeLeft--;
     console.log('⏰ Countdown tick - time left:', turnConfirmationTimeLeft);
     
-    if (timerText) {
-      timerText.setText(`${turnConfirmationTimeLeft}s`);
-      
-      // Change color based on time remaining
-      if (turnConfirmationTimeLeft <= 10) {
-        timerText.setColor('#ff3333');
-      } else if (turnConfirmationTimeLeft <= 20) {
-        timerText.setColor('#ffaa00');
-      }
-    }
+    // Update HTML timer if present
+    const htmlTimer = document.getElementById('turn-timer-text');
+    if (htmlTimer) htmlTimer.textContent = `${turnConfirmationTimeLeft}s`;
     
     if (turnConfirmationTimeLeft <= 0) {
       console.log('⏰ Turn confirmation timeout - forcing turn pass');
@@ -344,9 +228,16 @@ function hideTurnConfirmationPopup() {
     turnConfirmationInterval = null;
   }
   
+  // Hide HTML overlay if present
+  if (turnConfirmOverlayEl) {
+    turnConfirmOverlayEl.style.display = 'none';
+    turnConfirmOverlayEl.innerHTML = '';
+    turnConfirmOverlayEl = null;
+  }
+
+  // Keep legacy cleanup for safety
   if (turnConfirmationPopup) {
-    console.log('🚫 Destroying turnConfirmationPopup');
-    turnConfirmationPopup.destroy();
+    try { turnConfirmationPopup.destroy(); } catch (e) {}
     turnConfirmationPopup = null;
   }
 }
@@ -761,6 +652,9 @@ function resizeGameElements(scene) {
   
   // Update HTML continent positions
   resizeHTMLContinents();
+
+  // Update HTML connections (lines between territories)
+  updateAllConnectionsDebounced();
 }
 
 function setupRemanejamentoEventListeners() {
@@ -889,6 +783,9 @@ function isAnyHTMLInterfaceOpen() {
 // Sistema de Tropas HTML - Substitui círculos Phaser por elementos HTML responsivos
 let htmlTroopsEnabled = true;
 let troopsOverlay = null;
+let connectionsOverlay = null;
+let htmlConnectionsEnabled = true;
+let phaserConnectionLinesEnabled = false;
 
 // Sistema de Continentes HTML - Substitui textos Phaser por elementos HTML responsivos
 let htmlContinentsEnabled = true;
@@ -901,6 +798,82 @@ function initializeHTMLTroopSystem() {
     return;
   }
   console.log('✅ Sistema de tropas HTML inicializado');
+}
+
+// === SISTEMA DE CONEXÕES HTML (LINHAS ENTRE TERRITÓRIOS) ===
+function initializeHTMLConnectionsSystem() {
+  connectionsOverlay = document.getElementById('connections-overlay');
+  if (!connectionsOverlay) {
+    console.error('❌ Connections overlay não encontrado');
+    return;
+  }
+  console.log('✅ Sistema de conexões HTML inicializado');
+  renderAllConnections();
+}
+
+function getTroopIndicatorCenter(territorioNome) {
+  const el = document.getElementById(`troop-${territorioNome}`);
+  if (!el) return null;
+  // Usar exatamente o que foi aplicado no estilo (mesmo sistema dos overlays)
+  const left = parseFloat(el.style.left || '0');
+  const top = parseFloat(el.style.top || '0');
+  const width = el.offsetWidth || parseFloat(getComputedStyle(el).width) || 12;
+  const height = el.offsetHeight || parseFloat(getComputedStyle(el).height) || 12;
+  return { x: left + width / 2, y: top + height / 2 };
+}
+
+function clearAllConnections() {
+  if (!connectionsOverlay) return;
+  connectionsOverlay.innerHTML = '';
+}
+
+function createConnectionLine(id, x1, y1, x2, y2) {
+  if (!connectionsOverlay) return null;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI; // degrees
+  const line = document.createElement('div');
+  line.className = 'connection-line';
+  line.id = `conn-${id}`;
+  line.style.width = `${length}px`;
+  line.style.left = `${x1}px`;
+  line.style.top = `${y1}px`;
+  line.style.transform = `rotate(${angle}deg)`;
+  connectionsOverlay.appendChild(line);
+  return line;
+}
+
+// Lista única de conexões (entre continentes e outras especiais)
+const htmlConnections = [
+  { origem: 'Blackmere', destino: 'Nihadara' },
+  { origem: 'Duskmere', destino: 'Shōrenji' },
+  { origem: "Kaer'Tai", destino: 'Duskmere' },
+  { origem: 'Highmoor', destino: 'Frosthollow' },
+  { origem: 'Stormfen', destino: 'Frosthollow' },
+  { origem: "Ravenspire", destino: "Zul'Marak" },
+  { origem: "Ish'Tanor", destino: 'Aetheris' },
+  { origem: 'Darakai', destino: 'Aetheris' },
+  { origem: 'Aetheris', destino: 'Dawnwatch' },
+  { origem: 'Dawnwatch', destino: 'Mistveil' },
+  { origem: 'Aetheris', destino: 'Mistveil' },
+  { origem: 'Darakai', destino: 'Mistveil' }
+];
+
+function renderAllConnections() {
+  if (!htmlConnectionsEnabled || !connectionsOverlay) return;
+  clearAllConnections();
+  htmlConnections.forEach(({ origem, destino }) => {
+    const p1 = getTroopIndicatorCenter(origem);
+    const p2 = getTroopIndicatorCenter(destino);
+    if (!p1 || !p2) return;
+    createConnectionLine(`${origem}__${destino}`, p1.x, p1.y, p2.x, p2.y);
+  });
+}
+
+function updateAllConnectionsDebounced() {
+  // Aguarda um frame para garantir reposicionamento dos indicadores
+  requestAnimationFrame(() => renderAllConnections());
 }
 
 function createHTMLTroopIndicator(territorio) {
@@ -918,11 +891,11 @@ function createHTMLTroopIndicator(territorio) {
   
   // Definir quantidade de tropas
   indicator.textContent = territorio.tropas.toString();
-  
-  // Posicionar baseado nas coordenadas do Phaser
-  updateHTMLTroopPosition(indicator, territorio);
-  
+  // Inserir no DOM antes de calcular o tamanho para centralizar corretamente
   troopsOverlay.appendChild(indicator);
+
+  // Posicionar baseado nas coordenadas do Phaser (após estar no DOM para obter dimensões)
+  updateHTMLTroopPosition(indicator, territorio);
   return indicator;
 }
 
@@ -956,9 +929,11 @@ function updateHTMLTroopPosition(indicator, territorio) {
   const isSmallMobile = window.innerWidth <= 480;
   const verticalOffset = isSmallMobile ? globalTroopOffset.smallMobile : 
                         (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
-  
-  indicator.style.left = `${cssX}px`;
-  indicator.style.top = `${cssY + canvasOffsetTop + verticalOffset}px`;
+  // Centralizar o indicador no ponto alvo
+  const width = indicator.offsetWidth || parseFloat(getComputedStyle(indicator).width) || 12;
+  const height = indicator.offsetHeight || parseFloat(getComputedStyle(indicator).height) || 12;
+  indicator.style.left = `${cssX - width / 2}px`;
+  indicator.style.top = `${cssY + canvasOffsetTop + verticalOffset - height / 2}px`;
 }
 
 function updateHTMLTroopIndicator(territorio) {
@@ -966,6 +941,7 @@ function updateHTMLTroopIndicator(territorio) {
   if (!indicator) {
     // Criar indicador se não existir
     createHTMLTroopIndicator(territorio);
+    updateAllConnectionsDebounced();
     return;
   }
   
@@ -981,6 +957,7 @@ function updateHTMLTroopIndicator(territorio) {
   
   // Atualizar posição
   updateHTMLTroopPosition(indicator, territorio);
+  updateAllConnectionsDebounced();
 }
 
 function removeHTMLTroopIndicator(territorioNome) {
@@ -999,6 +976,7 @@ function updateAllHTMLTroops() {
   gameState.paises.forEach(territorio => {
     updateHTMLTroopIndicator(territorio);
   });
+  updateAllConnectionsDebounced();
 }
 
 function hidePhaserrTroops() {
@@ -1053,7 +1031,7 @@ function toggleHTMLTroops() {
 }
 
 // Variável global para ajuste dinâmico do offset das tropas
-let globalTroopOffset = { desktop: 40, mobile: 40, smallMobile: 12 };
+let globalTroopOffset = { desktop: 50, mobile: 40, smallMobile: 12 };
 
 // Função para ajustar o offset vertical das tropas (debug)
 function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
@@ -1082,12 +1060,12 @@ function resizeHTMLTroops() {
 
 // Dados dos continentes com posições calculadas baseadas nos territórios
 const continentPositions = {
-  'Thaloria': { x: 250, y: 280 },      // Região noroeste
-  'Zarandis': { x: 450, y: 420 },      // Região central-oeste  
-  'Elyndra': { x: 480, y: 180 },       // Região norte-central
-  'Kharune': { x: 720, y: 420 },       // Região central-leste
-  'Xanthera': { x: 980, y: 380 },      // Região leste
-  'Mythara': { x: 1100, y: 520 }       // Região sudeste
+  'Thaloria': { x: 200, y: 100 },      // Região noroeste
+  'Zarandis': { x: 450, y: 350 },      // Região central-oeste  
+  'Elyndra': { x: 620, y: 90 },       // Região norte-central
+  'Kharune': { x: 620, y: 480 },       // Região central-leste
+  'Xanthera': { x: 980, y: 90 },      // Região leste
+  'Mythara': { x: 1050, y: 520 }       // Região sudeste
 };
 
 const continentData = {
@@ -1126,14 +1104,22 @@ function createContinentLabel(continentName, continentInfo) {
   
   // Estrutura HTML do label
   label.innerHTML = `
-    <span class="continent-name">${continentInfo.name}</span>
-    <span class="continent-bonus">+${continentInfo.bonus} tropas</span>
+    <span class="continent-name">${continentInfo.name}<span class="continent-bonus">+${continentInfo.bonus}</span></span>
   `;
   
   // Posicionar o label
   updateContinentLabelPosition(label, position);
   
   continentsOverlay.appendChild(label);
+
+  // Hover interactions to highlight territories of the continent
+  label.addEventListener('mouseenter', () => highlightContinentTerritories(continentName));
+  label.addEventListener('mouseleave', () => unhighlightContinentTerritories(continentName));
+  // Touch support (mobile): highlight on touchstart and remove on touchend/cancel
+  label.addEventListener('touchstart', () => highlightContinentTerritories(continentName), { passive: true });
+  ['touchend','touchcancel'].forEach(evt =>
+    label.addEventListener(evt, () => unhighlightContinentTerritories(continentName), { passive: true })
+  );
   return label;
 }
 
@@ -1226,6 +1212,74 @@ function updateAllContinentLabels() {
   Object.keys(continentData).forEach(continentName => {
     updateContinentLabel(continentName);
   });
+}
+
+// === Highlight continent territories on hover ===
+let currentHoveredContinent = null;
+const hoveredTerritoryState = new Map(); // nome -> { prevStroke: {width,color,alpha}, elevatedApplied: boolean }
+
+function highlightContinentTerritories(continentName) {
+  const gameState = getGameState();
+  if (!gameState) return;
+  if (!continentData[continentName]) return;
+
+  // If hovering a different continent, remove previous highlight first
+  if (currentHoveredContinent && currentHoveredContinent !== continentName) {
+    unhighlightContinentTerritories(currentHoveredContinent);
+  }
+
+  currentHoveredContinent = continentName;
+  hoveredTerritoryState.clear();
+
+  const scene = (window.game && window.game.scene && window.game.scene.scenes[0]) || null;
+
+  continentData[continentName].territories.forEach(territoryName => {
+    const territory = gameState.paises.find(p => p.nome === territoryName);
+    if (!territory || !territory.polygon) return;
+
+    const polygon = territory.polygon;
+    const prev = polygon.strokeStyle
+      ? { width: polygon.strokeStyle.width, color: polygon.strokeStyle.color, alpha: polygon.strokeStyle.alpha }
+      : { width: 4, color: 0x000000, alpha: 1 };
+
+    // Apply white border highlight
+    polygon.setStrokeStyle(6, 0xffffff, 1);
+
+    // Apply elevation only if not already elevated
+    let elevatedApplied = false;
+    if (!territory.elevado && scene) {
+      criarElevacaoTerritorio(territory.nome, scene);
+      elevatedApplied = true;
+    }
+
+    hoveredTerritoryState.set(territory.nome, { prevStroke: prev, elevatedApplied });
+  });
+}
+
+function unhighlightContinentTerritories(continentName) {
+  if (!currentHoveredContinent || currentHoveredContinent !== continentName) return;
+  const gameState = getGameState();
+  if (!gameState) return;
+  const scene = (window.game && window.game.scene && window.game.scene.scenes[0]) || null;
+
+  hoveredTerritoryState.forEach((state, territoryName) => {
+    const territory = gameState.paises.find(p => p.nome === territoryName);
+    if (!territory || !territory.polygon) return;
+
+    const polygon = territory.polygon;
+    const { prevStroke, elevatedApplied } = state;
+
+    // Restore previous border
+    polygon.setStrokeStyle(prevStroke.width, prevStroke.color, prevStroke.alpha);
+
+    // Remove only the elevation we applied
+    if (elevatedApplied && scene) {
+      removerElevacaoTerritorio(territory.nome, scene);
+    }
+  });
+
+  hoveredTerritoryState.clear();
+  currentHoveredContinent = null;
 }
 
 function resizeHTMLContinents() {
@@ -2116,6 +2170,7 @@ function initializeGame() {
       const scene = window.game.scene.scenes[0];
       resizeGameElements(scene);
       updateAllResponsiveElements();
+      updateAllConnectionsDebounced();
     }
   });
 
@@ -2128,6 +2183,7 @@ function initializeGame() {
         resizeGameElements(scene);
         forceMobileCanvasPosition();
         updateAllResponsiveElements();
+        updateAllConnectionsDebounced();
         console.log('📱 Game elements adjusted for orientation change');
       }
     }, 100);
@@ -2146,6 +2202,7 @@ function initializeGame() {
           resizeGameElements(scene);
           forceMobileCanvasPosition();
           updateAllResponsiveElements();
+          updateAllConnectionsDebounced();
           console.log('📱 Game elements adjusted for viewport height change');
         }
       }, 100);
@@ -2164,6 +2221,9 @@ function initializeGame() {
   
   // Inicializar sistema de continentes HTML
   initializeHTMLContinentSystem();
+  
+  // Inicializar sistema de conexões HTML
+  initializeHTMLConnectionsSystem();
   
   // Configurar modo debug
   setupDebugMode();
@@ -3494,7 +3554,7 @@ function atualizarPaises(novosPaises, scene) {
   
   // Adicionar indicadores de continentes após os territórios serem carregados
   
-  // Desenhar linhas tracejadas usando o mesmo sistema de posicionamento dos textos
+  // Desenhar linhas tracejadas usando o mesmo sistema de posicionamento dos textos (Phaser)
   const dadosGeograficosLinha = {
     "Highmoor": {
       pontos: [305,165,252,223,345,279,358,279,373,279,384,279,378,268,373,257,364,253,366,236,370,223,386,215,380,203,370,198,360,189,349,182,336,168,322,163]
@@ -3565,31 +3625,35 @@ function atualizarPaises(novosPaises, scene) {
     { origem: "Stormfen", destino: "Frosthollow" },
     { origem: "Ravenspire", destino: "Zul'Marak" },
     { origem: "Ish'Tanor", destino: "Aetheris" },
-    { origem: "Darakai", destino: "Aetheris" },
     { origem: "Aetheris", destino: "Dawnwatch" },
     { origem: "Dawnwatch", destino: "Mistveil" },
     { origem: "Aetheris", destino: "Mistveil" },
     { origem: "Darakai", destino: "Mistveil" }
   ];
   
-  // Iterar sobre todas as conexões e desenhar as linhas
-  conexoes.forEach(conexao => {
-    const origemGeo = dadosGeograficosLinha[conexao.origem];
-    const destinoGeo = dadosGeograficosLinha[conexao.destino];
-    
-    if (origemGeo && destinoGeo) {
-      const origemCentro = calcularCentro(origemGeo.pontos);
-      const destinoCentro = calcularCentro(destinoGeo.pontos);
+  // Desenhar linhas tracejadas entre centros (apenas se modo Phaser estiver habilitado)
+  if (phaserConnectionLinesEnabled) {
+    conexoes.forEach(conexao => {
+      const origemGeo = dadosGeograficosLinha[conexao.origem];
+      const destinoGeo = dadosGeograficosLinha[conexao.destino];
       
-      console.log(`🎨 Desenhando linha tracejada entre os centros de ${conexao.origem} e ${conexao.destino}`);
-      console.log(`📍 ${conexao.origem} centro: (${origemCentro.centroX.toFixed(1)}, ${origemCentro.centroY.toFixed(1)})`);
-      console.log(`📍 ${conexao.destino} centro: (${destinoCentro.centroX.toFixed(1)}, ${destinoCentro.centroY.toFixed(1)})`);
-      
-      desenharLinhaTracejada(scene, origemCentro.centroX, origemCentro.centroY, destinoCentro.centroX, destinoCentro.centroY);
-    } else {
-      console.log(`❌ Não foi possível encontrar os dados geográficos de ${conexao.origem} ou ${conexao.destino}`);
-    }
-  });
+      if (origemGeo && destinoGeo) {
+        const origemCentro = calcularCentro(origemGeo.pontos);
+        const destinoCentro = calcularCentro(destinoGeo.pontos);
+        
+        console.log(`🎨 Desenhando linha tracejada entre os centros de ${conexao.origem} e ${conexao.destino}`);
+        console.log(`📍 ${conexao.origem} centro: (${origemCentro.centroX.toFixed(1)}, ${origemCentro.centroY.toFixed(1)})`);
+        console.log(`📍 ${conexao.destino} centro: (${destinoCentro.centroX.toFixed(1)}, ${destinoCentro.centroY.toFixed(1)})`);
+        
+        desenharLinhaTracejada(scene, origemCentro.centroX, origemCentro.centroY, destinoCentro.centroX, destinoCentro.centroY);
+      } else {
+        console.log(`❌ Não foi possível encontrar os dados geográficos de ${conexao.origem} ou ${conexao.destino}`);
+      }
+    });
+  } else {
+    // Se usando HTML, garantir renderização das conexões após atualizar países
+    updateAllConnectionsDebounced();
+  }
   
   // Atualizar cards dos jogadores se estiverem visíveis
   const panel = document.getElementById('player-info-panel');
@@ -5468,6 +5532,7 @@ function updateAllResponsiveElements() {
     const scaleX = canvas.width / originalWidth;
     const scaleY = canvas.height / originalHeight;
     atualizarLinhasContinentes(scene, scaleX, scaleY);
+    updateAllConnectionsDebounced();
     
     // Atualizar interfaces abertas
     if (interfaceReforco) {
