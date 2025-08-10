@@ -755,6 +755,12 @@ function resizeGameElements(scene) {
 
   // Update continent indicator lines
   atualizarLinhasContinentes(scene, scaleX, scaleY);
+  
+  // Update HTML troops positions
+  resizeHTMLTroops();
+  
+  // Update HTML continent positions
+  resizeHTMLContinents();
 }
 
 function setupRemanejamentoEventListeners() {
@@ -880,6 +886,451 @@ function isAnyHTMLInterfaceOpen() {
   return null; // Nenhuma interface aberta
 }
 
+// Sistema de Tropas HTML - Substitui círculos Phaser por elementos HTML responsivos
+let htmlTroopsEnabled = true;
+let troopsOverlay = null;
+
+// Sistema de Continentes HTML - Substitui textos Phaser por elementos HTML responsivos
+let htmlContinentsEnabled = true;
+let continentsOverlay = null;
+
+// Sistema de Territórios HTML - Substitui polígonos Phaser por elementos HTML responsivos
+let htmlTerritoriesEnabled = false;
+let htmlTerritoriesContainer = null;
+let htmlTerritories = new Map();
+
+function initializeHTMLTroopSystem() {
+  troopsOverlay = document.getElementById('troops-overlay');
+  if (!troopsOverlay) {
+    console.error('❌ Troops overlay não encontrado');
+    return;
+  }
+  console.log('✅ Sistema de tropas HTML inicializado');
+}
+
+function initializeHTMLTerritorySystem() {
+  // Criar container para territórios HTML se não existir
+  if (!htmlTerritoriesContainer) {
+    htmlTerritoriesContainer = document.createElement('div');
+    htmlTerritoriesContainer.id = 'territories-overlay';
+    htmlTerritoriesContainer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    `;
+    
+    // Adicionar ao body
+    document.body.appendChild(htmlTerritoriesContainer);
+  }
+  
+  console.log('✅ Sistema de territórios HTML inicializado');
+}
+
+function createHTMLTroopIndicator(territorio) {
+  if (!troopsOverlay || !htmlTroopsEnabled) return null;
+  
+  const indicator = document.createElement('div');
+  indicator.className = 'troop-indicator';
+  indicator.id = `troop-${territorio.nome}`;
+  
+  // Aplicar cor do jogador
+  const playerColor = getPlayerColorClass(territorio.dono);
+  if (playerColor) {
+    indicator.classList.add(playerColor);
+  }
+  
+  // Definir quantidade de tropas
+  indicator.textContent = territorio.tropas.toString();
+  
+  // Posicionar baseado nas coordenadas do Phaser
+  updateHTMLTroopPosition(indicator, territorio);
+  
+  troopsOverlay.appendChild(indicator);
+  return indicator;
+}
+
+function updateHTMLTroopPosition(indicator, territorio) {
+  if (!indicator || !territorio.troopCircle) return;
+  
+  // Obter coordenadas do círculo Phaser
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return;
+  
+  const canvasRect = canvas.getBoundingClientRect();
+  const game = window.game;
+  if (!game || !game.canvas) return;
+  
+  // Converter coordenadas do Phaser para CSS
+  const scaleX = canvasRect.width / game.canvas.width;
+  const scaleY = canvasRect.height / game.canvas.height;
+  
+  const phaserX = territorio.troopCircle.x;
+  const phaserY = territorio.troopCircle.y;
+  
+  // Calcular posição CSS (relative to canvas)
+  const cssX = phaserX * scaleX;
+  const cssY = phaserY * scaleY;
+  
+  // Aplicar offset do canvas (HUD offset) e ajuste vertical
+  const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
+  
+  // Adicionar offset vertical para baixar os indicadores (ajustável por tamanho de tela)
+  const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
+  const verticalOffset = isSmallMobile ? globalTroopOffset.smallMobile : 
+                        (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
+  
+  indicator.style.left = `${cssX}px`;
+  indicator.style.top = `${cssY + canvasOffsetTop + verticalOffset}px`;
+}
+
+function updateHTMLTroopIndicator(territorio) {
+  const indicator = document.getElementById(`troop-${territorio.nome}`);
+  if (!indicator) {
+    // Criar indicador se não existir
+    createHTMLTroopIndicator(territorio);
+    return;
+  }
+  
+  // Atualizar quantidade
+  indicator.textContent = territorio.tropas.toString();
+  
+  // Atualizar cor do jogador
+  indicator.className = 'troop-indicator';
+  const playerColor = getPlayerColorClass(territorio.dono);
+  if (playerColor) {
+    indicator.classList.add(playerColor);
+  }
+  
+  // Atualizar posição
+  updateHTMLTroopPosition(indicator, territorio);
+}
+
+function removeHTMLTroopIndicator(territorioNome) {
+  const indicator = document.getElementById(`troop-${territorioNome}`);
+  if (indicator && indicator.parentNode) {
+    indicator.parentNode.removeChild(indicator);
+  }
+}
+
+function updateAllHTMLTroops() {
+  if (!htmlTroopsEnabled || !troopsOverlay) return;
+  
+  const gameState = getGameState();
+  if (!gameState || !gameState.paises) return;
+  
+  gameState.paises.forEach(territorio => {
+    updateHTMLTroopIndicator(territorio);
+  });
+}
+
+function hidePhaserrTroops() {
+  const gameState = getGameState();
+  if (!gameState || !gameState.paises) return;
+  
+  gameState.paises.forEach(territorio => {
+    if (territorio.troopCircle) {
+      territorio.troopCircle.setVisible(false);
+    }
+    if (territorio.troopText) {
+      territorio.troopText.setVisible(false);
+    }
+  });
+}
+
+function showPhaserTroops() {
+  const gameState = getGameState();
+  if (!gameState || !gameState.paises) return;
+  
+  gameState.paises.forEach(territorio => {
+    if (territorio.troopCircle) {
+      territorio.troopCircle.setVisible(true);
+    }
+    if (territorio.troopText) {
+      territorio.troopText.setVisible(true);
+    }
+  });
+}
+
+function clearAllHTMLTroops() {
+  if (troopsOverlay) {
+    troopsOverlay.innerHTML = '';
+  }
+}
+
+// Função para alternar entre tropas HTML e Phaser (para debug)
+function toggleHTMLTroops() {
+  htmlTroopsEnabled = !htmlTroopsEnabled;
+  
+  if (htmlTroopsEnabled) {
+    console.log('🔄 Ativando tropas HTML');
+    hidePhaserrTroops();
+    updateAllHTMLTroops();
+  } else {
+    console.log('🔄 Ativando tropas Phaser');
+    clearAllHTMLTroops();
+    showPhaserTroops();
+  }
+  
+  return htmlTroopsEnabled;
+}
+
+// Variável global para ajuste dinâmico do offset das tropas
+let globalTroopOffset = { desktop: 35, mobile: 12, smallMobile: 8 };
+
+// Função para ajustar o offset vertical das tropas (debug)
+function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
+  globalTroopOffset = { desktop, mobile, smallMobile };
+  console.log('🎯 Novo offset de tropas:', globalTroopOffset);
+  
+  if (htmlTroopsEnabled) {
+    updateAllHTMLTroops();
+    showDebugMessage(`Offset ajustado: Desktop=${desktop}, Mobile=${mobile}, Small=${smallMobile}`);
+  }
+  
+  return globalTroopOffset;
+}
+
+// Função para redimensionar tropas HTML quando a tela muda
+function resizeHTMLTroops() {
+  if (htmlTroopsEnabled) {
+    // Aguardar um frame para garantir que o canvas foi redimensionado
+    requestAnimationFrame(() => {
+      updateAllHTMLTroops();
+    });
+  }
+}
+
+// === SISTEMA DE CONTINENTES HTML ===
+
+// Dados dos continentes com posições calculadas baseadas nos territórios
+const continentPositions = {
+  'Thaloria': { x: 250, y: 280 },      // Região noroeste
+  'Zarandis': { x: 450, y: 420 },      // Região central-oeste  
+  'Elyndra': { x: 480, y: 180 },       // Região norte-central
+  'Kharune': { x: 720, y: 420 },       // Região central-leste
+  'Xanthera': { x: 980, y: 380 },      // Região leste
+  'Mythara': { x: 1100, y: 520 }       // Região sudeste
+};
+
+const continentData = {
+  'Thaloria': { name: 'Thaloria', bonus: 5, territories: ['Redwyn', 'Stormfen', 'Cragstone', 'Hollowspire', 'Westreach', 'Barrowfell', 'Highmoor', 'Frosthollow'] },
+  'Zarandis': { name: 'Zarandis', bonus: 3, territories: ['Stonevale', 'Emberlyn', 'Duskwatch', 'Ravenspire', 'Stormhall'] },
+  'Elyndra': { name: 'Elyndra', bonus: 5, territories: ['Frosthelm', 'Eldoria', 'Ironreach', 'Greymoor', 'Blackmere', 'Duskmere', 'Thalengarde'] },
+  'Kharune': { name: 'Kharune', bonus: 4, territories: ['Zul\'Marak', 'Emberwaste', 'Sunjara', 'Tharkuun', 'Bareshi', 'Oru\'Kai'] },
+  'Xanthera': { name: 'Xanthera', bonus: 7, territories: ['Nihadara', 'Shōrenji', 'Kaer\'Tai', 'Xin\'Qari', 'Vol\'Zareth', 'Sa\'Torran', 'Omradan', 'Mei\'Zhara', 'Qumaran', 'Darakai', 'Ish\'Tanor', 'Tzun\'Rakai'] },
+  'Mythara': { name: 'Mythara', bonus: 2, territories: ['Mistveil', 'Dawnwatch', 'Aetheris', 'Winterholde'] }
+};
+
+function initializeHTMLContinentSystem() {
+  continentsOverlay = document.getElementById('continents-overlay');
+  if (!continentsOverlay) {
+    console.error('❌ Continents overlay não encontrado');
+    return;
+  }
+  console.log('✅ Sistema de continentes HTML inicializado');
+  
+  // Criar labels dos continentes
+  createAllContinentLabels();
+}
+
+function createContinentLabel(continentName, continentInfo) {
+  if (!continentsOverlay || !htmlContinentsEnabled) return null;
+  
+  const position = continentPositions[continentName];
+  if (!position) {
+    console.warn(`❌ Posição não encontrada para continente: ${continentName}`);
+    return null;
+  }
+  
+  const label = document.createElement('div');
+  label.className = 'continent-label';
+  label.id = `continent-${continentName}`;
+  
+  // Estrutura HTML do label
+  label.innerHTML = `
+    <span class="continent-name">${continentInfo.name}</span>
+    <span class="continent-bonus">+${continentInfo.bonus} tropas</span>
+  `;
+  
+  // Posicionar o label
+  updateContinentLabelPosition(label, position);
+  
+  continentsOverlay.appendChild(label);
+  return label;
+}
+
+function updateContinentLabelPosition(label, position) {
+  if (!label) return;
+  
+  // Obter canvas para calcular escala
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return;
+  
+  const canvasRect = canvas.getBoundingClientRect();
+  const game = window.game;
+  if (!game || !game.canvas) return;
+  
+  // Converter coordenadas do jogo para CSS
+  const scaleX = canvasRect.width / game.canvas.width;
+  const scaleY = canvasRect.height / game.canvas.height;
+  
+  const cssX = position.x * scaleX;
+  const cssY = position.y * scaleY;
+  
+  // Aplicar offset do canvas (HUD offset)
+  const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
+  
+  label.style.left = `${cssX}px`;
+  label.style.top = `${cssY + canvasOffsetTop}px`;
+}
+
+function createAllContinentLabels() {
+  if (!htmlContinentsEnabled || !continentsOverlay) return;
+  
+  // Limpar labels existentes
+  continentsOverlay.innerHTML = '';
+  
+  // Criar label para cada continente
+  Object.entries(continentData).forEach(([continentName, continentInfo]) => {
+    createContinentLabel(continentName, continentInfo);
+  });
+  
+  console.log('✅ Labels de continentes criados');
+}
+
+function updateContinentLabel(continentName) {
+  const label = document.getElementById(`continent-${continentName}`);
+  if (!label) return;
+  
+  const gameState = getGameState();
+  if (!gameState) return;
+  
+  const continentInfo = continentData[continentName];
+  if (!continentInfo) return;
+  
+  // Verificar se o continente é controlado pelo jogador atual
+  const isControlled = isContinentControlledByPlayer(continentName, gameState.meuNome, gameState);
+  
+  // Verificar se é continente prioritário para bônus
+  const isPriority = gameState.continentePrioritario?.nome === continentName;
+  
+  // Aplicar classes CSS baseadas no estado
+  label.className = 'continent-label';
+  if (isControlled) {
+    label.classList.add('controlled');
+  }
+  if (isPriority) {
+    label.classList.add('priority');
+  }
+  
+  // Atualizar posição (caso tenha mudado com redimensionamento)
+  const position = continentPositions[continentName];
+  if (position) {
+    updateContinentLabelPosition(label, position);
+  }
+}
+
+function isContinentControlledByPlayer(continentName, playerName, gameState) {
+  const continentInfo = continentData[continentName];
+  if (!continentInfo || !gameState.paises) return false;
+  
+  const territoriesControlled = continentInfo.territories.filter(territoryName => {
+    const territory = gameState.paises.find(p => p.nome === territoryName);
+    return territory && territory.dono === playerName;
+  });
+  
+  return territoriesControlled.length === continentInfo.territories.length;
+}
+
+function updateAllContinentLabels() {
+  if (!htmlContinentsEnabled || !continentsOverlay) return;
+  
+  Object.keys(continentData).forEach(continentName => {
+    updateContinentLabel(continentName);
+  });
+}
+
+function resizeHTMLContinents() {
+  if (htmlContinentsEnabled) {
+    // Aguardar um frame para garantir que o canvas foi redimensionado
+    requestAnimationFrame(() => {
+      updateAllContinentLabels();
+    });
+  }
+}
+
+function clearAllContinentLabels() {
+  if (continentsOverlay) {
+    continentsOverlay.innerHTML = '';
+  }
+}
+
+// Função para alternar entre continentes HTML e Phaser (para debug)
+function toggleHTMLContinents() {
+  htmlContinentsEnabled = !htmlContinentsEnabled;
+  
+  if (htmlContinentsEnabled) {
+    console.log('🔄 Ativando continentes HTML');
+    createAllContinentLabels();
+    updateAllContinentLabels();
+  } else {
+    console.log('🔄 Desativando continentes HTML');
+    clearAllContinentLabels();
+  }
+  
+  return htmlContinentsEnabled;
+}
+
+// Função para configurar proteção touch em mobile
+function setupMobileTouchProtection() {
+  // Função para bloquear eventos touch quando interfaces estão abertas
+  function blockTouchEvent(event) {
+    const interfaceAberta = isAnyHTMLInterfaceOpen();
+    if (interfaceAberta) {
+      console.log('🛡️ Touch event bloqueado em mobile - Interface aberta:', interfaceAberta);
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }
+  
+  // Aguardar até o game estar pronto para adicionar listeners ao canvas
+  function addCanvasListeners() {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      // Adicionar listeners para todos os tipos de eventos touch
+      ['touchstart', 'touchend', 'touchmove', 'touchcancel'].forEach(eventType => {
+        canvas.addEventListener(eventType, blockTouchEvent, { 
+          capture: true, // Capturar no capturing phase
+          passive: false // Permitir preventDefault
+        });
+      });
+      
+      // Adicionar listeners para eventos de mouse (fallback para alguns devices)
+      ['mousedown', 'mouseup', 'mousemove', 'click'].forEach(eventType => {
+        canvas.addEventListener(eventType, blockTouchEvent, { 
+          capture: true,
+          passive: false
+        });
+      });
+      
+      console.log('🛡️ Proteção touch mobile configurada no canvas');
+    } else {
+      // Se canvas não estiver pronto, tentar novamente em 100ms
+      setTimeout(addCanvasListeners, 100);
+    }
+  }
+  
+  // Iniciar a configuração
+  addCanvasListeners();
+}
+
 function setupDebugMode() {
   let debugModeEnabled = false;
   let debugIndicator = null;
@@ -937,10 +1388,62 @@ function setupDebugMode() {
         break;
         
       case 'c':
-        // Debug: Testar posicionamento do canvas
+        // Debug: Simular combate com 3 dados de defesa
         if (!modalsAbertas) {
           event.preventDefault();
-          testCanvasPositioning();
+          simulateCombatTest();
+        }
+        break;
+        
+      case 'm':
+        // Debug: Testar proteção mobile touch
+        if (!modalsAbertas) {
+          event.preventDefault();
+          testMobileTouchProtection();
+        }
+        break;
+        
+      case 'h':
+        // Debug: Alternar tropas HTML/Phaser
+        if (!modalsAbertas) {
+          event.preventDefault();
+          const enabled = toggleHTMLTroops();
+          showDebugMessage(`Tropas ${enabled ? 'HTML' : 'Phaser'} ativadas`);
+        }
+        break;
+        
+      case 'n':
+        // Debug: Alternar continentes HTML/Phaser
+        if (!modalsAbertas) {
+          event.preventDefault();
+          const enabled = toggleHTMLContinents();
+          showDebugMessage(`Continentes ${enabled ? 'HTML' : 'Phaser'} ativados`);
+        }
+        break;
+        
+      case 'arrowup':
+        // Debug: Subir tropas (diminuir offset)
+        if (!modalsAbertas && htmlTroopsEnabled) {
+          event.preventDefault();
+          const newOffset = {
+            desktop: Math.max(0, globalTroopOffset.desktop - 5),
+            mobile: Math.max(0, globalTroopOffset.mobile - 3),
+            smallMobile: Math.max(0, globalTroopOffset.smallMobile - 2)
+          };
+          adjustTroopOffset(newOffset.desktop, newOffset.mobile, newOffset.smallMobile);
+        }
+        break;
+        
+      case 'arrowdown':
+        // Debug: Baixar tropas (aumentar offset)
+        if (!modalsAbertas && htmlTroopsEnabled) {
+          event.preventDefault();
+          const newOffset = {
+            desktop: globalTroopOffset.desktop + 5,
+            mobile: globalTroopOffset.mobile + 3,
+            smallMobile: globalTroopOffset.smallMobile + 2
+          };
+          adjustTroopOffset(newOffset.desktop, newOffset.mobile, newOffset.smallMobile);
         }
         break;
     }
@@ -950,7 +1453,12 @@ function setupDebugMode() {
   console.log('🛠️ Comandos disponíveis:');
   console.log('  • V - Mostrar tela de vitória (debug)');
   console.log('  • T - Testar interfaces modais');
-  console.log('  • C - Testar posicionamento do canvas');
+  console.log('  • C - Simular combate (3 dados defesa)');
+  console.log('  • M - Testar proteção mobile touch');
+  console.log('  • H - Alternar tropas HTML/Phaser');
+  console.log('  • N - Alternar continentes HTML/Phaser');
+  console.log('  • ↑ - Subir posição das tropas');
+  console.log('  • ↓ - Baixar posição das tropas');
   console.log('  • ESC - Fechar modais abertas');
   console.log('  • Ctrl+D - Toggle modo debug');
 }
@@ -960,7 +1468,12 @@ function showDebugCommands() {
     '🛠️ COMANDOS DE DEBUG DISPONÍVEIS:',
     '  • V - Mostrar tela de vitória',
     '  • T - Testar interfaces modais',
-    '  • C - Testar posicionamento do canvas',
+    '  • C - Simular combate (3 dados defesa)',
+    '  • M - Testar proteção mobile touch',
+    '  • H - Alternar tropas HTML/Phaser',
+    '  • N - Alternar continentes HTML/Phaser',
+    '  • ↑ - Subir posição das tropas',
+    '  • ↓ - Baixar posição das tropas',
     '  • ESC - Fechar modais',
     '  • Ctrl+D - Toggle debug mode',
     '',
@@ -968,9 +1481,14 @@ function showDebugCommands() {
     '  • testVictoryScreen() - Teste da tela de vitória',
     '  • showDebugVictoryScreen() - Vitória com dados variados',
     '  • testModalInterfaces() - Testar proteção modal',
-    '  • testCanvasPositioning() - Testar posicionamento do canvas',
-    '  • isAnyHTMLInterfaceOpen() - Verificar interfaces abertas',
-    '  • forceMobileCanvasPosition() - Forçar reposicionamento mobile'
+    '  • testMobileTouchProtection() - Testar proteção mobile',
+    '  • toggleHTMLTroops() - Alternar sistema de tropas',
+    '  • toggleHTMLContinents() - Alternar sistema de continentes',
+    '  • updateAllHTMLTroops() - Atualizar posições tropas',
+    '  • updateAllContinentLabels() - Atualizar labels continentes',
+    '  • adjustTroopOffset(desktop, mobile, small) - Ajustar posição tropas',
+    '  • simulateCombatTest() - Simular combates',
+    '  • isAnyHTMLInterfaceOpen() - Verificar interfaces abertas'
   ];
   
   commands.forEach(cmd => console.log(cmd));
@@ -1046,7 +1564,7 @@ function toggleDebugIndicator(enabled) {
     
     indicator.innerHTML = `
       🛠️ DEBUG MODE<br>
-      <span style="font-size: 9px; opacity: 0.8;">V = Victory | T = Test | C = Canvas</span>
+      <span style="font-size: 10px; opacity: 0.8;">V = Victory | T = Test Modals</span>
     `;
     
     // Adicionar animação CSS
@@ -1251,118 +1769,6 @@ function testModalInterfaces() {
   
   // Iniciar teste
   showNext();
-}
-
-function testCanvasPositioning() {
-  console.log('📱 Testando posicionamento do canvas...');
-  showDebugMessage('📱 Testando canvas mobile');
-  
-  const canvas = document.querySelector('canvas');
-  const hudTop = document.querySelector('.hud-top');
-  
-  if (!canvas) {
-    console.error('❌ Canvas não encontrado');
-    showDebugMessage('❌ Canvas não encontrado');
-    return;
-  }
-  
-  // Informações da tela
-  const screenInfo = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    isMobile: isMobileDevice(),
-    isSmallMobile: isSmallMobileDevice(),
-    isLandscape: isMobileLandscape(),
-    devicePixelRatio: window.devicePixelRatio || 1
-  };
-  
-  // Informações do HUD
-  const hudInfo = hudTop ? {
-    height: hudTop.offsetHeight,
-    boundingHeight: hudTop.getBoundingClientRect().height,
-    top: hudTop.getBoundingClientRect().top,
-    bottom: hudTop.getBoundingClientRect().bottom
-  } : { height: 0, boundingHeight: 0, top: 0, bottom: 0 };
-  
-  // Informações do canvas
-  const canvasInfo = {
-    width: canvas.offsetWidth,
-    height: canvas.offsetHeight,
-    top: canvas.offsetTop,
-    left: canvas.offsetLeft,
-    bottom: canvas.offsetTop + canvas.offsetHeight,
-    right: canvas.offsetLeft + canvas.offsetWidth,
-    styleTop: canvas.style.top,
-    styleHeight: canvas.style.height,
-    styleObjectFit: canvas.style.objectFit,
-    computedStyle: window.getComputedStyle(canvas)
-  };
-  
-  // Verificar se o canvas está cortando
-  const viewport = {
-    width: window.innerWidth,
-    height: window.innerHeight
-  };
-  
-  const isCutOff = {
-    top: canvasInfo.top < 0,
-    bottom: canvasInfo.bottom > viewport.height,
-    left: canvasInfo.left < 0,
-    right: canvasInfo.right > viewport.width
-  };
-  
-  // Log detalhado
-  console.log('📊 INFORMAÇÕES DA TELA:');
-  console.table(screenInfo);
-  
-  console.log('📊 INFORMAÇÕES DO HUD:');
-  console.table(hudInfo);
-  
-  console.log('📊 INFORMAÇÕES DO CANVAS:');
-  console.table(canvasInfo);
-  
-  console.log('📊 VERIFICAÇÃO DE CORTE:');
-  console.table(isCutOff);
-  
-  // Verificar problemas
-  const problems = [];
-  if (isCutOff.top) problems.push('Canvas cortado no topo');
-  if (isCutOff.bottom) problems.push('Canvas cortado na parte inferior');
-  if (isCutOff.left) problems.push('Canvas cortado na esquerda');
-  if (isCutOff.right) problems.push('Canvas cortado na direita');
-  
-  if (problems.length > 0) {
-    console.warn('⚠️ PROBLEMAS DETECTADOS:');
-    problems.forEach(problem => console.warn(`  • ${problem}`));
-    showDebugMessage(`⚠️ ${problems.length} problemas detectados`);
-  } else {
-    console.log('✅ Canvas posicionado corretamente');
-    showDebugMessage('✅ Canvas OK');
-  }
-  
-  // Reforçar posicionamento
-  console.log('🔧 Reaplicando posicionamento...');
-  forceMobileCanvasPosition();
-  
-  setTimeout(() => {
-    const newCanvasInfo = {
-      top: canvas.offsetTop,
-      height: canvas.offsetHeight,
-      bottom: canvas.offsetTop + canvas.offsetHeight
-    };
-    
-    console.log('📊 CANVAS APÓS REPOSICIONAMENTO:');
-    console.table(newCanvasInfo);
-    
-    const stillCutOff = newCanvasInfo.bottom > viewport.height;
-    if (stillCutOff) {
-      console.warn('❌ Ainda há corte na parte inferior');
-      showDebugMessage('❌ Ainda cortando');
-    } else {
-      console.log('✅ Posicionamento corrigido');
-      showDebugMessage('✅ Corrigido');
-    }
-  }, 500);
 }
 
 function initializeGame() {
@@ -1776,6 +2182,15 @@ function initializeGame() {
   
   // Configurar event listeners da interface de remanejamento HTML
   setupRemanejamentoEventListeners();
+  
+  // Setup mobile touch protection
+  setupMobileTouchProtection();
+  
+  // Inicializar sistema de tropas HTML
+  initializeHTMLTroopSystem();
+  
+  // Inicializar sistema de continentes HTML
+  initializeHTMLContinentSystem();
   
   // Configurar modo debug
   setupDebugMode();
@@ -2849,6 +3264,12 @@ function atualizarPaises(novosPaises, scene) {
         align: 'center',
         fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(6);
+      
+    // Ocultar tropas Phaser se o sistema HTML estiver ativo
+    if (htmlTroopsEnabled) {
+      obj.troopCircle.setVisible(false);
+      obj.troopText.setVisible(false);
+    }
 
              // Eventos de hover para mostrar/esconder o texto
              obj.polygon.on('pointerover', (pointer) => {
@@ -3033,6 +3454,17 @@ function atualizarPaises(novosPaises, scene) {
       gameState.paises[i].troopText.setText(gameState.paises[i].tropas.toString());
     }
     
+    // Atualizar tropas HTML se estiver habilitado
+    if (htmlTroopsEnabled) {
+      updateHTMLTroopIndicator(gameState.paises[i]);
+    }
+    
+    // Atualizar continentes HTML se estiver habilitado
+    if (htmlContinentsEnabled && i === gameState.paises.length - 1) {
+      // Atualizar apenas uma vez no final do loop
+      updateAllContinentLabels();
+    }
+    
     // Verificar se este país pertence ao continente prioritário
     let pertenceAoContinentePrioritario = false;
     const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
@@ -3088,7 +3520,6 @@ function atualizarPaises(novosPaises, scene) {
   gameState.selecionado = null;
   
   // Adicionar indicadores de continentes após os territórios serem carregados
-  adicionarIndicadoresContinentes(scene);
   
   // Desenhar linhas tracejadas usando o mesmo sistema de posicionamento dos textos
   const dadosGeograficosLinha = {
@@ -5472,49 +5903,26 @@ function forceMobileCanvasPosition() {
   
   if (!isMobile) return;
 
+  const hudTop = document.querySelector('.hud-top');
   const canvasElement = document.querySelector('canvas');
   
-  if (canvasElement) {
-    // Determinar altura do HUD baseado na media query ativa
-    let hudHeight = 45; // Default desktop
-    
-    // Verificar media queries do CSS para usar valores consistentes
-    if (window.innerWidth <= 360) {
-      hudHeight = 16; // Ultra-compact
-    } else if (window.innerWidth <= 400) {
-      hudHeight = 18; // Very small mobile
-    } else if (window.innerWidth <= 480) {
-      hudHeight = 20; // Extra small mobile
-    } else if (window.innerWidth <= 768) {
-      hudHeight = 25; // Mobile
-    }
-    
-    // Ajustes para landscape
-    if (isLandscape) {
-      if (window.innerHeight <= 400) {
-        hudHeight = 18; // Very small landscape
-      } else if (window.innerHeight <= 500) {
-        hudHeight = 22; // Landscape mobile
-      }
-    }
-    
-    // Adicionar margem extra para evitar corte (especialmente na parte inferior)
-    const marginTop = Math.max(hudHeight + 2, 18); // Pelo menos 18px, mas preferir HUD + 2px
-    const marginBottom = 10; // Margem extra na parte inferior para evitar corte
+  if (hudTop && canvasElement) {
+    // Calcular posição exata do HUD
+    const hudRect = hudTop.getBoundingClientRect();
+    const hudBottom = hudRect.bottom;
     
     // Aplicar posicionamento correto
     canvasElement.style.position = 'absolute';
-    canvasElement.style.top = `${marginTop}px`;
+    canvasElement.style.top = `${hudBottom}px`;
     canvasElement.style.left = '0';
     canvasElement.style.right = '0';
-    canvasElement.style.bottom = `${marginBottom}px`;
+    canvasElement.style.bottom = '0';
     canvasElement.style.width = '100%';
-    canvasElement.style.height = `calc(100vh - ${marginTop + marginBottom}px)`;
-    canvasElement.style.objectFit = 'contain'; // Mudança: 'contain' em vez de 'fill' para evitar distorção
+    canvasElement.style.height = `calc(100vh - ${hudBottom}px)`;
+    canvasElement.style.objectFit = 'fill';
     canvasElement.style.zIndex = '1';
     
-    console.log(`📱 Mobile canvas positioned: top=${marginTop}px, bottom=${marginBottom}px, hudHeight=${hudHeight}px`);
-    console.log(`📱 Screen: ${window.innerWidth}x${window.innerHeight}, landscape=${isLandscape}`);
+    console.log('📱 Mobile canvas positioned at:', hudBottom, 'px from top');
   }
 }
 

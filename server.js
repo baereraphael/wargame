@@ -705,7 +705,7 @@ io.on('connection', (socket) => {
 
     // Número de dados de ataque: mínimo entre tropas - 1 e 3
     const dadosAtaque = Math.min(atacantePais.tropas - 1, 3);
-    const dadosDefesa = Math.min(defensorPais.tropas, 2);
+    const dadosDefesa = Math.min(defensorPais.tropas, 3);
 
     const rolagemAtaque = Array.from({ length: dadosAtaque }, rolarDado).sort((a, b) => b - a);
     const rolagemDefesa = Array.from({ length: dadosDefesa }, rolarDado).sort((a, b) => b - a);
@@ -2715,7 +2715,7 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
     
     // Usar a mesma lógica de dados dos jogadores humanos
     const dadosAtaque = Math.min(oportunidade.origem.tropas - 1, 3);
-    const dadosDefesa = Math.min(oportunidade.destino.tropas, 2);
+    const dadosDefesa = Math.min(oportunidade.destino.tropas, 3);
 
     const rolagemAtaque = Array.from({ length: dadosAtaque }, rolarDado).sort((a, b) => b - a);
     const rolagemDefesa = Array.from({ length: dadosDefesa }, rolarDado).sort((a, b) => b - a);

@@ -2877,10 +2877,8 @@
     }
     
     .game-container canvas {
-      top: 22px !important; /* Position below extra small mobile HUD + margin */
-      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
-      height: calc(100vh - 32px) !important; /* Use viewport height minus top and bottom margins */
-      object-fit: contain !important; /* Prevent distortion */
+      top: 20px !important; /* Position below extra small mobile HUD */
+      height: calc(100vh - 20px) !important; /* Use viewport height minus extra small mobile HUD */
     }
     
     .hud-top {
@@ -2931,13 +2929,6 @@
 
   /* Very Small Mobile Devices */
   @media (max-width: 400px) {
-    .game-container canvas {
-      top: 20px !important; /* Position below very small mobile HUD + margin */
-      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
-      height: calc(100vh - 30px) !important; /* Use viewport height minus top and bottom margins */
-      object-fit: contain !important; /* Prevent distortion */
-    }
-    
     .hud-top {
       height: 18px;
       padding: 0 3px;
@@ -2984,10 +2975,8 @@
     }
     
     .game-container canvas {
-      top: 20px !important; /* Position below very small landscape HUD + margin */
-      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
-      height: calc(100vh - 30px) !important; /* Use viewport height minus top and bottom margins */
-      object-fit: contain !important; /* Prevent distortion */
+      top: 18px !important;
+      height: calc(100vh - 18px) !important;
     }
   }
 
@@ -3052,11 +3041,10 @@
     }
     
     .game-container canvas {
-      top: 24px !important; /* Position below landscape mobile HUD + margin */
-      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
+      top: 22px !important;
       width: 100% !important;
-      height: calc(100vh - 34px) !important; /* Use viewport height minus top and bottom margins */
-      object-fit: contain !important; /* Prevent distortion */
+      height: calc(100vh - 22px) !important;
+      object-fit: fill !important;
     }
   }
 
@@ -3162,13 +3150,6 @@
 
   /* Ultra-compact mode for very small screens */
   @media (max-width: 360px) {
-    .game-container canvas {
-      top: 18px !important; /* Position below ultra-compact mobile HUD + margin */
-      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
-      height: calc(100vh - 28px) !important; /* Use viewport height minus top and bottom margins */
-      object-fit: contain !important; /* Prevent distortion */
-    }
-    
     .hud-top {
       height: 16px;
       padding: 0 2px;
@@ -3223,6 +3204,198 @@
     .game-container canvas {
       top: 16px !important;
       height: calc(100vh - 16px) !important;
+    }
+  }
+
+  /* Troops Overlay */
+  .troops-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow clicks to pass through to the game */
+    z-index: 10; /* Above game canvas but below HUD */
+  }
+
+  .troop-indicator {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #000;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+    z-index: 11;
+  }
+
+  /* Responsive troop indicators for mobile */
+  @media (max-width: 768px) {
+    .troop-indicator {
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      border-width: 1.5px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .troop-indicator {
+      width: 18px;
+      height: 18px;
+      font-size: 11px;
+      border-width: 1px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .troop-indicator {
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
+      border-width: 1px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .troop-indicator {
+      width: 14px;
+      height: 14px;
+      font-size: 9px;
+      border-width: 1px;
+    }
+  }
+
+  /* Player color classes for troop indicators */
+  .troop-indicator.azul { background: #3366ff; color: white; }
+  .troop-indicator.vermelho { background: #ff3333; color: white; }
+  .troop-indicator.amarelo { background: #ffcc00; color: black; }
+  .troop-indicator.verde { background: #33cc33; color: white; }
+  .troop-indicator.roxo { background: #9933cc; color: white; }
+  .troop-indicator.preto { background: #222222; color: white; }
+
+  /* Continents Overlay */
+  .continents-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow clicks to pass through to the game */
+    z-index: 9; /* Above game canvas but below troops and HUD */
+  }
+
+  .continent-label {
+    position: absolute;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    border: 2px solid #ffaa00;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+    backdrop-filter: blur(3px);
+    transition: all 0.3s ease;
+    min-width: 80px;
+    white-space: nowrap;
+  }
+
+  .continent-label .continent-name {
+    display: block;
+    font-size: 1em;
+    margin-bottom: 2px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  }
+
+  .continent-label .continent-bonus {
+    display: block;
+    font-size: 0.8em;
+    color: #ffaa00;
+    font-weight: normal;
+  }
+
+  /* Continent states */
+  .continent-label.controlled {
+    border-color: #33cc33;
+    background: rgba(0,100,0,0.9);
+  }
+
+  .continent-label.controlled .continent-bonus {
+    color: #88ff88;
+  }
+
+  .continent-label.priority {
+    border-color: #ff3333;
+    background: rgba(100,0,0,0.9);
+    animation: priorityPulse 2s infinite;
+  }
+
+  @keyframes priorityPulse {
+    0%, 100% { box-shadow: 0 3px 12px rgba(255,51,51,0.4); }
+    50% { box-shadow: 0 3px 20px rgba(255,51,51,0.8); }
+  }
+
+  /* Responsive continent labels for mobile */
+  @media (max-width: 768px) {
+    .continent-label {
+      font-size: 12px;
+      padding: 4px 8px;
+      min-width: 70px;
+      border-radius: 6px;
+    }
+
+    .continent-label .continent-bonus {
+      font-size: 0.75em;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .continent-label {
+      font-size: 11px;
+      padding: 3px 6px;
+      min-width: 60px;
+      border-radius: 5px;
+    }
+
+    .continent-label .continent-bonus {
+      font-size: 0.7em;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .continent-label {
+      font-size: 10px;
+      padding: 2px 5px;
+      min-width: 55px;
+      border-radius: 4px;
+    }
+
+    .continent-label .continent-bonus {
+      font-size: 0.65em;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .continent-label {
+      font-size: 9px;
+      padding: 2px 4px;
+      min-width: 50px;
+      border-radius: 3px;
+    }
+
+    .continent-label .continent-bonus {
+      font-size: 0.6em;
     }
   }
 
@@ -3355,6 +3528,17 @@
 
   <!-- Game Container (initially hidden) -->
   <div class="game-container" id="game-container" style="display: none;">
+    
+    <!-- HTML Overlay for Troops -->
+    <div id="troops-overlay" class="troops-overlay">
+      <!-- Dynamic troop indicators will be created here -->
+    </div>
+    
+    <!-- HTML Overlay for Continents -->
+    <div id="continents-overlay" class="continents-overlay">
+      <!-- Dynamic continent labels will be created here -->
+    </div>
+    
     <div class="game-hud">
     <!-- Top HUD Bar -->
     <div class="hud-top">
@@ -3455,9 +3639,9 @@
     </div>
     <div class="victory-content">
       <div class="victory-header-content">
-        <div class="victory-icon">🏆</div>
-        <div class="victory-message" id="victory-message">Parabéns! Você venceu!</div>
-        <div class="victory-subtitle" id="victory-subtitle"></div>
+      <div class="victory-icon">🏆</div>
+      <div class="victory-message" id="victory-message">Parabéns! Você venceu!</div>
+      <div class="victory-subtitle" id="victory-subtitle"></div>
       </div>
       
       <div class="victory-summary">
