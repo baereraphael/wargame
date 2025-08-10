@@ -757,6 +757,94 @@ function resizeGameElements(scene) {
   atualizarLinhasContinentes(scene, scaleX, scaleY);
 }
 
+function setupRemanejamentoEventListeners() {
+  // Event listeners para fechar interface
+  const remanejamentoClose = document.getElementById('remanejamento-close');
+  const remanejamentoBackdrop = document.getElementById('remanejamento-backdrop');
+  const remanejamentoCancel = document.getElementById('remanejamento-cancel');
+  
+  if (remanejamentoClose) {
+    remanejamentoClose.addEventListener('click', () => {
+      tocarSomClick();
+      esconderInterfaceRemanejamento();
+    });
+  }
+  
+  if (remanejamentoBackdrop) {
+    remanejamentoBackdrop.addEventListener('click', () => {
+      esconderInterfaceRemanejamento();
+    });
+  }
+  
+  if (remanejamentoCancel) {
+    remanejamentoCancel.addEventListener('click', () => {
+      tocarSomClick();
+      esconderInterfaceRemanejamento();
+    });
+  }
+  
+  // Event listeners para controles de quantidade
+  const remanejamentoMinus = document.getElementById('remanejamento-minus');
+  const remanejamentoPlus = document.getElementById('remanejamento-plus');
+  const remanejamentoConfirm = document.getElementById('remanejamento-confirm');
+  
+  if (remanejamentoMinus) {
+    remanejamentoMinus.addEventListener('click', () => {
+      tocarSomClick();
+      if (dadosRemanejamento && tropasParaMover > 1) {
+        tropasParaMover -= 1;
+        atualizarQuantidadeRemanejamento();
+      }
+    });
+  }
+  
+  if (remanejamentoPlus) {
+    remanejamentoPlus.addEventListener('click', () => {
+      tocarSomClick();
+      if (dadosRemanejamento && tropasParaMover < dadosRemanejamento.maxTropas) {
+        tropasParaMover += 1;
+        atualizarQuantidadeRemanejamento();
+      }
+    });
+  }
+  
+  if (remanejamentoConfirm) {
+    remanejamentoConfirm.addEventListener('click', () => {
+      tocarSomClick();
+      confirmarRemanejamento();
+    });
+  }
+  
+  console.log('✅ Event listeners da interface de remanejamento configurados');
+}
+
+function atualizarQuantidadeRemanejamento() {
+  const qtyEl = document.getElementById('remanejamento-qty');
+  if (qtyEl && dadosRemanejamento) {
+    qtyEl.textContent = `${tropasParaMover}/${dadosRemanejamento.maxTropas}`;
+  }
+}
+
+function confirmarRemanejamento() {
+  if (!dadosRemanejamento) {
+    console.error('❌ Dados de remanejamento não encontrados');
+    return;
+  }
+  
+  const quantidade = Math.min(Math.max(tropasParaMover, 1), dadosRemanejamento.maxTropas);
+  if (quantidade > 0) {
+    console.log('🔧 DEBUG: Confirmando movimento de', quantidade, 'tropas de', dadosRemanejamento.origem.nome, 'para', dadosRemanejamento.destino.nome);
+    emitWithRoom('moverTropas', { 
+      origem: dadosRemanejamento.origem.nome, 
+      destino: dadosRemanejamento.destino.nome, 
+      quantidade: quantidade 
+    });
+    esconderInterfaceRemanejamento();
+  } else {
+    console.error('❌ Quantidade inválida para movimento:', quantidade);
+  }
+}
+
 function initializeGame() {
   console.log('🔧 DEBUG: initializeGame() iniciada');
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
@@ -949,12 +1037,10 @@ function initializeGame() {
   socket.on('vitoria', (nomeJogador, resumoJogo) => {
     console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
     console.log('📊 Resumo do jogo:', resumoJogo);
-    
-    // Mostrar tela de vitória moderna
-    if (currentScene) {
-      mostrarTelaVitoria(nomeJogador, resumoJogo, currentScene);
-    } else {
-      console.log('❌ Scene não disponível para mostrar tela de vitória');
+    try {
+      showVictoryModal(nomeJogador, resumoJogo);
+    } catch (e) {
+      console.error('Erro ao exibir modal de vitória (HTML).', e);
       mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
     }
   });
@@ -998,14 +1084,14 @@ function initializeGame() {
     // Só mostrar a interface para o jogador atacante se há tropas adicionais
     if (dados.jogadorAtacante === gameState.meuNome && dados.tropasAdicionais > 0) {
       // Verificar se já existe uma interface aberta
-      if (interfaceTransferenciaConquista) {
+      if (modalTransferenciaAberta) {
         console.log('🔧 DEBUG: Interface de transferência já está aberta, ignorando');
         return;
       }
       
       dadosConquista = dados;
       console.log('DEBUG: dadosConquista definido como', dadosConquista);
-      mostrarInterfaceTransferenciaConquista(dados, currentScene);
+      showTransferModal(dados);
     }
   });
 
@@ -1081,7 +1167,7 @@ function initializeGame() {
       
       if (territorioOrigem && territorioDestino) {
         // Verificar se já existe uma interface aberta
-        if (interfaceRemanejamento) {
+        if (interfaceRemanejamentoAberta) {
           console.log('🔧 DEBUG: Interface de remanejamento já está aberta, ignorando');
           return;
         }
@@ -1167,6 +1253,9 @@ function initializeGame() {
       lastViewportHeight = window.innerHeight;
     }
   });
+  
+  // Configurar event listeners da interface de remanejamento HTML
+  setupRemanejamentoEventListeners();
   
   console.log('🔧 DEBUG: initializeGame() concluída');
   
@@ -1579,17 +1668,17 @@ let somHuh;
 // Variáveis para interface de reforço
 let interfaceReforco = null;
 
-// Variáveis para interface de transferência após conquista
-let interfaceTransferenciaConquista = null;
-
-// Variáveis para interface de remanejamento
-let interfaceRemanejamento = null;
+// Variáveis para interface de remanejamento (HTML)
+let interfaceRemanejamentoAberta = false;
+let tropasParaMover = 1;
+let dadosRemanejamento = null;
 let tropasParaTransferir = 0;
 let dadosConquista = null;
 let botaoObjetivo = null;
 let modalObjetivoAberto = false;
 let botaoCartasTerritorio = null;
 let modalCartasTerritorioAberto = false;
+let modalTransferenciaAberta = false;
 // HTML modals state
 let cardsModalForced = false;
 let cardsSelected = [];
@@ -1740,6 +1829,34 @@ function create() {
   if (cardsCloseBtn) cardsCloseBtn.addEventListener('click', () => hideCardsModal());
   if (cardsBackdrop) cardsBackdrop.addEventListener('click', () => hideCardsModal());
 
+  // Victory modal buttons
+  const victoryCloseBtn = document.getElementById('victory-close');
+  const victoryBackdrop = document.getElementById('victory-backdrop');
+  const victoryRestartBtn = document.getElementById('victory-restart');
+  const victoryMenuBtn = document.getElementById('victory-menu');
+  if (victoryCloseBtn) victoryCloseBtn.addEventListener('click', () => hideVictoryModal());
+  if (victoryBackdrop) victoryBackdrop.addEventListener('click', () => hideVictoryModal());
+  if (victoryRestartBtn) victoryRestartBtn.addEventListener('click', () => {
+    tocarSomClick();
+    emitWithRoom('reiniciarJogo');
+    hideVictoryModal();
+  });
+  if (victoryMenuBtn) victoryMenuBtn.addEventListener('click', () => {
+    tocarSomClick();
+    hideVictoryModal();
+    backToModeSelection();
+  });
+
+  // Reinforce modal buttons
+  const reinforceBackdrop = document.getElementById('reinforce-backdrop');
+  const reinforceClose = document.getElementById('reinforce-close');
+  const reinforceMinus = document.getElementById('reinforce-minus');
+  const reinforcePlus = document.getElementById('reinforce-plus');
+  const reinforceConfirm = document.getElementById('reinforce-confirm');
+  const reinforceCancel = document.getElementById('reinforce-cancel');
+  if (reinforceBackdrop) reinforceBackdrop.addEventListener('click', hideReinforceModal);
+  if (reinforceClose) reinforceClose.addEventListener('click', hideReinforceModal);
+
   // Add event listeners for CSS buttons
   botaoTurno.addEventListener('click', () => {
     // Fechar indicação de início de turno automaticamente
@@ -1820,25 +1937,9 @@ function create() {
         }
       }
       
-      if (interfaceTransferenciaConquista) {
-        const localX = pointer.x - interfaceTransferenciaConquista.x;
-        const localY = pointer.y - interfaceTransferenciaConquista.y;
-        // Aumentar a área de detecção para incluir todos os botões
-        if (localX >= -150 && localX <= 150 && localY >= -90 && localY <= 90) {
-          cliqueEmInterface = true;
-          console.log('DEBUG: Clique detectado dentro da interface de transferência');
-        }
-      }
+      // Interface de transferência agora é HTML/CSS, não precisa de detecção de clique Phaser
       
-      if (interfaceRemanejamento) {
-        const localX = pointer.x - interfaceRemanejamento.x;
-        const localY = pointer.y - interfaceRemanejamento.y;
-        // Aumentar a área de detecção para incluir todos os botões
-        if (localX >= -150 && localX <= 150 && localY >= -90 && localY <= 90) {
-          cliqueEmInterface = true;
-          console.log('DEBUG: Clique detectado dentro da interface de remanejamento');
-        }
-      }
+      // Interface de remanejamento agora é HTML/CSS, não precisa de detecção de clique Phaser
       
       // Verificar se há modais abertos (objetivo ou cartas território)
       if (modalObjetivoAberto || modalCartasTerritorioAberto) {
@@ -2297,7 +2398,7 @@ function atualizarPaises(novosPaises, scene) {
            console.log('🔧 DEBUG: Território clicado:', obj.nome);
            console.log('🔧 DEBUG: Território selecionado:', gameState.selecionado ? gameState.selecionado.nome : 'nenhum');
            console.log('🔧 DEBUG: Vizinhos do selecionado:', gameState.selecionado ? gameState.selecionado.vizinhos : 'nenhum');
-           console.log('🔧 DEBUG: Interface remanejamento ativa:', !!interfaceRemanejamento);
+           console.log('🔧 DEBUG: Interface remanejamento ativa:', !!interfaceRemanejamentoAberta);
            
            if (!gameState.selecionado) {
              // Selecionar território de origem
@@ -2354,11 +2455,8 @@ function atualizarPaises(novosPaises, scene) {
           mostrarMensagem('Seleção cancelada');
         } else {
           // Bloquear ataques enquanto a interface de transferência pós-conquista estiver aberta
-          if (interfaceTransferenciaConquista) {
+          if (modalTransferenciaAberta) {
             mostrarMensagem('⚠️ Confirme ou cancele a transferência antes de atacar novamente.');
-            if (typeof tremerInterfaceTransferenciaConquista === 'function') {
-              tremerInterfaceTransferenciaConquista();
-            }
             return;
           }
 
@@ -3301,15 +3399,14 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
 
 // Função para esconder tela de vitória
 function esconderTelaVitoria() {
-  if (window.overlay) {
-    window.overlay.destroy();
-    window.overlay = null;
-  }
-  
-  if (window.containerVitoria) {
-    window.containerVitoria.destroy();
-    window.containerVitoria = null;
-  }
+  // Fechar versão Phaser (legado) se existir
+  if (window.overlay) { try { window.overlay.destroy(); } catch(_){} window.overlay = null; }
+  if (window.containerVitoria) { try { window.containerVitoria.destroy(); } catch(_){} window.containerVitoria = null; }
+  // Fechar modal HTML
+  const vp = document.getElementById('victory-popup');
+  const vb = document.getElementById('victory-backdrop');
+  if (vp) vp.style.display = 'none';
+  if (vb) vb.style.display = 'none';
 }
 
 // Função para tocar som de vitória
@@ -3662,378 +3759,73 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   gameState.tropasParaColocar = 1;
   gameState.territorioSelecionadoParaReforco = territorio;
   
-  // Aplicar efeito de elevação e borda branca no território selecionado
+  // Aplicar efeito visual no território (mantém borda e elevação)
   territorio.polygon.setStrokeStyle(8, 0xffffff, 1);
   criarElevacaoTerritorio(territorio.nome, scene);
-  
-  // Criar container para a interface
-  interfaceReforco = scene.add.container(pointer.x, pointer.y);
-  interfaceReforco.setDepth(20);
-  
-  // Background principal com gradiente
-  const background = scene.add.rectangle(0, 0, getResponsiveSize(350), getResponsiveSize(200), 0x1a1a1a, 0.95);
-  background.setStrokeStyle(3, 0x33cc33);
-  background.setDepth(0);
-  interfaceReforco.add(background);
-  
-  // Header com gradiente
-  const headerBg = scene.add.rectangle(0, -getResponsiveSize(80), getResponsiveSize(350), getResponsiveSize(40), 0x33cc33, 0.9);
-  headerBg.setDepth(1);
-  interfaceReforco.add(headerBg);
-  
-  // Ícone de reforço
-  const reforcoIcon = scene.add.text(-getResponsiveSize(150), -getResponsiveSize(80), '🛡️', {
-    fontSize: getResponsiveFontSize(20),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  interfaceReforco.add(reforcoIcon);
-  
-  // Título
-  let tituloTexto = 'REFORÇAR TERRITÓRIO';
-  if (totalBonus > 0 && gameState.continentePrioritario) {
-    tituloTexto = `BÔNUS ${gameState.continentePrioritario.nome.toUpperCase()}`;
+
+  // Preencher modal HTML
+  const popup = document.getElementById('reinforce-popup');
+  const backdrop = document.getElementById('reinforce-backdrop');
+  if (!popup) return;
+  document.getElementById('reinforce-title').textContent = (totalBonus > 0 && gameState.continentePrioritario)
+    ? `Bônus ${gameState.continentePrioritario.nome}` : 'Reforçar Território';
+  document.getElementById('reinforce-territory-name').textContent = territorio.nome;
+  document.getElementById('reinforce-territory-troops').textContent = `Tropas: ${territorio.tropas}`;
+  const qtyEl = document.getElementById('reinforce-qty');
+  const minusBtn = document.getElementById('reinforce-minus');
+  const plusBtn = document.getElementById('reinforce-plus');
+  const confirmBtn = document.getElementById('reinforce-confirm');
+  const cancelBtn = document.getElementById('reinforce-cancel');
+
+  // Atualizador de quantidade
+  function updateQty() {
+    qtyEl.textContent = `${gameState.tropasParaColocar}/${tropasDisponiveis}`;
   }
-  
-  const titulo = scene.add.text(-getResponsiveSize(120), -getResponsiveSize(80), tituloTexto, {
-    fontSize: getResponsiveFontSize(16),
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0, 0.5).setDepth(2);
-  interfaceReforco.add(titulo);
-  
-  // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -getResponsiveSize(60), getResponsiveSize(300), 2, 0x444444, 0.8);
-  linhaDecorativa.setDepth(1);
-  interfaceReforco.add(linhaDecorativa);
-  
-  // Container para informações do território
-  const territorioContainer = scene.add.container(0, -getResponsiveSize(30));
-  territorioContainer.setDepth(2);
-  interfaceReforco.add(territorioContainer);
-  
-  // Background do território
-  const territorioBg = scene.add.rectangle(0, 0, getResponsiveSize(280), getResponsiveSize(35), 0x2a2a2a, 0.9);
-  territorioBg.setStrokeStyle(2, 0x33cc33);
-  territorioContainer.add(territorioBg);
-  
-  // Ícone do território
-  const territorioIcon = scene.add.text(-getResponsiveSize(120), 0, '🗺️', {
-    fontSize: getResponsiveFontSize(16)
-  }).setOrigin(0.5).setDepth(2);
-  territorioContainer.add(territorioIcon);
-  
-  // Nome do território
-  const territorioText = scene.add.text(-getResponsiveSize(100), 0, territorio.nome, {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  territorioContainer.add(territorioText);
-  
-  // Tropas atuais
-  const tropasAtuaisText = scene.add.text(getResponsiveSize(80), 0, `Tropas: ${territorio.tropas}`, {
-    fontSize: getResponsiveFontSize(12),
-    fill: '#cccccc',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  territorioContainer.add(tropasAtuaisText);
-  
-  // Container para controles de quantidade
-  const controlesContainer = scene.add.container(0, getResponsiveSize(20));
-  controlesContainer.setDepth(2);
-  interfaceReforco.add(controlesContainer);
-  
-  // Background dos controles
-  const controlesBg = scene.add.rectangle(0, 0, getResponsiveSize(280), getResponsiveSize(50), 0x2a2a2a, 0.9);
-  controlesBg.setStrokeStyle(2, 0x444444);
-  controlesContainer.add(controlesBg);
-  
-  // Título dos controles
-  const controlesTitulo = scene.add.text(0, -getResponsiveSize(15), 'Quantidade a Adicionar', {
-    fontSize: getResponsiveFontSize(12),
-    fill: '#cccccc',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(controlesTitulo);
-  
-  // Botão menos com decremento progressivo
-  const botaoMenos = scene.add.text(-getResponsiveSize(70), getResponsiveSize(8), '-', {
-    fontSize: getResponsiveFontSize(18),
-    fill: '#ffffff',
-    backgroundColor: '#ff3333',
-    padding: { x: getResponsivePadding(8), y: getResponsivePadding(4) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Variáveis para controle do decremento progressivo
-  window.decrementoInterval = null;
-  let decrementoDelay = 150; // Delay inicial em ms
-  let decrementoStep = 1; // Quantidade inicial a decrementar
-  
-  botaoMenos.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    // Decremento imediato
-    if (gameState.tropasParaColocar > 1) {
-      gameState.tropasParaColocar--;
-      atualizarTextoQuantidade();
-    }
-    
-    // Iniciar decremento progressivo
-    decrementoProgressivo();
-  });
-  
-  botaoMenos.on('pointerup', () => {
-    // Parar decremento progressivo
-    pararDecrementoProgressivo();
-  });
-  
-  botaoMenos.on('pointerout', () => {
-    // Parar decremento progressivo quando o mouse sai do botão
-    pararDecrementoProgressivo();
-  });
-  
-  // Função para decremento progressivo
-  function decrementoProgressivo() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.decrementoInterval) return; // Já está rodando
-    
-    window.decrementoInterval = setInterval(() => {
-      if (gameState.tropasParaColocar > 1) {
-        // Calcular quantidade a decrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.decrementoInterval.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          decrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          decrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          decrementoStep = 2;
-        }
-        
-        // Decrementar
-        const decrementoReal = Math.min(decrementoStep, gameState.tropasParaColocar - 1);
-        gameState.tropasParaColocar -= decrementoReal;
-        atualizarTextoQuantidade();
-        
-        // Tocar som a cada 5 decrementos para feedback
-        if (gameState.tropasParaColocar % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararDecrementoProgressivo();
-      }
-    }, decrementoDelay);
-    
-    window.decrementoInterval.startTime = Date.now();
-  }
-  
-  // Função para parar decremento progressivo
-  function pararDecrementoProgressivo() {
-    if (window.decrementoInterval) {
-      clearInterval(window.decrementoInterval);
-      window.decrementoInterval = null;
-      decrementoStep = 1; // Resetar para próximo uso
-    }
-  }
-  controlesContainer.add(botaoMenos);
-  
-  // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, getResponsiveSize(8), `${gameState.tropasParaColocar}/${tropasDisponiveis}`, {
-    fontSize: getResponsiveFontSize(18),
-    fill: '#ffffff',
-    align: 'center',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(textoQuantidade);
-  
-  // Botão mais com incremento progressivo
-  const botaoMais = scene.add.text(getResponsiveSize(70), getResponsiveSize(8), '+', {
-    fontSize: getResponsiveFontSize(18),
-    fill: '#ffffff',
-    backgroundColor: '#33ff33',
-    padding: { x: getResponsivePadding(8), y: getResponsivePadding(4) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Variáveis para controle do incremento progressivo
-  window.incrementoInterval = null;
-  let incrementoDelay = 150; // Delay inicial em ms
-  let incrementoStep = 1; // Quantidade inicial a incrementar
-  
-  botaoMais.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    // Incremento imediato
-    if (gameState.tropasParaColocar < tropasDisponiveis) {
-      gameState.tropasParaColocar++;
-      atualizarTextoQuantidade();
-    }
-    
-    // Iniciar incremento progressivo
-    incrementoProgressivo();
-  });
-  
-  botaoMais.on('pointerup', () => {
-    // Parar incremento progressivo
-    pararIncrementoProgressivo();
-  });
-  
-  botaoMais.on('pointerout', () => {
-    // Parar incremento progressivo quando o mouse sai do botão
-    pararIncrementoProgressivo();
-  });
-  
-  // Função para incremento progressivo
-  function incrementoProgressivo() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.incrementoInterval) return; // Já está rodando
-    
-    window.incrementoInterval = setInterval(() => {
+  updateQty();
+
+  // Handlers
+  let incInterval = null;
+  let decInterval = null;
+  function startInc() {
+    if (incInterval) return;
+    incInterval = setInterval(() => {
       if (gameState.tropasParaColocar < tropasDisponiveis) {
-        // Calcular quantidade a incrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.incrementoInterval.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          incrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          incrementoStep = 2;
-        }
-        
-        // Incrementar
-        const incrementoReal = Math.min(incrementoStep, tropasDisponiveis - gameState.tropasParaColocar);
-        gameState.tropasParaColocar += incrementoReal;
-        atualizarTextoQuantidade();
-        
-        // Tocar som a cada 5 incrementos para feedback
-        if (gameState.tropasParaColocar % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararIncrementoProgressivo();
+        gameState.tropasParaColocar = Math.min(tropasDisponiveis, gameState.tropasParaColocar + 1);
+        updateQty();
       }
-    }, incrementoDelay);
-    
-    window.incrementoInterval.startTime = Date.now();
+    }, 120);
   }
-  
-  // Função para parar incremento progressivo
-  function pararIncrementoProgressivo() {
-    if (window.incrementoInterval) {
-      clearInterval(window.incrementoInterval);
-      window.incrementoInterval = null;
-      incrementoStep = 1; // Resetar para próximo uso
-    }
+  function stopInc() { if (incInterval) { clearInterval(incInterval); incInterval = null; } }
+  function startDec() {
+    if (decInterval) return;
+    decInterval = setInterval(() => {
+      if (gameState.tropasParaColocar > 1) {
+        gameState.tropasParaColocar = Math.max(1, gameState.tropasParaColocar - 1);
+        updateQty();
+      }
+    }, 120);
   }
-  controlesContainer.add(botaoMais);
-  
-  // Container para botões de ação
-  const botoesContainer = scene.add.container(0, 80);
-  botoesContainer.setDepth(2);
-  interfaceReforco.add(botoesContainer);
-  
-  // Detectar se é dispositivo móvel
-  const isMobile = window.innerWidth <= 768;
-  const buttonWidth = isMobile ? 140 : 120;
-  const buttonHeight = isMobile ? 45 : 35;
-  const buttonFontSize = isMobile ? '16px' : '12px';
-  
-  // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(-70, 0, buttonWidth, buttonHeight, 0x33cc33, 0.9);
-  botaoConfirmarBg.setStrokeStyle(2, 0x2a9e2a);
-  botaoConfirmarBg.setInteractive({ useHandCursor: true });
-  botoesContainer.add(botaoConfirmarBg);
-  
-  const botaoConfirmar = scene.add.text(-70, 0, '✅ CONFIRMAR', {
-    fontSize: buttonFontSize,
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para confirmar reforço
-  const confirmarAcao = () => {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    tocarSomClick();
-    confirmarReforco();
-  };
-  
-  botaoConfirmarBg.on('pointerdown', confirmarAcao);
-  botaoConfirmar.on('pointerdown', confirmarAcao);
-  botoesContainer.add(botaoConfirmar);
-  
-  // Botão cancelar
-  const botaoCancelarBg = scene.add.rectangle(70, 0, buttonWidth, buttonHeight, 0x666666, 0.9);
-  botaoCancelarBg.setStrokeStyle(2, 0x444444);
-  botaoCancelarBg.setInteractive({ useHandCursor: true });
-  botoesContainer.add(botaoCancelarBg);
-  
-  const botaoCancelar = scene.add.text(70, 0, '❌ CANCELAR', {
-    fontSize: buttonFontSize,
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para cancelar reforço
-  const cancelarAcao = () => {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    tocarSomClick();
-    esconderInterfaceReforco();
-  };
-  
-  botaoCancelarBg.on('pointerdown', cancelarAcao);
-  botaoCancelar.on('pointerdown', cancelarAcao);
-  botoesContainer.add(botaoCancelar);
-  
-  // Função para atualizar o texto da quantidade
-  function atualizarTextoQuantidade() {
-    textoQuantidade.setText(`${gameState.tropasParaColocar}/${tropasDisponiveis}`);
+  function stopDec() { if (decInterval) { clearInterval(decInterval); decInterval = null; } }
+
+  if (minusBtn) {
+    minusBtn.onmousedown = () => { tocarSomClick(); if (gameState.tropasParaColocar > 1) { gameState.tropasParaColocar--; updateQty(); } startDec(); };
+    minusBtn.onmouseup = minusBtn.onmouseleave = () => stopDec();
   }
-  
-  // Posicionar interface para não sair da tela
-  const largura = scene.scale.width;
-  const altura = scene.scale.height;
-  if (pointer.x + 100 > largura) {
-    interfaceReforco.x = largura - 100;
+  if (plusBtn) {
+    plusBtn.onmousedown = () => { tocarSomClick(); if (gameState.tropasParaColocar < tropasDisponiveis) { gameState.tropasParaColocar++; updateQty(); } startInc(); };
+    plusBtn.onmouseup = plusBtn.onmouseleave = () => stopInc();
   }
-  if (pointer.y + 60 > altura) {
-    interfaceReforco.y = altura - 60;
-  }
-  
-  // Tornar a interface arrastável
-  tornarInterfaceArrastavel(interfaceReforco, scene);
+  if (confirmBtn) confirmBtn.onclick = () => { tocarSomClick(); confirmarReforco(); hideReinforceModal(); };
+  if (cancelBtn) cancelBtn.onclick = () => { tocarSomClick(); hideReinforceModal(); };
+
+  // Exibir modal
+  popup.style.display = 'flex';
+  if (backdrop) backdrop.style.display = 'block';
 }
 
 function esconderInterfaceReforco() {
-  if (interfaceReforco) {
-    // Limpar intervalos de incremento/decremento se existirem
-    if (window.incrementoInterval) {
-      clearInterval(window.incrementoInterval);
-      window.incrementoInterval = null;
-    }
-    if (window.decrementoInterval) {
-      clearInterval(window.decrementoInterval);
-      window.decrementoInterval = null;
-    }
-    
-    interfaceReforco.destroy();
-    interfaceReforco = null;
-  }
+  // Fechar modal HTML
+  hideReinforceModal();
   const gameState = getGameState();
   if (gameState) {
     // Verificar se o território selecionado pertence ao continente prioritário
@@ -4070,6 +3862,13 @@ function esconderInterfaceReforco() {
   }
 }
 
+function hideReinforceModal() {
+  const popup = document.getElementById('reinforce-popup');
+  const backdrop = document.getElementById('reinforce-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+}
+
 function confirmarReforco() {
   const gameState = getGameState();
   if (!gameState) return;
@@ -4099,337 +3898,9 @@ function confirmarReforco() {
 
 // Funções para interface de transferência após conquista
 function mostrarInterfaceTransferenciaConquista(dados, scene) {
-  // Verificar se a scene é válida
-  if (!scene || !scene.add) {
-    console.error('❌ Scene inválida em mostrarInterfaceTransferenciaConquista:', scene);
-    return;
-  }
-  
-  // Esconder interface anterior se existir
-  esconderInterfaceTransferenciaConquista(true);
-  
-  // Inicializar com 1 tropa (automática)
-  tropasParaTransferir = 1;
-  
-  // Criar container para a interface
-  interfaceTransferenciaConquista = scene.add.container(400, 300);
-  interfaceTransferenciaConquista.setDepth(20);
-  
-  // Background principal com gradiente
-  const background = scene.add.rectangle(0, 0, 400, 250, 0x1a1a1a, 0.95);
-  background.setStrokeStyle(3, 0xcc6633);
-  background.setDepth(0);
-  interfaceTransferenciaConquista.add(background);
-  
-  // Header com gradiente
-  const headerBg = scene.add.rectangle(0, -100, 400, 50, 0xcc6633, 0.9);
-  headerBg.setDepth(1);
-  interfaceTransferenciaConquista.add(headerBg);
-  
-  // Ícone de conquista
-  const conquistaIcon = scene.add.text(-170, -100, '⚔️', {
-    fontSize: getResponsiveFontSize(24),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  interfaceTransferenciaConquista.add(conquistaIcon);
-  
-  // Título
-  const titulo = scene.add.text(-140, -100, 'TRANSFERIR TROPAS', {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0, 0.5).setDepth(2);
-  interfaceTransferenciaConquista.add(titulo);
-  
-  // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
-  linhaDecorativa.setDepth(1);
-  interfaceTransferenciaConquista.add(linhaDecorativa);
-  
-  // Container para territórios
-  const territoriosContainer = scene.add.container(0, -30);
-  territoriosContainer.setDepth(2);
-  interfaceTransferenciaConquista.add(territoriosContainer);
-  
-  // Território atacante
-  const atacanteBg = scene.add.rectangle(-100, 0, 180, 40, 0x2a2a2a, 0.9);
-  atacanteBg.setStrokeStyle(2, 0xcc6633);
-  territoriosContainer.add(atacanteBg);
-  
-  const atacanteIcon = scene.add.text(-170, 0, '⚔️', {
-    fontSize: getResponsiveFontSize(18)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(atacanteIcon);
-  
-  const atacanteText = scene.add.text(-130, 0, dados.territorioAtacante, {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  territoriosContainer.add(atacanteText);
-  
-  // Seta de direção
-  const seta = scene.add.text(0, 0, '➡️', {
-    fontSize: getResponsiveFontSize(20)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(seta);
-  
-  // Território conquistado
-  const conquistadoBg = scene.add.rectangle(100, 0, 180, 40, 0x2a2a2a, 0.9);
-  conquistadoBg.setStrokeStyle(2, 0xcc6633);
-  territoriosContainer.add(conquistadoBg);
-  
-  const conquistadoIcon = scene.add.text(30, 0, '🏆', {
-    fontSize: getResponsiveFontSize(18)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(conquistadoIcon);
-  
-  const conquistadoText = scene.add.text(70, 0, dados.territorioConquistado, {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  territoriosContainer.add(conquistadoText);
-  
-  // Container para controles de quantidade
-  const controlesContainer = scene.add.container(0, 30);
-  controlesContainer.setDepth(2);
-  interfaceTransferenciaConquista.add(controlesContainer);
-  
-  // Background dos controles
-  const controlesBg = scene.add.rectangle(0, 0, 300, 60, 0x2a2a2a, 0.9);
-  controlesBg.setStrokeStyle(2, 0x444444);
-  controlesContainer.add(controlesBg);
-  
-  // Título dos controles
-  const controlesTitulo = scene.add.text(0, -20, 'Quantidade de Tropas', {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#cccccc',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(controlesTitulo);
-  
-  // Botão menos
-  const botaoMenos = scene.add.text(-80, 10, '-', {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    backgroundColor: '#ff3333',
-    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Variáveis para incremento progressivo
-  let incrementoStep = 1;
-  let incrementoDelay = 100;
-  
-  // Função para decremento progressivo
-  function decrementoProgressivoTransferencia() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.decrementoIntervalTransferencia) return; // Já está rodando
-    
-    window.decrementoIntervalTransferencia = setInterval(() => {
-      if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
-        // Calcular quantidade a decrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.decrementoIntervalTransferencia.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          incrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          incrementoStep = 2;
-        }
-        
-        // Decrementar
-        const decrementoReal = Math.min(incrementoStep, tropasParaTransferir - 1);
-        tropasParaTransferir -= decrementoReal;
-        atualizarTextoQuantidadeTransferencia();
-        
-        // Tocar som a cada 5 decrementos para feedback
-        if (tropasParaTransferir % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararDecrementoProgressivoTransferencia();
-      }
-    }, incrementoDelay);
-    
-    window.decrementoIntervalTransferencia.startTime = Date.now();
-  }
-  
-  // Função para parar decremento progressivo
-  function pararDecrementoProgressivoTransferencia() {
-    if (window.decrementoIntervalTransferencia) {
-      clearInterval(window.decrementoIntervalTransferencia);
-      window.decrementoIntervalTransferencia = null;
-      incrementoStep = 1; // Resetar para próximo uso
-    }
-  }
-  
-  botaoMenos.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    if (tropasParaTransferir > 1) { // Mínimo 1 (tropa automática)
-      tropasParaTransferir--;
-      atualizarTextoQuantidadeTransferencia();
-    }
-  });
-  
-  botaoMenos.on('pointerdown', decrementoProgressivoTransferencia);
-  botaoMenos.on('pointerup', pararDecrementoProgressivoTransferencia);
-  botaoMenos.on('pointerout', pararDecrementoProgressivoTransferencia);
-  
-  controlesContainer.add(botaoMenos);
-  
-  // Texto da quantidade
-  const textoQuantidade = scene.add.text(0, 10, `${tropasParaTransferir}/${dados.tropasDisponiveis}`, {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    align: 'center',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setDepth(2);
-  controlesContainer.add(textoQuantidade);
-  
-  // Botão mais
-  const botaoMais = scene.add.text(80, 10, '+', {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    backgroundColor: '#33ff33',
-    padding: { x: getResponsivePadding(10), y: getResponsivePadding(5) },
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para incremento progressivo
-  function incrementoProgressivoTransferencia() {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    if (window.incrementoIntervalTransferencia) return; // Já está rodando
-    
-    window.incrementoIntervalTransferencia = setInterval(() => {
-      if (tropasParaTransferir < dados.tropasDisponiveis) {
-        // Calcular quantidade a incrementar baseada no tempo
-        const tempoDecorrido = Date.now() - (window.incrementoIntervalTransferencia.startTime || Date.now());
-        
-        if (tempoDecorrido > 2000) { // Após 2 segundos
-          incrementoStep = Math.min(10, Math.floor(tempoDecorrido / 1000)); // Máximo 10 por vez
-        } else if (tempoDecorrido > 1000) { // Após 1 segundo
-          incrementoStep = 5;
-        } else if (tempoDecorrido > 500) { // Após 0.5 segundos
-          incrementoStep = 2;
-        }
-        
-        // Incrementar
-        const incrementoReal = Math.min(incrementoStep, dados.tropasDisponiveis - tropasParaTransferir);
-        tropasParaTransferir += incrementoReal;
-        atualizarTextoQuantidadeTransferencia();
-        
-        // Tocar som a cada 5 incrementos para feedback
-        if (tropasParaTransferir % 5 === 0) {
-          tocarSomClick();
-        }
-      } else {
-        pararIncrementoProgressivoTransferencia();
-      }
-    }, incrementoDelay);
-    
-    window.incrementoIntervalTransferencia.startTime = Date.now();
-  }
-  
-  // Função para parar incremento progressivo
-  function pararIncrementoProgressivoTransferencia() {
-    if (window.incrementoIntervalTransferencia) {
-      clearInterval(window.incrementoIntervalTransferencia);
-      window.incrementoIntervalTransferencia = null;
-      incrementoStep = 1; // Resetar para próximo uso
-    }
-  }
-  
-  botaoMais.on('pointerdown', (pointer) => {
-    tocarSomClick();
-    if (tropasParaTransferir < dados.tropasDisponiveis) {
-      tropasParaTransferir++;
-      atualizarTextoQuantidadeTransferencia();
-    }
-  });
-  
-  botaoMais.on('pointerdown', incrementoProgressivoTransferencia);
-  botaoMais.on('pointerup', pararIncrementoProgressivoTransferencia);
-  botaoMais.on('pointerout', pararIncrementoProgressivoTransferencia);
-  
-  controlesContainer.add(botaoMais);
-  
-  // Container para botões de ação
-  const botoesContainer = scene.add.container(0, getResponsiveSize(100));
-  botoesContainer.setDepth(2);
-  interfaceTransferenciaConquista.add(botoesContainer);
-
-  // Função para tremer a interface quando o jogador tentar atacar durante a transferência
-  window.tremerInterfaceTransferenciaConquista = () => {
-    if (!interfaceTransferenciaConquista || !scene || !scene.tweens) return;
-    const originalX = interfaceTransferenciaConquista.x;
-    const originalY = interfaceTransferenciaConquista.y;
-    scene.tweens.add({
-      targets: interfaceTransferenciaConquista,
-      x: originalX + 12,
-      duration: 50,
-      yoyo: true,
-      repeat: 4,
-      onComplete: () => {
-        interfaceTransferenciaConquista.setPosition(originalX, originalY);
-      }
-    });
-  };
-  
-  // Detectar se é dispositivo móvel
-  const isMobile = window.innerWidth <= 768;
-  const buttonWidth = isMobile ? getResponsiveSize(160) : getResponsiveSize(140);
-  const buttonHeight = isMobile ? getResponsiveSize(50) : getResponsiveSize(40);
-  const buttonFontSize = isMobile ? getResponsiveFontSize(18) : getResponsiveFontSize(14);
-  
-  // Botão confirmar
-  const botaoConfirmarBg = scene.add.rectangle(0, 0, buttonWidth, buttonHeight, 0xcc6633, 0.9);
-  botaoConfirmarBg.setStrokeStyle(2, 0xa55229);
-  botaoConfirmarBg.setInteractive({ useHandCursor: true });
-  botoesContainer.add(botaoConfirmarBg);
-  
-  const botaoConfirmar = scene.add.text(0, 0, '✅ CONFIRMAR', {
-    fontSize: buttonFontSize,
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  // Função para confirmar transferência
-  const confirmarTransferenciaAcao = () => {
-    // Fechar indicação de início de turno automaticamente
-    fecharIndicacaoInicioTurnoAutomatico();
-    
-    tocarSomClick();
-    setTimeout(() => {
-      confirmarTransferenciaConquista();
-    }, 10);
-  };
-  
-  botaoConfirmarBg.on('pointerdown', confirmarTransferenciaAcao);
-  botaoConfirmar.on('pointerdown', confirmarTransferenciaAcao);
-  botoesContainer.add(botaoConfirmar);
-  
-
-  
-  // Função para atualizar o texto da quantidade
-  function atualizarTextoQuantidadeTransferencia() {
-    textoQuantidade.setText(`${tropasParaTransferir}/${dados.tropasDisponiveis}`);
-  }
-  
-  // Tornar a interface arrastável
-  tornarInterfaceArrastavel(interfaceTransferenciaConquista, scene);
+  // Esta função foi migrada para HTML/CSS
+  // Agora usa showTransferModal() em vez desta implementação Phaser
+  showTransferModal(dados);
 }
 
 function esconderInterfaceTransferenciaConquista(manterDados = false) {
@@ -4445,11 +3916,9 @@ function esconderInterfaceTransferenciaConquista(manterDados = false) {
     window.decrementoIntervalTransferencia = null;
   }
   
-  if (interfaceTransferenciaConquista) {
-    interfaceTransferenciaConquista.destroy();
-    interfaceTransferenciaConquista = null;
-    console.log('DEBUG: interfaceTransferenciaConquista destruída');
-  }
+  // Esconder o modal HTML
+  hideTransferModal();
+  
   tropasParaTransferir = 0;
   if (!manterDados) {
     dadosConquista = null;
@@ -4462,21 +3931,21 @@ function esconderInterfaceTransferenciaConquista(manterDados = false) {
 function esconderInterfaceRemanejamento() {
   console.log('DEBUG: esconderInterfaceRemanejamento chamada');
   
-  if (interfaceRemanejamento) {
-    interfaceRemanejamento.destroy();
-    interfaceRemanejamento = null;
-    console.log('DEBUG: Interface de remanejamento destruída');
+  const popup = document.getElementById('remanejamento-popup');
+  const backdrop = document.getElementById('remanejamento-backdrop');
+  
+  if (popup) {
+    popup.style.display = 'none';
+  }
+  if (backdrop) {
+    backdrop.style.display = 'none';
   }
   
-  // Limpar intervalos de incremento/decremento se existirem
-  if (window.incrementoIntervalRemanejamento) {
-    clearInterval(window.incrementoIntervalRemanejamento);
-    window.incrementoIntervalRemanejamento = null;
-  }
-  if (window.decrementoIntervalRemanejamento) {
-    clearInterval(window.decrementoIntervalRemanejamento);
-    window.decrementoIntervalRemanejamento = null;
-  }
+  interfaceRemanejamentoAberta = false;
+  dadosRemanejamento = null;
+  tropasParaMover = 1;
+  
+  console.log('DEBUG: Interface de remanejamento HTML escondida');
 }
 
 function confirmarTransferenciaConquista() {
@@ -4498,195 +3967,53 @@ function confirmarTransferenciaConquista() {
 }
 
 function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima = null) {
-  console.log('🔧 DEBUG: mostrarInterfaceRemanejamento chamada');
+  console.log('🔧 DEBUG: mostrarInterfaceRemanejamento HTML chamada');
   console.log('🔧 DEBUG: Origem:', origem ? origem.nome : 'não definido');
   console.log('🔧 DEBUG: Destino:', destino ? destino.nome : 'não definido');
-  console.log('🔧 DEBUG: Scene:', scene ? 'válida' : 'inválida');
   console.log('🔧 DEBUG: Quantidade máxima:', quantidadeMaxima);
   
-  // Verificar se a scene é válida
-  if (!scene || !scene.add) {
-    console.error('❌ Scene inválida em mostrarInterfaceRemanejamento:', scene);
+  // Verificar se a interface já está aberta
+  if (interfaceRemanejamentoAberta) {
+    console.log('🔧 DEBUG: Interface de remanejamento já está aberta, ignorando');
     return;
   }
   
-  // Inicializar com 1 tropa
-  let tropasParaMover = 1;
-  const maxTropas = quantidadeMaxima || (origem.tropas - 1); // Usar quantidade máxima fornecida ou calcular
+  // Calcular quantidade máxima
+  const maxTropas = quantidadeMaxima || (origem.tropas - 1);
   
-  // Criar container para a interface
-  interfaceRemanejamento = scene.add.container(400, 300);
-  interfaceRemanejamento.setDepth(20);
+  // Armazenar dados para uso posterior
+  dadosRemanejamento = {
+    origem: origem,
+    destino: destino,
+    maxTropas: Math.max(0, maxTropas)
+  };
   
-  // Background principal com gradiente
-  const background = scene.add.rectangle(0, 0, 400, 250, 0x1a1a1a, 0.95);
-  background.setStrokeStyle(3, 0x0077cc);
-  background.setDepth(0);
-  interfaceRemanejamento.add(background);
+  // Inicializar quantidade
+  tropasParaMover = 1;
   
-  // Header com gradiente
-  const headerBg = scene.add.rectangle(0, -100, 400, 50, 0x0077cc, 0.9);
-  headerBg.setDepth(1);
-  interfaceRemanejamento.add(headerBg);
+  // Obter elementos HTML
+  const popup = document.getElementById('remanejamento-popup');
+  const backdrop = document.getElementById('remanejamento-backdrop');
+  const origemEl = document.getElementById('remanejamento-origem');
+  const destinoEl = document.getElementById('remanejamento-destino');
+  const origemTropasEl = document.getElementById('remanejamento-origem-tropas');
+  const destinoTropasEl = document.getElementById('remanejamento-destino-tropas');
+  const qtyEl = document.getElementById('remanejamento-qty');
   
-  // Ícone de movimento
-  const movimentoIcon = scene.add.text(-170, -100, '🔄', {
-    fontSize: getResponsiveFontSize(24),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  interfaceRemanejamento.add(movimentoIcon);
+  // Preencher dados da interface
+  if (origemEl) origemEl.textContent = origem.nome;
+  if (destinoEl) destinoEl.textContent = destino.nome;
+  if (origemTropasEl) origemTropasEl.textContent = `Tropas: ${origem.tropas}`;
+  if (destinoTropasEl) destinoTropasEl.textContent = `Tropas: ${destino.tropas}`;
+  if (qtyEl) qtyEl.textContent = `${tropasParaMover}/${dadosRemanejamento.maxTropas}`;
   
-  // Título
-  const titulo = scene.add.text(-140, -100, 'MOVER TROPAS', {
-    fontSize: getResponsiveFontSize(20),
-    fill: '#ffffff',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0, 0.5).setDepth(2);
-  interfaceRemanejamento.add(titulo);
+  // Mostrar interface
+  if (backdrop) backdrop.style.display = 'block';
+  if (popup) popup.style.display = 'flex';
   
-  // Linha decorativa
-  const linhaDecorativaRemanejamento = scene.add.rectangle(0, -75, 350, 2, 0x444444, 0.8);
-  linhaDecorativaRemanejamento.setDepth(1);
-  interfaceRemanejamento.add(linhaDecorativaRemanejamento);
+  interfaceRemanejamentoAberta = true;
   
-  // Container para territórios
-  const territoriosContainer = scene.add.container(0, -30);
-  territoriosContainer.setDepth(2);
-  interfaceRemanejamento.add(territoriosContainer);
-  
-  // Território de origem
-  const origemBg = scene.add.rectangle(-100, 0, 180, 40, 0x2a2a2a, 0.9);
-  origemBg.setStrokeStyle(2, 0x0077cc);
-  territoriosContainer.add(origemBg);
-  
-  const origemIcon = scene.add.text(-170, 0, '📤', {
-    fontSize: getResponsiveFontSize(18)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(origemIcon);
-  
-  const origemText = scene.add.text(-130, 0, origem.nome, {
-    fontSize: getResponsiveFontSize(14),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  territoriosContainer.add(origemText);
-  
-  // Seta de direção
-  const seta = scene.add.text(0, 0, '➡️', {
-    fontSize: getResponsiveFontSize(20)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(seta);
-  
-  // Território de destino
-  const destinoBg = scene.add.rectangle(100, 0, 180, 40, 0x2a2a2a, 0.9);
-  destinoBg.setStrokeStyle(2, 0x0077cc);
-  territoriosContainer.add(destinoBg);
-  
-  const destinoIcon = scene.add.text(30, 0, '📥', {
-    fontSize: getResponsiveFontSize(18)
-  }).setOrigin(0.5).setDepth(2);
-  territoriosContainer.add(destinoIcon);
-  
-  // Linha decorativa
-  const linhaDecorativaObjetivo = scene.add.rectangle(0, -145, 550, 1, 0x444444, 0.8);
-  linhaDecorativaObjetivo.setDepth(1);
-  container.add(linhaDecorativaObjetivo);
-  
-  // Container para o conteúdo principal
-  const contentContainer = scene.add.container(0, -30);
-  contentContainer.setDepth(2);
-  container.add(contentContainer);
-  
-  // Ícone de objetivo específico baseado no tipo
-  let objetivoIcone = '🎯';
-  if (objetivo.descricao.includes('eliminar')) {
-    objetivoIcone = '⚔️';
-  } else if (objetivo.descricao.includes('conquistar')) {
-    objetivoIcone = '🏆';
-  } else if (objetivo.descricao.includes('territórios')) {
-    objetivoIcone = '🗺️';
-  } else if (objetivo.descricao.includes('continentes')) {
-    objetivoIcone = '🌍';
-  }
-  
-  const iconeObjetivo = scene.add.text(0, -60, objetivoIcone, {
-    fontSize: getResponsiveFontSize(36, 0.8, 0.6),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  contentContainer.add(iconeObjetivo);
-  
-  // Descrição do objetivo com melhor formatação
-  const descricao = scene.add.text(0, -10, objetivo.descricao, {
-    fontSize: getResponsiveFontSize(18, 0.8, 0.6),
-    fill: '#ffffff',
-    align: 'center',
-    wordWrap: { width: getResponsiveSize(500, 0.8, 0.6) },
-    lineSpacing: 6
-  }).setOrigin(0.5).setDepth(2);
-  contentContainer.add(descricao);
-  
-  // Dica de jogo
-  const dica = scene.add.text(0, 50, '💡 Dica: Mantenha seu objetivo em mente durante toda a partida!', {
-    fontSize: getResponsiveFontSize(14, 0.8, 0.6),
-    fill: '#cccccc',
-    align: 'center',
-    wordWrap: { width: getResponsiveSize(450, 0.8, 0.6) },
-    fontStyle: 'italic'
-  }).setOrigin(0.5).setDepth(2);
-  contentContainer.add(dica);
-  
-  // Botão de fechar com estilo azul moderno como o chat
-  const botaoFecharBg = scene.add.rectangle(0, 140, 150, 40, 0x0077cc, 0.95);
-  botaoFecharBg.setStrokeStyle(1, 0x0077cc);
-  botaoFecharBg.setDepth(1);
-  container.add(botaoFecharBg);
-  
-  const botaoFechar = scene.add.text(0, 140, '✅ Entendi', {
-    fontSize: getResponsiveFontSize(16, 0.8, 0.6),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
-  container.add(botaoFechar);
-  
-  // Efeitos hover no botão - estilo azul moderno
-  botaoFechar.on('pointerover', () => {
-    botaoFecharBg.setFillStyle(0x005fa3, 0.95);
-    botaoFecharBg.setStrokeStyle(1, 0x005fa3);
-  });
-  
-  botaoFechar.on('pointerout', () => {
-    botaoFecharBg.setFillStyle(0x0077cc, 0.95);
-    botaoFecharBg.setStrokeStyle(1, 0x0077cc);
-  });
-  
-  botaoFechar.on('pointerdown', () => {
-    tocarSomClick();
-    fecharTodasModais();
-  });
-  
-  // Animação de entrada
-  container.setScale(0.8);
-  scene.tweens.add({
-    targets: container,
-    scaleX: 1,
-    scaleY: 1,
-    duration: 300,
-    ease: 'Back.easeOut'
-  });
-  
-  // Animação do overlay
-  overlay.setAlpha(0);
-  scene.tweens.add({
-    targets: overlay,
-    alpha: 1,
-    duration: 200,
-    ease: 'Power2'
-  });
-  
-  // Tornar a modal arrastável
-  tornarInterfaceArrastavel(container, scene);
+  console.log('🔧 DEBUG: Interface de remanejamento HTML mostrada');
 }
 
 function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
@@ -5219,19 +4546,9 @@ function updateAllResponsiveElements() {
       }
     }
     
-    if (interfaceTransferenciaConquista) {
-      // Reposicionar interface de transferência se estiver aberta
-      const newX = Math.min(Math.max(canvas.width / 2, getResponsiveSize(200)), canvas.width - getResponsiveSize(200));
-      const newY = Math.min(Math.max(canvas.height / 2, getResponsiveSize(150)), canvas.height - getResponsiveSize(150));
-      interfaceTransferenciaConquista.setPosition(newX, newY);
-    }
+    // Interface de transferência agora é HTML/CSS, não precisa de reposicionamento Phaser
     
-    if (interfaceRemanejamento) {
-      // Reposicionar interface de remanejamento se estiver aberta
-      const newX = Math.min(Math.max(canvas.width / 2, getResponsiveSize(200)), canvas.width - getResponsiveSize(200));
-      const newY = Math.min(Math.max(canvas.height / 2, getResponsiveSize(150)), canvas.height - getResponsiveSize(150));
-      interfaceRemanejamento.setPosition(newX, newY);
-    }
+    // Interface de remanejamento agora é HTML/CSS, não precisa de reposicionamento Phaser
   }
   
   // Atualizar popup de histórico se estiver aberto
@@ -5740,6 +5057,11 @@ function fecharTodasModais() {
     hideCardsModal();
   }
   
+  // Fechar modal de transferência
+  if (modalTransferenciaAberta) {
+    hideTransferModal();
+  }
+  
   // Fechar popup de histórico
   const gameState = getGameState();
   if (gameState && gameState.historyPopupVisible) {
@@ -5771,6 +5093,121 @@ function showObjectiveModal(objetivo) {
   popup.style.display = 'flex';
   if (backdrop) backdrop.style.display = 'block';
   modalObjetivoAberto = true;
+}
+
+// Victory Modal (HTML) Functions - global
+function showVictoryModal(nomeJogador, resumoJogo) {
+  try { fecharTodasModais(); } catch(_) {}
+  const popup = document.getElementById('victory-popup');
+  const backdrop = document.getElementById('victory-backdrop');
+  const msg = document.getElementById('victory-message');
+  const subtitle = document.getElementById('victory-subtitle');
+  const stats = document.getElementById('victory-stats');
+  if (!popup || !msg || !subtitle || !stats) return;
+  const gameState = getGameState();
+  const isPlayerVictory = gameState && nomeJogador === gameState.meuNome;
+  msg.textContent = isPlayerVictory ? 'Parabéns! Você venceu!' : `${nomeJogador} venceu o jogo!`;
+  subtitle.textContent = resumoJogo && resumoJogo.tipoVitoria
+    ? `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`
+    : '';
+  // Montar estatísticas simples
+  const statsLines = [];
+  if (resumoJogo && resumoJogo.estatisticas) {
+    const e = resumoJogo.estatisticas;
+    if (e.duracao) statsLines.push(`⏱️ Duração: ${e.duracao}`);
+    if (e.totalAtaques != null) statsLines.push(`⚔️ Ataques: ${e.totalAtaques}`);
+    if (e.continentesConquistados != null) statsLines.push(`🌍 Continentes: ${e.continentesConquistados}`);
+  }
+  stats.innerHTML = statsLines.map(l => `<div>${l}</div>`).join('');
+  popup.style.display = 'flex';
+  if (backdrop) backdrop.style.display = 'block';
+  // Som de vitória
+  try { tocarSomTerritoryWin(); } catch(_) {}
+}
+
+function hideVictoryModal() {
+  const popup = document.getElementById('victory-popup');
+  const backdrop = document.getElementById('victory-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+}
+
+function showTransferModal(dados) {
+  console.log('DEBUG: showTransferModal chamada com dados:', dados);
+  esconderInterfaceTransferenciaConquista(true);
+  dadosConquista = dados;
+  tropasParaTransferir = 1;
+  
+  const popup = document.getElementById('transfer-popup');
+  const backdrop = document.getElementById('transfer-backdrop');
+  if (!popup) {
+    console.error('DEBUG: Elemento transfer-popup não encontrado');
+    return;
+  }
+  
+  const origemEl = document.getElementById('transfer-origem');
+  const destinoEl = document.getElementById('transfer-destino');
+  const origemTroopsEl = document.getElementById('transfer-origem-tropas');
+  const destinoTroopsEl = document.getElementById('transfer-destino-tropas');
+  const qtyEl = document.getElementById('transfer-qty');
+  const minusBtn = document.getElementById('transfer-minus');
+  const plusBtn = document.getElementById('transfer-plus');
+  const confirmBtn = document.getElementById('transfer-confirm');
+  const cancelBtn = document.getElementById('transfer-cancel');
+  const closeBtn = document.getElementById('transfer-close');
+  
+  const maxDisponivel = (typeof dados.tropasAdicionais === 'number' ? dados.tropasAdicionais : (dados.tropasDisponiveis || 0));
+  
+  if (origemEl) origemEl.textContent = dados.territorioAtacante;
+  if (destinoEl) destinoEl.textContent = dados.territorioConquistado;
+  if (origemTroopsEl) origemTroopsEl.textContent = `Tropas: ${dados.tropasOrigem ?? '-'}`;
+  if (destinoTroopsEl) destinoTroopsEl.textContent = `Tropas: ${dados.tropasDestino ?? '-'}`;
+  
+  function updateQty() { 
+    if (qtyEl) qtyEl.textContent = `${tropasParaTransferir}/${maxDisponivel}`; 
+  }
+  updateQty();
+  
+  if (minusBtn) minusBtn.onclick = () => { 
+    if (tropasParaTransferir > 0) { 
+      tropasParaTransferir--; 
+      updateQty(); 
+    } 
+  };
+  
+  if (plusBtn) plusBtn.onclick = () => { 
+    if (tropasParaTransferir < maxDisponivel) { 
+      tropasParaTransferir++; 
+      updateQty(); 
+    } 
+  };
+  
+  if (confirmBtn) confirmBtn.onclick = () => { 
+    tocarSomClick(); 
+    confirmarTransferenciaConquista(); 
+    esconderInterfaceTransferenciaConquista(false); 
+  };
+  
+  const cancelar = () => { 
+    tocarSomClick(); 
+    esconderInterfaceTransferenciaConquista(false); 
+  };
+  
+  if (cancelBtn) cancelBtn.onclick = cancelar;
+  if (closeBtn) closeBtn.onclick = cancelar;
+  if (backdrop) backdrop.onclick = cancelar;
+  
+  popup.style.display = 'flex';
+  if (backdrop) backdrop.style.display = 'block';
+  modalTransferenciaAberta = true;
+}
+
+function hideTransferModal() {
+  const popup = document.getElementById('transfer-popup');
+  const backdrop = document.getElementById('transfer-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  modalTransferenciaAberta = false;
 }
 
 function hideObjectiveModal() {

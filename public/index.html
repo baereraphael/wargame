@@ -691,6 +691,8 @@
     text-overflow: ellipsis;
     max-width: 300px;
     transition: all 0.3s ease;
+    min-width: 0; /* Allow element to shrink */
+    flex-shrink: 1; /* Allow shrinking in flex container */
   }
 
   .instruction-text.highlight {
@@ -1291,6 +1293,352 @@
   @media (max-width: 480px) {
     .cards-popup { width: 92vw; }
     .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Victory Popup Styles */
+  .victory-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(600px, 92vw);
+    max-height: min(85vh, 800px);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #444;
+    border-radius: 15px;
+    z-index: 1002;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+  }
+
+  .victory-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1001;
+    display: none;
+  }
+
+  .victory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #444;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 13px 13px 0 0;
+  }
+
+  .victory-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .victory-close {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  .victory-close:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+  .victory-content { padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; }
+  .victory-icon { font-size: 48px; }
+  .victory-message { color: #fff; font-size: 18px; text-align: center; }
+  .victory-subtitle { color: #ccc; font-size: 14px; text-align: center; }
+  .victory-stats { color: #ddd; font-size: 13px; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .victory-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .victory-btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+  .victory-btn.primary { background: #0077cc; color: #fff; }
+  .victory-btn.primary:hover { background: #005fa3; }
+  .victory-btn.secondary { background: #33cc33; color: #000; }
+  .victory-btn.secondary:hover { filter: brightness(0.95); }
+
+  /* Reinforcement Popup Styles */
+  .reinforce-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(420px, 92vw);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #33cc33;
+    border-radius: 14px;
+    z-index: 1002;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+  }
+
+  .reinforce-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1001;
+    display: none;
+  }
+
+  .reinforce-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(51, 204, 51, 0.15);
+    border-bottom: 1px solid #2a9e2a;
+    border-radius: 12px 12px 0 0;
+  }
+  .reinforce-title { color: #fff; font-weight: bold; font-size: 16px; }
+  .reinforce-close { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; }
+  .reinforce-close:hover { color: #fff; }
+
+  .reinforce-content { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .reinforce-territory { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); border: 1px solid #33cc33; border-radius: 8px; padding: 8px 10px; color: #fff; }
+  .reinforce-territory .name { font-weight: bold; }
+  .reinforce-territory .troops { margin-left: auto; color: #ccc; font-size: 12px; }
+
+  .reinforce-controls { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .reinforce-label { color: #ccc; font-size: 12px; }
+  .reinforce-qty { color: #fff; font-weight: bold; font-size: 16px; }
+  .reinforce-stepper { display: flex; align-items: center; gap: 8px; }
+  .reinforce-btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+  .reinforce-minus { background: #ff3333; color: #fff; }
+  .reinforce-plus { background: #33ff33; color: #000; }
+
+  .reinforce-actions { display: flex; justify-content: center; gap: 10px; }
+  .reinforce-confirm { background: #33cc33; color: #000; }
+  .reinforce-cancel { background: #666; color: #fff; }
+  .reinforce-actions .reinforce-btn { padding: 10px 14px; }
+
+  /* Transfer Popup Styles */
+  .transfer-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(460px, 94vw);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #cc6633;
+    border-radius: 14px;
+    z-index: 1002;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+  }
+  .transfer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1001; display: none; }
+  .transfer-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; background: rgba(204,102,51,0.15); border-bottom: 1px solid #a55229; border-radius: 12px 12px 0 0; }
+  .transfer-title { color: #fff; font-weight: bold; font-size: 16px; }
+  .transfer-close { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; }
+  .transfer-close:hover { color: #fff; }
+  .transfer-content { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .transfer-row { display: flex; align-items: center; gap: 8px; color: #fff; }
+  .transfer-card { flex: 1; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); border: 1px solid #cc6633; border-radius: 8px; padding: 8px 10px; }
+  .transfer-card .name { font-weight: bold; }
+  .transfer-card .troops { margin-left: auto; color: #ccc; font-size: 12px; }
+  .transfer-arrow { width: 36px; text-align: center; }
+  .transfer-controls { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .transfer-label { color: #ccc; font-size: 12px; }
+  .transfer-qty { color: #fff; font-weight: bold; font-size: 16px; }
+  .transfer-stepper { display: flex; align-items: center; gap: 8px; }
+  .transfer-btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+  .transfer-minus { background: #ff3333; color: #fff; }
+  .transfer-plus { background: #ffaa00; color: #000; }
+  .transfer-actions { display: flex; justify-content: center; gap: 10px; }
+  .transfer-confirm { background: #cc6633; color: #fff; }
+  .transfer-cancel { background: #666; color: #fff; }
+  .transfer-actions .transfer-btn { padding: 10px 14px; }
+
+  /* Remanejamento Popup Styles */
+  .remanejamento-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(480px, 94vw);
+    max-height: 90vh;
+    background: rgba(26, 26, 26, 0.96);
+    border: 3px solid #0077cc;
+    border-radius: 15px;
+    z-index: 1002;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+  }
+  .remanejamento-backdrop { 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.6); 
+    z-index: 1001; 
+    display: none; 
+  }
+  .remanejamento-header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 12px; 
+    padding: 16px 20px; 
+    background: linear-gradient(135deg, rgba(0,119,204,0.2), rgba(0,119,204,0.1)); 
+    border-bottom: 2px solid #0077cc; 
+    border-radius: 12px 12px 0 0; 
+  }
+  .remanejamento-icon {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .remanejamento-title { 
+    color: #fff; 
+    font-weight: bold; 
+    font-size: 20px;
+    flex: 1;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  .remanejamento-close { 
+    background: none; 
+    border: none; 
+    color: #ccc; 
+    font-size: 18px; 
+    cursor: pointer; 
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  .remanejamento-close:hover { 
+    color: #fff; 
+    background: rgba(255,255,255,0.1);
+  }
+  .remanejamento-content { 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+  }
+  .remanejamento-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    color: #fff; 
+  }
+  .remanejamento-card { 
+    flex: 1; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    background: rgba(42, 42, 42, 0.9); 
+    border: 2px solid #0077cc; 
+    border-radius: 10px; 
+    padding: 12px; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .remanejamento-territory-icon {
+    font-size: 18px;
+  }
+  .remanejamento-territory-name { 
+    font-weight: bold; 
+    font-size: 14px;
+  }
+  .remanejamento-territory-troops { 
+    margin-left: auto; 
+    color: #ccc; 
+    font-size: 12px; 
+  }
+  .remanejamento-arrow { 
+    width: 40px; 
+    text-align: center; 
+    font-size: 20px;
+  }
+  .remanejamento-controls { 
+    background: rgba(42, 42, 42, 0.9); 
+    border: 2px solid #444; 
+    border-radius: 10px; 
+    padding: 16px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .remanejamento-label { 
+    color: #ccc; 
+    font-size: 14px; 
+    font-weight: bold;
+  }
+  .remanejamento-qty { 
+    color: #fff; 
+    font-weight: bold; 
+    font-size: 18px; 
+    margin: 0 16px;
+  }
+  .remanejamento-stepper { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+  }
+  .remanejamento-btn { 
+    padding: 8px 12px; 
+    border-radius: 8px; 
+    border: none; 
+    cursor: pointer; 
+    font-weight: bold; 
+    font-size: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .remanejamento-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  }
+  .remanejamento-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .remanejamento-minus { 
+    background: #ff3333; 
+    color: #fff; 
+  }
+  .remanejamento-minus:hover {
+    background: #ff4444;
+  }
+  .remanejamento-plus { 
+    background: #ffaa00; 
+    color: #000; 
+  }
+  .remanejamento-plus:hover {
+    background: #ffbb11;
+  }
+  .remanejamento-actions { 
+    display: flex; 
+    justify-content: center; 
+    gap: 16px; 
+  }
+  .remanejamento-confirm { 
+    background: #33cc33; 
+    color: #000; 
+    padding: 12px 18px;
+  }
+  .remanejamento-confirm:hover {
+    background: #44dd44;
+  }
+  .remanejamento-cancel { 
+    background: #cc3333; 
+    color: #fff; 
+    padding: 12px 18px;
+  }
+  .remanejamento-cancel:hover {
+    background: #dd4444;
   }
 
   /* Responsive adjustments for very small screens */
@@ -2073,6 +2421,23 @@
       min-width: 40px;
     }
 
+    /* Game Instructions - Mobile */
+    .game-instructions {
+      margin: 0 5px;
+      flex: 1;
+      min-width: 0; /* Allow shrinking */
+    }
+
+    .instruction-text {
+      font-size: 8px;
+      padding: 2px 4px;
+      max-width: none; /* Remove fixed max-width */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 4px;
+    }
+
     /* Game Info - Mobile */
     .game-info {
       gap: 12px;
@@ -2102,6 +2467,17 @@
     .hud-top {
       height: 20px;
       padding: 0 4px;
+    }
+
+    /* Game Instructions - Extra Small Mobile */
+    .game-instructions {
+      margin: 0 3px;
+    }
+
+    .instruction-text {
+      font-size: 7px;
+      padding: 1px 3px;
+      line-height: 1.2;
     }
 
     .player-avatar {
@@ -2139,6 +2515,17 @@
     .hud-top {
       height: 18px;
       padding: 0 3px;
+    }
+
+    /* Game Instructions - Very Small Mobile */
+    .game-instructions {
+      margin: 0 2px;
+    }
+
+    .instruction-text {
+      font-size: 6px;
+      padding: 1px 2px;
+      line-height: 1.1;
     }
     
     .player-avatar {
@@ -2181,6 +2568,17 @@
     .hud-top {
       height: 22px !important;
       padding: 0 4px !important;
+    }
+
+    /* Game Instructions - Landscape Mobile */
+    .game-instructions {
+      margin: 0 4px !important;
+    }
+
+    .instruction-text {
+      font-size: 7px !important;
+      padding: 1px 3px !important;
+      line-height: 1.2 !important;
     }
     
     .player-info {
@@ -2238,6 +2636,17 @@
     .hud-top {
       height: 18px !important;
       padding: 0 3px !important;
+    }
+
+    /* Game Instructions - Very Small Landscape */
+    .game-instructions {
+      margin: 0 2px !important;
+    }
+
+    .instruction-text {
+      font-size: 6px !important;
+      padding: 1px 2px !important;
+      line-height: 1.1 !important;
     }
     
     .player-avatar {
@@ -2327,6 +2736,21 @@
     .hud-top {
       height: 16px;
       padding: 0 2px;
+    }
+
+    /* Game Instructions - Ultra Compact */
+    .game-instructions {
+      margin: 0 1px;
+    }
+
+    .instruction-text {
+      font-size: 5px;
+      padding: 1px;
+      line-height: 1;
+      min-height: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .player-avatar {
@@ -2582,6 +3006,127 @@
       <div class="cards-grid" id="cards-grid"></div>
       <div class="cards-actions">
         <button class="cards-exchange" id="cards-exchange" disabled>🔄 Trocar Cartas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Popup (HTML-based) -->
+  <div class="victory-backdrop" id="victory-backdrop"></div>
+  <div class="victory-popup" id="victory-popup">
+    <div class="victory-header">
+      <h3>🏆 Vitória</h3>
+      <button class="victory-close" id="victory-close" aria-label="Fechar">✖</button>
+    </div>
+    <div class="victory-content">
+      <div class="victory-icon">🏆</div>
+      <div class="victory-message" id="victory-message">Parabéns! Você venceu!</div>
+      <div class="victory-subtitle" id="victory-subtitle"></div>
+      <div class="victory-stats" id="victory-stats"></div>
+      <div class="victory-actions">
+        <button class="victory-btn primary" id="victory-restart">Jogar Novamente</button>
+        <button class="victory-btn secondary" id="victory-menu">Voltar ao Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reinforcement Popup (HTML-based) -->
+  <div class="reinforce-backdrop" id="reinforce-backdrop"></div>
+  <div class="reinforce-popup" id="reinforce-popup">
+    <div class="reinforce-header">
+      <div class="reinforce-title" id="reinforce-title">Reforçar Território</div>
+      <button class="reinforce-close" id="reinforce-close">✖</button>
+    </div>
+    <div class="reinforce-content">
+      <div class="reinforce-territory">
+        <div>🗺️</div>
+        <div class="name" id="reinforce-territory-name">-</div>
+        <div class="troops" id="reinforce-territory-troops">Tropas: 0</div>
+      </div>
+      <div class="reinforce-controls">
+        <div class="reinforce-label">Quantidade a adicionar</div>
+        <div class="reinforce-qty" id="reinforce-qty">0/0</div>
+        <div class="reinforce-stepper">
+          <button class="reinforce-btn reinforce-minus" id="reinforce-minus">-</button>
+          <button class="reinforce-btn reinforce-plus" id="reinforce-plus">+</button>
+        </div>
+      </div>
+      <div class="reinforce-actions">
+        <button class="reinforce-btn reinforce-confirm" id="reinforce-confirm">✅ Confirmar</button>
+        <button class="reinforce-btn reinforce-cancel" id="reinforce-cancel">❌ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer Popup (HTML-based) -->
+  <div class="transfer-backdrop" id="transfer-backdrop"></div>
+  <div class="transfer-popup" id="transfer-popup">
+    <div class="transfer-header">
+      <div class="transfer-title" id="transfer-title">Transferir Tropas</div>
+      <button class="transfer-close" id="transfer-close">✖</button>
+    </div>
+    <div class="transfer-content">
+
+      <div class="transfer-row">
+        <div class="transfer-card">
+          <div>📤</div>
+          <div class="name" id="transfer-origem">-</div>
+          <div class="troops" id="transfer-origem-tropas">Tropas: 0</div>
+        </div>
+        <div class="transfer-arrow">➡️</div>
+        <div class="transfer-card">
+          <div>📥</div>
+          <div class="name" id="transfer-destino">-</div>
+          <div class="troops" id="transfer-destino-tropas">Tropas: 0</div>
+        </div>
+      </div>
+      <div class="transfer-controls">
+        <div class="transfer-label">Quantidade para transferir</div>
+        <div class="transfer-qty" id="transfer-qty">0/0</div>
+        <div class="transfer-stepper">
+          <button class="transfer-btn transfer-minus" id="transfer-minus">-</button>
+          <button class="transfer-btn transfer-plus" id="transfer-plus">+</button>
+        </div>
+      </div>
+      <div class="transfer-actions">
+        <button class="transfer-btn transfer-confirm" id="transfer-confirm">✅ Confirmar</button>
+        <button class="transfer-btn transfer-cancel" id="transfer-cancel">❌ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remanejamento Popup (HTML-based) -->
+  <div class="remanejamento-backdrop" id="remanejamento-backdrop"></div>
+  <div class="remanejamento-popup" id="remanejamento-popup">
+    <div class="remanejamento-header">
+      <div class="remanejamento-icon">🔄</div>
+      <div class="remanejamento-title">MOVER TROPAS</div>
+      <button class="remanejamento-close" id="remanejamento-close">✖</button>
+    </div>
+    <div class="remanejamento-content">
+      <div class="remanejamento-row">
+        <div class="remanejamento-card">
+          <div class="remanejamento-territory-icon">📤</div>
+          <div class="remanejamento-territory-name" id="remanejamento-origem">-</div>
+          <div class="remanejamento-territory-troops" id="remanejamento-origem-tropas">Tropas: 0</div>
+        </div>
+        <div class="remanejamento-arrow">➡️</div>
+        <div class="remanejamento-card">
+          <div class="remanejamento-territory-icon">📥</div>
+          <div class="remanejamento-territory-name" id="remanejamento-destino">-</div>
+          <div class="remanejamento-territory-troops" id="remanejamento-destino-tropas">Tropas: 0</div>
+        </div>
+      </div>
+      <div class="remanejamento-controls">
+        <div class="remanejamento-label">Quantidade para mover</div>
+        <div class="remanejamento-qty" id="remanejamento-qty">1/0</div>
+        <div class="remanejamento-stepper">
+          <button class="remanejamento-btn remanejamento-minus" id="remanejamento-minus">−</button>
+          <button class="remanejamento-btn remanejamento-plus" id="remanejamento-plus">+</button>
+        </div>
+      </div>
+      <div class="remanejamento-actions">
+        <button class="remanejamento-btn remanejamento-confirm" id="remanejamento-confirm">✅ Confirmar</button>
+        <button class="remanejamento-btn remanejamento-cancel" id="remanejamento-cancel">❌ Cancelar</button>
       </div>
     </div>
   </div>
