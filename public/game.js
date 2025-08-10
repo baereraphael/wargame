@@ -894,11 +894,6 @@ let troopsOverlay = null;
 let htmlContinentsEnabled = true;
 let continentsOverlay = null;
 
-// Sistema de Territórios HTML - Substitui polígonos Phaser por elementos HTML responsivos
-let htmlTerritoriesEnabled = false;
-let htmlTerritoriesContainer = null;
-let htmlTerritories = new Map();
-
 function initializeHTMLTroopSystem() {
   troopsOverlay = document.getElementById('troops-overlay');
   if (!troopsOverlay) {
@@ -906,28 +901,6 @@ function initializeHTMLTroopSystem() {
     return;
   }
   console.log('✅ Sistema de tropas HTML inicializado');
-}
-
-function initializeHTMLTerritorySystem() {
-  // Criar container para territórios HTML se não existir
-  if (!htmlTerritoriesContainer) {
-    htmlTerritoriesContainer = document.createElement('div');
-    htmlTerritoriesContainer.id = 'territories-overlay';
-    htmlTerritoriesContainer.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1000;
-    `;
-    
-    // Adicionar ao body
-    document.body.appendChild(htmlTerritoriesContainer);
-  }
-  
-  console.log('✅ Sistema de territórios HTML inicializado');
 }
 
 function createHTMLTroopIndicator(territorio) {
@@ -1080,7 +1053,7 @@ function toggleHTMLTroops() {
 }
 
 // Variável global para ajuste dinâmico do offset das tropas
-let globalTroopOffset = { desktop: 35, mobile: 12, smallMobile: 8 };
+let globalTroopOffset = { desktop: 35, mobile: 25, smallMobile: 12 };
 
 // Função para ajustar o offset vertical das tropas (debug)
 function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
@@ -1453,7 +1426,7 @@ function setupDebugMode() {
   console.log('🛠️ Comandos disponíveis:');
   console.log('  • V - Mostrar tela de vitória (debug)');
   console.log('  • T - Testar interfaces modais');
-  console.log('  • C - Simular combate (3 dados defesa)');
+  console.log('  • C - Simular combate (3 dados de defesa)');
   console.log('  • M - Testar proteção mobile touch');
   console.log('  • H - Alternar tropas HTML/Phaser');
   console.log('  • N - Alternar continentes HTML/Phaser');
