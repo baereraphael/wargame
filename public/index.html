@@ -1799,9 +1799,10 @@
   .reinforce-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.7);
     z-index: 1001;
     display: none;
+    cursor: not-allowed; /* Indicar que não é clicável */
   }
 
   .reinforce-header {
@@ -1853,7 +1854,7 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
   }
-  .transfer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1001; display: none; }
+  .transfer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1001; display: none; cursor: not-allowed; }
   .transfer-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; background: rgba(204,102,51,0.15); border-bottom: 1px solid #a55229; border-radius: 12px 12px 0 0; }
   .transfer-title { color: #fff; font-weight: bold; font-size: 16px; }
   .transfer-close { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; }
@@ -1897,9 +1898,10 @@
   .remanejamento-backdrop { 
     position: fixed; 
     inset: 0; 
-    background: rgba(0,0,0,0.6); 
+    background: rgba(0,0,0,0.7); 
     z-index: 1001; 
     display: none; 
+    cursor: not-allowed; /* Indicar que não é clicável */
   }
   .remanejamento-header { 
     display: flex; 
@@ -2875,8 +2877,10 @@
     }
     
     .game-container canvas {
-      top: 20px !important; /* Position below extra small mobile HUD */
-      height: calc(100vh - 20px) !important; /* Use viewport height minus extra small mobile HUD */
+      top: 22px !important; /* Position below extra small mobile HUD + margin */
+      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
+      height: calc(100vh - 32px) !important; /* Use viewport height minus top and bottom margins */
+      object-fit: contain !important; /* Prevent distortion */
     }
     
     .hud-top {
@@ -2927,6 +2931,13 @@
 
   /* Very Small Mobile Devices */
   @media (max-width: 400px) {
+    .game-container canvas {
+      top: 20px !important; /* Position below very small mobile HUD + margin */
+      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
+      height: calc(100vh - 30px) !important; /* Use viewport height minus top and bottom margins */
+      object-fit: contain !important; /* Prevent distortion */
+    }
+    
     .hud-top {
       height: 18px;
       padding: 0 3px;
@@ -2973,8 +2984,10 @@
     }
     
     .game-container canvas {
-      top: 18px !important;
-      height: calc(100vh - 18px) !important;
+      top: 20px !important; /* Position below very small landscape HUD + margin */
+      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
+      height: calc(100vh - 30px) !important; /* Use viewport height minus top and bottom margins */
+      object-fit: contain !important; /* Prevent distortion */
     }
   }
 
@@ -3039,10 +3052,11 @@
     }
     
     .game-container canvas {
-      top: 22px !important;
+      top: 24px !important; /* Position below landscape mobile HUD + margin */
+      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
       width: 100% !important;
-      height: calc(100vh - 22px) !important;
-      object-fit: fill !important;
+      height: calc(100vh - 34px) !important; /* Use viewport height minus top and bottom margins */
+      object-fit: contain !important; /* Prevent distortion */
     }
   }
 
@@ -3148,6 +3162,13 @@
 
   /* Ultra-compact mode for very small screens */
   @media (max-width: 360px) {
+    .game-container canvas {
+      top: 18px !important; /* Position below ultra-compact mobile HUD + margin */
+      bottom: 10px !important; /* Add bottom margin to prevent cut-off */
+      height: calc(100vh - 28px) !important; /* Use viewport height minus top and bottom margins */
+      object-fit: contain !important; /* Prevent distortion */
+    }
+    
     .hud-top {
       height: 16px;
       padding: 0 2px;

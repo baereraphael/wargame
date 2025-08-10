@@ -770,11 +770,12 @@ function setupRemanejamentoEventListeners() {
     });
   }
   
-  if (remanejamentoBackdrop) {
-    remanejamentoBackdrop.addEventListener('click', () => {
-      esconderInterfaceRemanejamento();
-    });
-  }
+  // Backdrop do remanejamento removido - não deve fechar ao clicar fora
+  // if (remanejamentoBackdrop) {
+  //   remanejamentoBackdrop.addEventListener('click', () => {
+  //     esconderInterfaceRemanejamento();
+  //   });
+  // }
   
   if (remanejamentoCancel) {
     remanejamentoCancel.addEventListener('click', () => {
@@ -845,6 +846,40 @@ function confirmarRemanejamento() {
   }
 }
 
+// Função para verificar se alguma interface HTML está aberta
+function isAnyHTMLInterfaceOpen() {
+  // Verificar interfaces por elemento e estilo de display
+  const interfaces = [
+    { name: 'Remanejamento', element: document.getElementById('remanejamento-popup') },
+    { name: 'Reforço', element: document.getElementById('reinforce-popup') },
+    { name: 'Transferência', element: document.getElementById('transfer-popup') },
+    { name: 'Vitória', element: document.getElementById('victory-popup') },
+    { name: 'Cartas', element: document.querySelector('.cards-popup[style*="flex"]') },
+    { name: 'Objetivo', element: document.querySelector('.objective-popup[style*="flex"]') }
+  ];
+  
+  for (const interface of interfaces) {
+    if (interface.element) {
+      const isVisible = interface.element.style.display === 'flex' || 
+                       interface.element.style.display === 'block' ||
+                       (interface.element.style.display === '' && 
+                        window.getComputedStyle(interface.element).display !== 'none');
+      
+      if (isVisible) {
+        return interface.name;
+      }
+    }
+  }
+  
+  // Verificar também por variáveis de estado
+  if (interfaceRemanejamentoAberta) return 'Remanejamento (estado)';
+  if (modalTransferenciaAberta) return 'Transferência (estado)';
+  if (modalObjetivoAberto) return 'Objetivo (estado)';
+  if (modalCartasTerritorioAberto) return 'Cartas (estado)';
+  
+  return null; // Nenhuma interface aberta
+}
+
 function setupDebugMode() {
   let debugModeEnabled = false;
   let debugIndicator = null;
@@ -884,12 +919,28 @@ function setupDebugMode() {
         }
         break;
         
-      case 'escape':
+              case 'escape':
         // Fechar qualquer modal aberta
         if (modalsAbertas) {
           event.preventDefault();
           fecharTodasModais();
           hideVictoryModal();
+        }
+        break;
+        
+      case 't':
+        // Debug: Testar interfaces modais
+        if (!modalsAbertas) {
+          event.preventDefault();
+          testModalInterfaces();
+        }
+        break;
+        
+      case 'c':
+        // Debug: Testar posicionamento do canvas
+        if (!modalsAbertas) {
+          event.preventDefault();
+          testCanvasPositioning();
         }
         break;
     }
@@ -898,6 +949,8 @@ function setupDebugMode() {
   console.log('🛠️ Modo Debug configurado - Pressione Ctrl+D para ativar/desativar');
   console.log('🛠️ Comandos disponíveis:');
   console.log('  • V - Mostrar tela de vitória (debug)');
+  console.log('  • T - Testar interfaces modais');
+  console.log('  • C - Testar posicionamento do canvas');
   console.log('  • ESC - Fechar modais abertas');
   console.log('  • Ctrl+D - Toggle modo debug');
 }
@@ -906,12 +959,18 @@ function showDebugCommands() {
   const commands = [
     '🛠️ COMANDOS DE DEBUG DISPONÍVEIS:',
     '  • V - Mostrar tela de vitória',
+    '  • T - Testar interfaces modais',
+    '  • C - Testar posicionamento do canvas',
     '  • ESC - Fechar modais',
     '  • Ctrl+D - Toggle debug mode',
     '',
     '📝 FUNÇÕES DE CONSOLE:',
     '  • testVictoryScreen() - Teste da tela de vitória',
-    '  • showDebugVictoryScreen() - Vitória com dados variados'
+    '  • showDebugVictoryScreen() - Vitória com dados variados',
+    '  • testModalInterfaces() - Testar proteção modal',
+    '  • testCanvasPositioning() - Testar posicionamento do canvas',
+    '  • isAnyHTMLInterfaceOpen() - Verificar interfaces abertas',
+    '  • forceMobileCanvasPosition() - Forçar reposicionamento mobile'
   ];
   
   commands.forEach(cmd => console.log(cmd));
@@ -987,7 +1046,7 @@ function toggleDebugIndicator(enabled) {
     
     indicator.innerHTML = `
       🛠️ DEBUG MODE<br>
-      <span style="font-size: 10px; opacity: 0.8;">V = Victory Screen</span>
+      <span style="font-size: 9px; opacity: 0.8;">V = Victory | T = Test | C = Canvas</span>
     `;
     
     // Adicionar animação CSS
@@ -1103,6 +1162,207 @@ function generateRandomTerritories(jogadores, vencedor) {
   });
   
   return paises;
+}
+
+function testModalInterfaces() {
+  console.log('🧪 Testando proteção de interfaces modais...');
+  showDebugMessage('🧪 Testando interfaces modais');
+  
+  const interfaces = [
+    {
+      name: 'Remanejamento',
+      show: () => {
+        const dadosSimulados = {
+          origem: { nome: 'Brasil', tropas: 10 },
+          destino: { nome: 'Argentina', tropas: 5 }
+        };
+        mostrarInterfaceRemanejamento(dadosSimulados.origem, dadosSimulados.destino, null);
+      },
+      hide: () => esconderInterfaceRemanejamento()
+    },
+    {
+      name: 'Reforço',
+      show: () => {
+        const popup = document.getElementById('reinforce-popup');
+        const backdrop = document.getElementById('reinforce-backdrop');
+        if (popup && backdrop) {
+          document.getElementById('reinforce-title').textContent = 'Teste de Reforço';
+          document.getElementById('reinforce-territory-name').textContent = 'Brasil';
+          document.getElementById('reinforce-territory-troops').textContent = 'Tropas: 10';
+          document.getElementById('reinforce-qty').textContent = '1/5';
+          popup.style.display = 'flex';
+          backdrop.style.display = 'block';
+        }
+      },
+      hide: () => hideReinforceModal()
+    },
+    {
+      name: 'Transferência',
+      show: () => {
+        const dadosSimulados = {
+          territorioAtacante: 'Brasil',
+          territorioConquistado: 'Argentina',
+          tropasOrigem: 10,
+          tropasDestino: 1,
+          tropasAdicionais: 5
+        };
+        showTransferModal(dadosSimulados);
+      },
+      hide: () => hideTransferModal()
+    }
+  ];
+  
+  let currentIndex = 0;
+  
+  function showNext() {
+    if (currentIndex >= interfaces.length) {
+      console.log('🎉 Teste de interfaces concluído!');
+      showDebugMessage('✅ Teste concluído');
+      return;
+    }
+    
+    const current = interfaces[currentIndex];
+    console.log(`📋 Testando interface: ${current.name}`);
+    
+    // Mostrar interface
+    current.show();
+    
+    // Verificar se foi detectada
+    setTimeout(() => {
+      const interfaceAberta = isAnyHTMLInterfaceOpen();
+      if (interfaceAberta) {
+        console.log(`✅ ${current.name}: Proteção ativa - ${interfaceAberta}`);
+        showDebugMessage(`✅ ${current.name} protegida`);
+      } else {
+        console.log(`❌ ${current.name}: Proteção falhou!`);
+        showDebugMessage(`❌ ${current.name} desprotegida`);
+      }
+      
+      // Fechar interface após 2 segundos
+      setTimeout(() => {
+        current.hide();
+        currentIndex++;
+        
+        // Próxima interface após 1 segundo
+        setTimeout(showNext, 1000);
+      }, 2000);
+    }, 500);
+  }
+  
+  // Iniciar teste
+  showNext();
+}
+
+function testCanvasPositioning() {
+  console.log('📱 Testando posicionamento do canvas...');
+  showDebugMessage('📱 Testando canvas mobile');
+  
+  const canvas = document.querySelector('canvas');
+  const hudTop = document.querySelector('.hud-top');
+  
+  if (!canvas) {
+    console.error('❌ Canvas não encontrado');
+    showDebugMessage('❌ Canvas não encontrado');
+    return;
+  }
+  
+  // Informações da tela
+  const screenInfo = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    isMobile: isMobileDevice(),
+    isSmallMobile: isSmallMobileDevice(),
+    isLandscape: isMobileLandscape(),
+    devicePixelRatio: window.devicePixelRatio || 1
+  };
+  
+  // Informações do HUD
+  const hudInfo = hudTop ? {
+    height: hudTop.offsetHeight,
+    boundingHeight: hudTop.getBoundingClientRect().height,
+    top: hudTop.getBoundingClientRect().top,
+    bottom: hudTop.getBoundingClientRect().bottom
+  } : { height: 0, boundingHeight: 0, top: 0, bottom: 0 };
+  
+  // Informações do canvas
+  const canvasInfo = {
+    width: canvas.offsetWidth,
+    height: canvas.offsetHeight,
+    top: canvas.offsetTop,
+    left: canvas.offsetLeft,
+    bottom: canvas.offsetTop + canvas.offsetHeight,
+    right: canvas.offsetLeft + canvas.offsetWidth,
+    styleTop: canvas.style.top,
+    styleHeight: canvas.style.height,
+    styleObjectFit: canvas.style.objectFit,
+    computedStyle: window.getComputedStyle(canvas)
+  };
+  
+  // Verificar se o canvas está cortando
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  };
+  
+  const isCutOff = {
+    top: canvasInfo.top < 0,
+    bottom: canvasInfo.bottom > viewport.height,
+    left: canvasInfo.left < 0,
+    right: canvasInfo.right > viewport.width
+  };
+  
+  // Log detalhado
+  console.log('📊 INFORMAÇÕES DA TELA:');
+  console.table(screenInfo);
+  
+  console.log('📊 INFORMAÇÕES DO HUD:');
+  console.table(hudInfo);
+  
+  console.log('📊 INFORMAÇÕES DO CANVAS:');
+  console.table(canvasInfo);
+  
+  console.log('📊 VERIFICAÇÃO DE CORTE:');
+  console.table(isCutOff);
+  
+  // Verificar problemas
+  const problems = [];
+  if (isCutOff.top) problems.push('Canvas cortado no topo');
+  if (isCutOff.bottom) problems.push('Canvas cortado na parte inferior');
+  if (isCutOff.left) problems.push('Canvas cortado na esquerda');
+  if (isCutOff.right) problems.push('Canvas cortado na direita');
+  
+  if (problems.length > 0) {
+    console.warn('⚠️ PROBLEMAS DETECTADOS:');
+    problems.forEach(problem => console.warn(`  • ${problem}`));
+    showDebugMessage(`⚠️ ${problems.length} problemas detectados`);
+  } else {
+    console.log('✅ Canvas posicionado corretamente');
+    showDebugMessage('✅ Canvas OK');
+  }
+  
+  // Reforçar posicionamento
+  console.log('🔧 Reaplicando posicionamento...');
+  forceMobileCanvasPosition();
+  
+  setTimeout(() => {
+    const newCanvasInfo = {
+      top: canvas.offsetTop,
+      height: canvas.offsetHeight,
+      bottom: canvas.offsetTop + canvas.offsetHeight
+    };
+    
+    console.log('📊 CANVAS APÓS REPOSICIONAMENTO:');
+    console.table(newCanvasInfo);
+    
+    const stillCutOff = newCanvasInfo.bottom > viewport.height;
+    if (stillCutOff) {
+      console.warn('❌ Ainda há corte na parte inferior');
+      showDebugMessage('❌ Ainda cortando');
+    } else {
+      console.log('✅ Posicionamento corrigido');
+      showDebugMessage('✅ Corrigido');
+    }
+  }, 500);
 }
 
 function initializeGame() {
@@ -2117,7 +2377,8 @@ function create() {
   const reinforcePlus = document.getElementById('reinforce-plus');
   const reinforceConfirm = document.getElementById('reinforce-confirm');
   const reinforceCancel = document.getElementById('reinforce-cancel');
-  if (reinforceBackdrop) reinforceBackdrop.addEventListener('click', hideReinforceModal);
+  // Backdrop do reforço removido - não deve fechar ao clicar fora
+  // if (reinforceBackdrop) reinforceBackdrop.addEventListener('click', hideReinforceModal);
   if (reinforceClose) reinforceClose.addEventListener('click', hideReinforceModal);
 
   // Add event listeners for CSS buttons
@@ -2173,6 +2434,13 @@ function create() {
     this.input.on('pointerdown', (pointer) => {
       // Fechar indicação de início de turno automaticamente em qualquer interação
       fecharIndicacaoInicioTurnoAutomatico();
+      
+      // Verificar se alguma interface HTML está aberta (modal)
+      const interfaceHTMLAberta = isAnyHTMLInterfaceOpen();
+      if (interfaceHTMLAberta) {
+        console.log('🛡️ Clique bloqueado - Interface HTML aberta:', interfaceHTMLAberta);
+        return; // Bloquear completamente a interação
+      }
       
       const gameState = getGameState();
       if (!gameState) return;
@@ -5204,26 +5472,49 @@ function forceMobileCanvasPosition() {
   
   if (!isMobile) return;
 
-  const hudTop = document.querySelector('.hud-top');
   const canvasElement = document.querySelector('canvas');
   
-  if (hudTop && canvasElement) {
-    // Calcular posição exata do HUD
-    const hudRect = hudTop.getBoundingClientRect();
-    const hudBottom = hudRect.bottom;
+  if (canvasElement) {
+    // Determinar altura do HUD baseado na media query ativa
+    let hudHeight = 45; // Default desktop
+    
+    // Verificar media queries do CSS para usar valores consistentes
+    if (window.innerWidth <= 360) {
+      hudHeight = 16; // Ultra-compact
+    } else if (window.innerWidth <= 400) {
+      hudHeight = 18; // Very small mobile
+    } else if (window.innerWidth <= 480) {
+      hudHeight = 20; // Extra small mobile
+    } else if (window.innerWidth <= 768) {
+      hudHeight = 25; // Mobile
+    }
+    
+    // Ajustes para landscape
+    if (isLandscape) {
+      if (window.innerHeight <= 400) {
+        hudHeight = 18; // Very small landscape
+      } else if (window.innerHeight <= 500) {
+        hudHeight = 22; // Landscape mobile
+      }
+    }
+    
+    // Adicionar margem extra para evitar corte (especialmente na parte inferior)
+    const marginTop = Math.max(hudHeight + 2, 18); // Pelo menos 18px, mas preferir HUD + 2px
+    const marginBottom = 10; // Margem extra na parte inferior para evitar corte
     
     // Aplicar posicionamento correto
     canvasElement.style.position = 'absolute';
-    canvasElement.style.top = `${hudBottom}px`;
+    canvasElement.style.top = `${marginTop}px`;
     canvasElement.style.left = '0';
     canvasElement.style.right = '0';
-    canvasElement.style.bottom = '0';
+    canvasElement.style.bottom = `${marginBottom}px`;
     canvasElement.style.width = '100%';
-    canvasElement.style.height = `calc(100vh - ${hudBottom}px)`;
-    canvasElement.style.objectFit = 'fill';
+    canvasElement.style.height = `calc(100vh - ${marginTop + marginBottom}px)`;
+    canvasElement.style.objectFit = 'contain'; // Mudança: 'contain' em vez de 'fill' para evitar distorção
     canvasElement.style.zIndex = '1';
     
-    console.log('📱 Mobile canvas positioned at:', hudBottom, 'px from top');
+    console.log(`📱 Mobile canvas positioned: top=${marginTop}px, bottom=${marginBottom}px, hudHeight=${hudHeight}px`);
+    console.log(`📱 Screen: ${window.innerWidth}x${window.innerHeight}, landscape=${isLandscape}`);
   }
 }
 
@@ -5702,7 +5993,8 @@ function showTransferModal(dados) {
   
   if (cancelBtn) cancelBtn.onclick = cancelar;
   if (closeBtn) closeBtn.onclick = cancelar;
-  if (backdrop) backdrop.onclick = cancelar;
+  // Backdrop da transferência removido - não deve fechar ao clicar fora
+  // if (backdrop) backdrop.onclick = cancelar;
   
   popup.style.display = 'flex';
   if (backdrop) backdrop.style.display = 'block';
