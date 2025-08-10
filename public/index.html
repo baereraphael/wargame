@@ -3240,8 +3240,8 @@
   /* Responsive troop indicators for mobile */
   @media (max-width: 768px) {
     .troop-indicator {
-      width: 8px;
-      height: 8px;
+      width: 4px;
+      height: 4px;
       font-size: 12px;
       border-width: 1.5px;
     }
@@ -3249,8 +3249,8 @@
 
   @media (max-width: 480px) {
     .troop-indicator {
-      width: 8px;
-      height: 8px;
+      width: 4px;
+      height: 4px;
       font-size: 11px;
       border-width: 1px;
     }
@@ -3258,8 +3258,8 @@
 
   @media (max-width: 400px) {
     .troop-indicator {
-      width: 8px;
-      height: 8px;
+      width: 4px;
+      height: 4px;
       font-size: 10px;
       border-width: 1px;
     }
@@ -3267,8 +3267,8 @@
 
   @media (max-width: 360px) {
     .troop-indicator {
-      width: 8px;
-      height: 8px;
+      width: 4px;
+      height: 4px;
       font-size: 9px;
       border-width: 1px;
     }
@@ -3332,25 +3332,26 @@
 
   /* Turn Confirmation Popup (HTML) */
   .turn-confirm-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 999999; /* ensure above troops/continents/HUD */
+    pointer-events: auto;
   }
 
   .turn-confirm-modal {
-    width: min(520px, 90vw);
+    width: min(480px, 92vw);
     background: rgba(26,26,26,0.95);
     border: 1px solid #0077cc;
-    border-radius: 12px;
+    border-radius: 10px;
     color: #fff;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-    transform: scale(0.9);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    transform: scale(0.95);
     opacity: 0;
-    transition: transform 250ms ease, opacity 250ms ease;
+    transition: transform 200ms ease, opacity 200ms ease;
   }
 
   .turn-confirm-modal.show {
@@ -3361,35 +3362,35 @@
   .turn-confirm-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 6px;
+    padding: 8px 12px;
     background: rgba(0,119,204,0.9);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
     font-weight: 700;
   }
 
   .turn-confirm-title {
-    font-size: 16px;
+    font-size: 14px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
   }
 
   .turn-confirm-body {
-    padding: 16px;
+    padding: 10px 12px;
     text-align: center;
   }
 
   .turn-confirm-warning {
-    margin: 8px 0 16px;
-    font-size: 13px;
-    line-height: 1.3;
+    margin: 6px 0 10px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
-  .turn-timer-label { font-size: 11px; color: #cccccc; }
+  .turn-timer-label { font-size: 10px; color: #cccccc; }
   .turn-timer-box {
-    margin: 6px auto 0;
-    width: 130px;
-    height: 36px;
+    margin: 4px auto 0;
+    width: 110px;
+    height: 30px;
     background: rgba(42,42,42,0.9);
     border: 1px solid #0077cc;
     border-radius: 6px;
@@ -3397,19 +3398,19 @@
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 14px;
     color: #ffff00;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   }
 
-  .turn-confirm-actions { padding: 8px 16px 16px; text-align: center; }
+  .turn-confirm-actions { padding: 6px 12px 10px; text-align: center; }
   .turn-confirm-btn {
-    padding: 10px 18px;
+    padding: 8px 14px;
     background: #33cc33;
     color: #fff;
     font-weight: 700;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
@@ -3650,6 +3651,9 @@
 
     <!-- Turn Confirmation Overlay (HTML) -->
     <div id="turn-confirm-overlay" class="turn-confirm-overlay" style="display:none;"></div>
+
+    <!-- Turn Start Overlay (HTML) -->
+    <div id="turn-start-overlay" class="turn-confirm-overlay" style="display:none;"></div>
     
     <div class="game-hud">
     <!-- Top HUD Bar -->

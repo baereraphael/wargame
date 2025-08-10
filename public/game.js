@@ -160,22 +160,12 @@ function showTurnConfirmationPopup(scene) {
   if (!overlay) return;
   turnConfirmOverlayEl = overlay;
   overlay.innerHTML = `
-    <div class="turn-confirm-modal" id="turn-confirm-modal">
-      <div class="turn-confirm-header">
-        <span>⚔️</span>
-        <span class="turn-confirm-title">SEU TURNO COMEÇOU!</span>
-      </div>
-      <div class="turn-confirm-body">
-        <div class="turn-confirm-warning">Se não confirmar, seu turno será passado automaticamente.<br/>Após ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.</div>
-        <div class="turn-timer-label">Tempo Restante</div>
-        <div class="turn-timer-box" id="turn-timer-text">${turnConfirmationTimeLeft}s</div>
-      </div>
-      <div class="turn-confirm-actions">
-        <button class="turn-confirm-btn" id="turn-confirm-btn">CONFIRMAR TURNO</button>
-      </div>
-    </div>
+    <div class=\"turn-confirm-modal show\" id=\"turn-confirm-modal\">\n      <div class=\"turn-confirm-header\">\n        <span>⚔️</span>\n        <span class=\"turn-confirm-title\">SEU TURNO COMEÇOU!</span>\n      </div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">Se não confirmar, seu turno será passado automaticamente.<br/>Após ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.</div>\n        <div class=\"turn-timer-label\">Tempo Restante</div>\n        <div class=\"turn-timer-box\" id=\"turn-timer-text\">${turnConfirmationTimeLeft}s</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-confirm-btn\">CONFIRMAR TURNO</button>\n      </div>\n    </div>
   `;
   overlay.style.display = 'flex';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '999999';
   // trigger animation
   requestAnimationFrame(() => {
     const modal = document.getElementById('turn-confirm-modal');
@@ -848,12 +838,20 @@ function createConnectionLine(id, x1, y1, x2, y2) {
 const htmlConnections = [
   { origem: 'Blackmere', destino: 'Nihadara' },
   { origem: 'Duskmere', destino: 'Shōrenji' },
+  { origem: 'Blackmere', destino: 'Shōrenji' },
   { origem: "Kaer'Tai", destino: 'Duskmere' },
   { origem: 'Highmoor', destino: 'Frosthollow' },
+  { origem: 'Eldoria', destino: 'Frosthollow' },
+  { origem: 'Frosthelm', destino: 'Frosthollow' },
   { origem: 'Stormfen', destino: 'Frosthollow' },
   { origem: "Ravenspire", destino: "Zul'Marak" },
+  { origem: "Winterholde", destino: "Aetheris" },
+  { origem: "Winterholde", destino: "Ish'Tanor" },
+  { origem: "Tzun'Rakai", destino: "Qumaran" },
+  { origem: "Tzun'Rakai", destino: "Omradan" },
+  { origem: "Oru'Kai", destino: "Bareshi" },
+  { origem: "Oru'Kai", destino: "Sunjara" },
   { origem: "Ish'Tanor", destino: 'Aetheris' },
-  { origem: 'Darakai', destino: 'Aetheris' },
   { origem: 'Aetheris', destino: 'Dawnwatch' },
   { origem: 'Dawnwatch', destino: 'Mistveil' },
   { origem: 'Aetheris', destino: 'Mistveil' },
@@ -1031,7 +1029,7 @@ function toggleHTMLTroops() {
 }
 
 // Variável global para ajuste dinâmico do offset das tropas
-let globalTroopOffset = { desktop: 50, mobile: 40, smallMobile: 12 };
+let globalTroopOffset = { desktop: 50, mobile: 50, smallMobile: 12 };
 
 // Função para ajustar o offset vertical das tropas (debug)
 function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
@@ -2827,7 +2825,7 @@ function create() {
   const reinforceCancel = document.getElementById('reinforce-cancel');
   // Backdrop do reforço removido - não deve fechar ao clicar fora
   // if (reinforceBackdrop) reinforceBackdrop.addEventListener('click', hideReinforceModal);
-  if (reinforceClose) reinforceClose.addEventListener('click', hideReinforceModal);
+  if (reinforceClose) reinforceClose.addEventListener('click', esconderInterfaceReforco);
 
   // Add event listeners for CSS buttons
   botaoTurno.addEventListener('click', () => {
@@ -4814,8 +4812,8 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
     plusBtn.onmousedown = () => { tocarSomClick(); if (gameState.tropasParaColocar < tropasDisponiveis) { gameState.tropasParaColocar++; updateQty(); } startInc(); };
     plusBtn.onmouseup = plusBtn.onmouseleave = () => stopInc();
   }
-  if (confirmBtn) confirmBtn.onclick = () => { tocarSomClick(); confirmarReforco(); hideReinforceModal(); };
-  if (cancelBtn) cancelBtn.onclick = () => { tocarSomClick(); hideReinforceModal(); };
+  if (confirmBtn) confirmBtn.onclick = () => { tocarSomClick(); confirmarReforco(); };
+  if (cancelBtn) cancelBtn.onclick = () => { tocarSomClick(); esconderInterfaceReforco(); };
 
   // Exibir modal
   popup.style.display = 'flex';
@@ -7849,126 +7847,43 @@ function limparTodasElevacoes() {
 }
 
 function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
-  console.log('🎯 Mostrando indicação de início de turno para:', nomeJogador);
-  
-  // Verificar se a scene é válida
-  if (!scene || !scene.add) {
-    console.error('❌ Scene inválida em mostrarIndicacaoInicioTurno:', scene);
-    return;
-  }
-  
-  // Obter dimensões reais do canvas
-  const canvas = scene.sys.game.canvas;
-  const largura = canvas.width;
-  const altura = canvas.height;
-  
-  // Detectar se é dispositivo móvel
-  const isMobile = isMobileDevice();
-  const isSmallMobile = isSmallMobileDevice();
-  const isLandscape = isMobileLandscape();
-  
-  // Calcular tamanhos responsivos
-  const containerWidth = isSmallMobile ? getResponsiveSize(300) : isMobile ? getResponsiveSize(350) : getResponsiveSize(400);
-  const containerHeight = isSmallMobile ? getResponsiveSize(80) : isMobile ? getResponsiveSize(100) : getResponsiveSize(120);
-  const headerHeight = isSmallMobile ? getResponsiveSize(30) : isMobile ? getResponsiveSize(35) : getResponsiveSize(40);
-  
-  // Container principal - estilo similar ao chat
-  const container = scene.add.container(largura/2, altura/2);
-  container.setDepth(31);
-  
-  // Background do container - estilo preto como o chat
-  const background = scene.add.rectangle(0, 0, containerWidth, containerHeight, 0x000000, 0.95);
-  background.setStrokeStyle(2, 0x444444);
-  background.setDepth(0);
-  container.add(background);
-  
-  // Header com estilo similar ao chat
-  const headerBg = scene.add.rectangle(0, -(containerHeight/2 - headerHeight/2), containerWidth, headerHeight, 0x000000, 0.95);
-  headerBg.setStrokeStyle(1, 0x444444);
-  headerBg.setDepth(1);
-  container.add(headerBg);
-  
-  // Calcular posições responsivas
-  const iconX = -(containerWidth/2 - getResponsiveSize(30));
-  const titleX = -(containerWidth/2 - getResponsiveSize(60));
-  const closeX = containerWidth/2 - getResponsiveSize(30);
-  const headerY = -(containerHeight/2 - headerHeight/2);
-  
-  // Ícone de turno
-  const turnoIcon = scene.add.text(iconX, headerY, '🎯', {
-    fontSize: getResponsiveFontSize(isSmallMobile ? 16 : isMobile ? 18 : 20),
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  container.add(turnoIcon);
-  
-  // Título
-  const titulo = scene.add.text(titleX, headerY, 'SEU TURNO!', {
-    fontSize: getResponsiveFontSize(isSmallMobile ? 14 : isMobile ? 16 : 18),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0, 0.5).setDepth(2);
-  container.add(titulo);
-  
-  // Linha decorativa
-  const linhaDecorativa = scene.add.rectangle(0, -(containerHeight/2 - headerHeight - 5), containerWidth - 20, 1, 0x444444, 0.8);
-  linhaDecorativa.setDepth(1);
-  container.add(linhaDecorativa);
-  
-  // Mensagem principal
-  const mensagem = scene.add.text(0, 5, `É a vez de ${nomeJogador} jogar!`, {
-    fontSize: getResponsiveFontSize(isSmallMobile ? 12 : isMobile ? 14 : 16),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setDepth(2);
-  container.add(mensagem);
-  
-  // Botão de fechar
-  const botaoFechar = scene.add.text(closeX, headerY, '✕', {
-    fontSize: getResponsiveFontSize(isSmallMobile ? 14 : isMobile ? 16 : 18),
-    fill: '#ffffff',
-    fontStyle: 'bold'
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
-  
-  botaoFechar.on('pointerdown', () => {
-    tocarSomClick();
-    fecharIndicacaoInicioTurno();
-  });
-  
-  container.add(botaoFechar);
-  
-  // Destacar territórios do jogador
+  console.log('🎯 Mostrando indicação de início de turno (HTML) para:', nomeJogador);
+  const overlay = document.getElementById('turn-start-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '999999';
+  overlay.innerHTML = `
+    <div class=\"turn-confirm-modal show\" style=\"max-width:480px;\">\n      <div class=\"turn-confirm-header\"><span>🎯</span><span class=\"turn-confirm-title\">SEU TURNO!</span></div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">É a vez de ${nomeJogador} jogar!</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-start-close\">OK</button>\n      </div>\n    </div>`;
+
+  const btn = document.getElementById('turn-start-close');
+  if (btn) btn.onclick = () => { tocarSomClick(); fecharIndicacaoInicioTurno(); };
+
+  // Destacar territórios do jogador (mesmo comportamento anterior)
   const gameState = getGameState();
-  if (gameState && gameState.paises) {
+  if (scene && gameState && gameState.paises) {
     gameState.paises.forEach(pais => {
       if (pais.dono === nomeJogador && pais.polygon) {
-        // Aplicar borda branca e elevação
         pais.polygon.setStrokeStyle(6, 0xffffff, 1);
         criarElevacaoTerritorio(pais.nome, scene);
       }
     });
   }
-  
-  // Auto-fechar após 5 segundos
-  setTimeout(() => {
-    fecharIndicacaoInicioTurno();
-  }, 5000);
-  
-  // Tocar som de notificação
+
+  setTimeout(() => fecharIndicacaoInicioTurno(), 5000);
   tocarSomHuh();
-  
-  // Armazenar referência para poder fechar depois
-  window.indicacaoInicioTurno = {
-    container: container,
-    scene: scene
-  };
+
+  // For compatibility with code that expects a Phaser container
+  const containerAPI = { destroy: () => { overlay.style.display = 'none'; overlay.innerHTML = ''; }, setPosition: () => {} };
+  window.indicacaoInicioTurno = { container: containerAPI, scene };
 }
 
 function fecharIndicacaoInicioTurno() {
   if (window.indicacaoInicioTurno) {
-    // Remover interface
-    if (window.indicacaoInicioTurno.container) {
-      window.indicacaoInicioTurno.container.destroy();
-    }
+    // Remover interface (HTML)
+    const overlay = document.getElementById('turn-start-overlay');
+    if (overlay) { overlay.style.display = 'none'; overlay.innerHTML = ''; }
     
     // Remover destaque dos territórios
     const gameState = getGameState();
