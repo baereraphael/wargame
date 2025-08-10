@@ -1010,13 +1010,25 @@ function initializeGame() {
   });
 
   socket.on('mostrarObjetivo', (objetivo) => {
-    mostrarObjetivo(objetivo, currentScene);
+    // Exibir via modal HTML
+    try {
+      if (window.showObjectiveModal) {
+        window.showObjectiveModal(objetivo);
+      } else {
+        console.warn('showObjectiveModal ainda não disponível');
+      }
+    } catch (e) {
+      console.error('Erro ao exibir modal de objetivo (HTML).', e);
+    }
   });
 
   socket.on('mostrarCartasTerritorio', (cartas) => {
-    // Não abrir se já estiver aberto
     if (modalCartasTerritorioAberto) return;
-    mostrarCartasTerritorio(cartas, currentScene);
+    try {
+      showCardsModal(cartas, false);
+    } catch (e) {
+      console.error('Erro ao exibir modal de cartas (HTML).', e);
+    }
   });
 
   socket.on('forcarTrocaCartas', (dados) => {
@@ -1026,7 +1038,11 @@ function initializeGame() {
     // Só mostrar para o jogador específico
     const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
     if (jogador && jogador.nome === dados.jogador) {
-      mostrarCartasTerritorio(dados.cartas, currentScene, true);
+      try {
+        showCardsModal(dados.cartas, true);
+      } catch (e) {
+        console.error('Erro ao exibir modal de cartas obrigatórias (HTML).', e);
+      }
     }
   });
 
@@ -1036,15 +1052,8 @@ function initializeGame() {
     if (resultado.sucesso) {
       console.log('✅ Troca de cartas bem-sucedida');
       mostrarMensagem(resultado.mensagem);
-      // Fechar modal e continuar o turno
-      modalCartasTerritorioAberto = false;
-      // Destruir elementos do modal se existirem
-      if (currentScene) {
-        const overlay = currentScene.children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
-        const container = currentScene.children.list.find(child => child.type === 'Container' && child.depth === 21);
-        if (overlay) overlay.destroy();
-        if (container) container.destroy();
-      }
+      // Fechar modal HTML e continuar o turno
+      hideCardsModal();
     } else {
       console.log('❌ Troca de cartas falhou:', resultado.mensagem);
       mostrarMensagem(`❌ ${resultado.mensagem}`);
@@ -1581,6 +1590,10 @@ let botaoObjetivo = null;
 let modalObjetivoAberto = false;
 let botaoCartasTerritorio = null;
 let modalCartasTerritorioAberto = false;
+// HTML modals state
+let cardsModalForced = false;
+let cardsSelected = [];
+let cardsCurrentList = [];
 
 function preload() {
   console.log('📦 Preload iniciado...');
@@ -1692,6 +1705,40 @@ function create() {
   botaoTurno = document.getElementById('btn-turn');
   botaoObjetivo = document.getElementById('btn-objective');
   botaoCartasTerritorio = document.getElementById('btn-cards');
+
+  // Objective modal buttons
+  const objectiveCloseBtn = document.getElementById('objective-close');
+  const objectiveOkBtn = document.getElementById('objective-ok');
+  const objectiveBackdrop = document.getElementById('objective-backdrop');
+  if (objectiveCloseBtn) objectiveCloseBtn.addEventListener('click', () => hideObjectiveModal());
+  if (objectiveOkBtn) objectiveOkBtn.addEventListener('click', () => hideObjectiveModal());
+  if (objectiveBackdrop) objectiveBackdrop.addEventListener('click', () => hideObjectiveModal());
+
+  // Wire up cards exchange button dynamically (will submit when enabled)
+  const cardsExchangeBtnInit = document.getElementById('cards-exchange');
+  if (cardsExchangeBtnInit) {
+    cardsExchangeBtnInit.addEventListener('click', () => {
+      if (cardsModalForced) {
+        // Em troca obrigatória, exigir exatamente 3
+        if (cardsSelected.length === 3) {
+          emitWithRoom('trocarCartasTerritorio', cardsSelected.slice());
+          hideCardsModal();
+        }
+      } else {
+        if (cardsSelected.length === 3) {
+          emitWithRoom('trocarCartasTerritorio', cardsSelected.slice());
+          hideCardsModal();
+        }
+      }
+    });
+  }
+
+  // Cards modal buttons
+  const cardsCloseBtn = document.getElementById('cards-close');
+  const cardsBackdrop = document.getElementById('cards-backdrop');
+  const cardsExchangeBtn = document.getElementById('cards-exchange');
+  if (cardsCloseBtn) cardsCloseBtn.addEventListener('click', () => hideCardsModal());
+  if (cardsBackdrop) cardsBackdrop.addEventListener('click', () => hideCardsModal());
 
   // Add event listeners for CSS buttons
   botaoTurno.addEventListener('click', () => {
@@ -4926,6 +4973,90 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   tornarInterfaceArrastavel(container, scene);
 }
 
+// Cards Modal (HTML) Functions - global
+function showCardsModal(cartas, forcarTroca = false) {
+  fecharTodasModais();
+  const popup = document.getElementById('cards-popup');
+  const backdrop = document.getElementById('cards-backdrop');
+  const grid = document.getElementById('cards-grid');
+  const instructions = document.getElementById('cards-instructions');
+  const exchangeBtn = document.getElementById('cards-exchange');
+  if (!popup || !backdrop || !grid || !instructions || !exchangeBtn) return;
+
+  cardsModalForced = !!forcarTroca;
+  cardsSelected = [];
+  cardsCurrentList = Array.isArray(cartas) ? cartas : [];
+  exchangeBtn.disabled = true;
+
+  // Render grid
+  grid.innerHTML = '';
+  if (cardsCurrentList.length === 0) {
+    instructions.textContent = 'Você ainda não possui cartas território.';
+  } else {
+    instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
+  }
+
+  cardsCurrentList.forEach((carta) => {
+    const item = document.createElement('div');
+    item.className = 'card-item';
+    item.dataset.territorio = carta.territorio;
+
+    const symbol = document.createElement('div');
+    symbol.className = 'card-symbol';
+    symbol.textContent = carta.simbolo || '🃏';
+
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = carta.territorio;
+
+    item.appendChild(symbol);
+    item.appendChild(name);
+    item.addEventListener('click', () => toggleCardSelection(item));
+
+    grid.appendChild(item);
+  });
+
+  popup.style.display = 'flex';
+  backdrop.style.display = 'block';
+  modalCartasTerritorioAberto = true;
+}
+
+function hideCardsModal() {
+  const popup = document.getElementById('cards-popup');
+  const backdrop = document.getElementById('cards-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  modalCartasTerritorioAberto = false;
+  cardsModalForced = false;
+  cardsSelected = [];
+  cardsCurrentList = [];
+}
+
+function toggleCardSelection(itemEl) {
+  const territorio = itemEl.dataset.territorio;
+  const idx = cardsSelected.indexOf(territorio);
+  if (idx >= 0) {
+    cardsSelected.splice(idx, 1);
+    itemEl.classList.remove('selected');
+  } else {
+    if (cardsSelected.length >= 3) return;
+    cardsSelected.push(territorio);
+    itemEl.classList.add('selected');
+  }
+  updateCardsInstructionsAndButton();
+}
+
+function updateCardsInstructionsAndButton() {
+  const instructions = document.getElementById('cards-instructions');
+  const exchangeBtn = document.getElementById('cards-exchange');
+  if (!instructions || !exchangeBtn) return;
+  const count = cardsSelected.length;
+  if (count === 0) instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
+  else if (count < 3) instructions.textContent = `Selecionadas: ${count}/3`;
+  else instructions.textContent = 'Selecionadas: 3/3 - Clique em Trocar Cartas';
+  exchangeBtn.disabled = count !== 3;
+}
+
 // Variável global para controlar se os indicadores já foram criados
 let indicadoresContinentesCriados = false;
 let linhasContinentes = []; // Array para armazenar as linhas dos continentes
@@ -5562,26 +5693,51 @@ function atualizarLinhasContinentes(scene, scaleX, scaleY) {
   });
 }
 
+// Objective Modal (HTML) - Global functions
+function showObjectiveModal(objetivo) {
+  try {
+    fecharTodasModais();
+  } catch (_) {}
+  const popup = document.getElementById('objective-popup');
+  const backdrop = document.getElementById('objective-backdrop');
+  const iconEl = document.getElementById('objective-icon');
+  const descEl = document.getElementById('objective-description');
+  if (!popup || !iconEl || !descEl) {
+    console.warn('Objective modal elements not found');
+    return;
+  }
+  let icone = '🎯';
+  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : 'Objetivo indisponível';
+  const lower = desc.toLowerCase();
+  if (lower.includes('eliminar')) icone = '⚔️';
+  else if (lower.includes('conquistar')) icone = '🏆';
+  else if (lower.includes('territ')) icone = '🗺️';
+  else if (lower.includes('continente')) icone = '🌍';
+  iconEl.textContent = icone;
+  descEl.textContent = desc;
+  popup.style.display = 'flex';
+  if (backdrop) backdrop.style.display = 'block';
+  modalObjetivoAberto = true;
+}
+
+function hideObjectiveModal() {
+  const popup = document.getElementById('objective-popup');
+  const backdrop = document.getElementById('objective-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  modalObjetivoAberto = false;
+}
+
 // Função para fechar todas as modais
 function fecharTodasModais() {
   // Fechar modal de objetivo
   if (modalObjetivoAberto) {
-    modalObjetivoAberto = false;
-    // Destruir elementos do modal se existirem
-    const overlay = game.scene.scenes[0].children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
-    const container = game.scene.scenes[0].children.list.find(child => child.type === 'Container' && child.depth === 21);
-    if (overlay) overlay.destroy();
-    if (container) container.destroy();
+    hideObjectiveModal();
   }
   
   // Fechar modal de cartas território
   if (modalCartasTerritorioAberto) {
-    modalCartasTerritorioAberto = false;
-    // Destruir elementos do modal se existirem
-    const overlay = game.scene.scenes[0].children.list.find(child => child.type === 'Rectangle' && child.depth === 20);
-    const container = game.scene.scenes[0].children.list.find(child => child.type === 'Container' && child.depth === 21);
-    if (overlay) overlay.destroy();
-    if (container) container.destroy();
+    hideCardsModal();
   }
   
   // Fechar popup de histórico
@@ -5593,6 +5749,36 @@ function fecharTodasModais() {
       popup.style.display = 'none';
     }
   }
+}
+
+// Objective Modal (HTML) Functions - global
+function showObjectiveModal(objetivo) {
+  try { fecharTodasModais(); } catch (_) {}
+  const popup = document.getElementById('objective-popup');
+  const backdrop = document.getElementById('objective-backdrop');
+  const iconEl = document.getElementById('objective-icon');
+  const descEl = document.getElementById('objective-description');
+  if (!popup || !iconEl || !descEl) return;
+  let icone = '🎯';
+  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : 'Objetivo indisponível';
+  const lower = desc.toLowerCase();
+  if (lower.includes('eliminar')) icone = '⚔️';
+  else if (lower.includes('conquistar')) icone = '🏆';
+  else if (lower.includes('territ')) icone = '🗺️';
+  else if (lower.includes('continente')) icone = '🌍';
+  iconEl.textContent = icone;
+  descEl.textContent = desc;
+  popup.style.display = 'flex';
+  if (backdrop) backdrop.style.display = 'block';
+  modalObjetivoAberto = true;
+}
+
+function hideObjectiveModal() {
+  const popup = document.getElementById('objective-popup');
+  const backdrop = document.getElementById('objective-backdrop');
+  if (popup) popup.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  modalObjetivoAberto = false;
 }
 
 // Action History Functions
@@ -5608,6 +5794,8 @@ function initializeActionHistory() {
   if (actionButtons) {
     actionButtons.appendChild(historyButton);
   }
+
+  // (removido) Objective Modal (HTML) Functions - agora globais
   
   // Add event listener
   historyButton.addEventListener('click', () => {
