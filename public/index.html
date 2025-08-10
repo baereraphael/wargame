@@ -3220,8 +3220,8 @@
 
   .troop-indicator {
     position: absolute;
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: white;
     border: 2px solid #000;
@@ -3240,17 +3240,17 @@
   /* Responsive troop indicators for mobile */
   @media (max-width: 768px) {
     .troop-indicator {
-      width: 4px;
-      height: 16px;
-      font-size: 4px;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
       border-width: 1.5px;
     }
   }
 
   @media (max-width: 480px) {
     .troop-indicator {
-      width: 4px;
-      height: 4px;
+      width: 18px;
+      height: 18px;
       font-size: 11px;
       border-width: 1px;
     }
@@ -3258,8 +3258,8 @@
 
   @media (max-width: 400px) {
     .troop-indicator {
-      width: 4px;
-      height: 4px;
+      width: 16px;
+      height: 16px;
       font-size: 10px;
       border-width: 1px;
     }
@@ -3267,9 +3267,28 @@
 
   @media (max-width: 360px) {
     .troop-indicator {
-      width: 4px;
-      height: 4px;
+      width: 14px;
+      height: 14px;
       font-size: 9px;
+      border-width: 1px;
+    }
+  }
+
+  /* Landscape phones (e.g., Galaxy S23) often have width > 768px but low height. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .troop-indicator {
+      width: 8px;
+      height: 8px;
+      font-size: 8px;
+      border-width: 1px;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 400px) {
+    .troop-indicator {
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
       border-width: 1px;
     }
   }
