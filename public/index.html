@@ -1301,10 +1301,10 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: min(600px, 92vw);
-    max-height: min(85vh, 800px);
+    width: min(800px, 95vw);
+    max-height: min(90vh, 900px);
     background: rgba(0, 0, 0, 0.95);
-    border: 2px solid #444;
+    border: 3px solid #0077cc;
     border-radius: 15px;
     z-index: 1002;
     display: none;
@@ -1326,10 +1326,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 18px;
-    border-bottom: 1px solid #444;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 13px 13px 0 0;
+    padding: 16px 20px;
+    border-bottom: 2px solid #0077cc;
+    background: linear-gradient(135deg, rgba(0,119,204,0.3), rgba(0,119,204,0.1));
+    border-radius: 12px 12px 0 0;
   }
 
   .victory-header h3 {
@@ -1351,17 +1351,432 @@
   }
   .victory-close:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
-  .victory-content { padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow-y: auto; }
-  .victory-icon { font-size: 48px; }
-  .victory-message { color: #fff; font-size: 18px; text-align: center; }
-  .victory-subtitle { color: #ccc; font-size: 14px; text-align: center; }
-  .victory-stats { color: #ddd; font-size: 13px; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-  .victory-actions { display: flex; gap: 10px; margin-top: 12px; }
-  .victory-btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
-  .victory-btn.primary { background: #0077cc; color: #fff; }
-  .victory-btn.primary:hover { background: #005fa3; }
-  .victory-btn.secondary { background: #33cc33; color: #000; }
-  .victory-btn.secondary:hover { filter: brightness(0.95); }
+  .victory-content { 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    overflow-y: auto; 
+    max-height: calc(90vh - 120px);
+  }
+
+  /* Victory Header Content */
+  .victory-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #333;
+  }
+  
+  .victory-icon { 
+    font-size: 56px; 
+    animation: bounce 2s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+  }
+  
+  .victory-message { 
+    color: #fff; 
+    font-size: 24px; 
+    text-align: center; 
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  
+  .victory-subtitle { 
+    color: #ccc; 
+    font-size: 16px; 
+    text-align: center; 
+  }
+
+  /* Victory Summary */
+  .victory-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .summary-title {
+    color: #0077cc;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+  }
+
+  /* Game Stats */
+  .game-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    border: 1px solid #333;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 14px;
+  }
+
+  .stat-icon {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+  }
+
+  .stat-label {
+    color: #ccc;
+    flex: 1;
+  }
+
+  .stat-value {
+    color: #fff;
+    font-weight: bold;
+  }
+
+  /* Players Summary */
+  .players-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .players-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    text-align: center;
+  }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .player-card {
+    background: rgba(255,255,255,0.08);
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .player-card.winner {
+    border-color: #ffdd00;
+    background: rgba(255,221,0,0.1);
+    box-shadow: 0 0 20px rgba(255,221,0,0.3);
+  }
+
+  .player-card.eliminated {
+    opacity: 0.6;
+    border-color: #666;
+  }
+
+  .player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid #fff;
+  }
+
+  .player-details {
+    flex: 1;
+  }
+
+  .player-name {
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  .player-status {
+    color: #ccc;
+    font-size: 12px;
+  }
+
+  .player-crown {
+    color: #ffdd00;
+    font-size: 24px;
+  }
+
+  .player-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .player-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .player-stat-label {
+    color: #ccc;
+  }
+
+  .player-stat-value {
+    color: #fff;
+    font-weight: bold;
+  }
+
+  /* Objectives Summary */
+  .objectives-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .objectives-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    text-align: center;
+  }
+
+  .objectives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .objective-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .objective-item.completed {
+    border-color: #33cc33;
+    background: rgba(51,204,51,0.1);
+  }
+
+  .objective-player {
+    color: #fff;
+    font-weight: bold;
+    min-width: 120px;
+  }
+
+  .objective-description {
+    color: #ccc;
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .objective-status {
+    font-size: 20px;
+  }
+
+  /* Victory Actions */
+  .victory-actions { 
+    display: flex; 
+    gap: 16px; 
+    justify-content: center;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+  }
+  
+  .victory-btn { 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    border: none; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .victory-btn.primary { 
+    background: #0077cc; 
+    color: #fff; 
+  }
+  
+  .victory-btn.primary:hover { 
+    background: #005fa3; 
+    transform: translateY(-1px);
+  }
+  
+  .victory-btn.secondary { 
+    background: #33cc33; 
+    color: #000; 
+  }
+  
+  .victory-btn.secondary:hover { 
+    filter: brightness(1.1); 
+    transform: translateY(-1px);
+  }
+
+  /* Victory Popup Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .victory-popup {
+      width: 98vw;
+      max-height: 95vh;
+      margin: 0;
+    }
+
+    .victory-content {
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .victory-icon {
+      font-size: 40px;
+    }
+
+    .victory-message {
+      font-size: 20px;
+    }
+
+    .summary-title {
+      font-size: 18px;
+    }
+
+    .game-stats {
+      grid-template-columns: 1fr;
+      padding: 12px;
+    }
+
+    .players-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .player-card {
+      padding: 12px;
+    }
+
+    .player-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .objective-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .objective-player {
+      min-width: auto;
+    }
+
+    .victory-actions {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .victory-btn {
+      padding: 14px 16px;
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .victory-header {
+      padding: 12px 16px;
+    }
+
+    .victory-header h3 {
+      font-size: 16px;
+    }
+
+    .victory-content {
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .victory-icon {
+      font-size: 32px;
+    }
+
+    .victory-message {
+      font-size: 16px;
+    }
+
+    .summary-title {
+      font-size: 16px;
+    }
+
+    .players-title, .objectives-title {
+      font-size: 16px;
+    }
+
+    .stat-item {
+      font-size: 12px;
+    }
+
+    .player-info {
+      gap: 8px;
+    }
+
+    .player-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+
+    .player-name {
+      font-size: 14px;
+    }
+
+    .player-stat {
+      font-size: 11px;
+      padding: 4px 6px;
+    }
+
+    .objective-item {
+      padding: 12px;
+    }
+
+    .victory-btn {
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+  }
 
   /* Reinforcement Popup Styles */
   .reinforce-popup {
@@ -3018,13 +3433,54 @@
       <button class="victory-close" id="victory-close" aria-label="Fechar">✖</button>
     </div>
     <div class="victory-content">
-      <div class="victory-icon">🏆</div>
-      <div class="victory-message" id="victory-message">Parabéns! Você venceu!</div>
-      <div class="victory-subtitle" id="victory-subtitle"></div>
-      <div class="victory-stats" id="victory-stats"></div>
+      <div class="victory-header-content">
+        <div class="victory-icon">🏆</div>
+        <div class="victory-message" id="victory-message">Parabéns! Você venceu!</div>
+        <div class="victory-subtitle" id="victory-subtitle"></div>
+      </div>
+      
+      <div class="victory-summary">
+        <h4 class="summary-title">📊 Resumo Final do Jogo</h4>
+        
+        <!-- Estatísticas gerais do jogo -->
+        <div class="game-stats" id="game-stats">
+          <div class="stat-item">
+            <span class="stat-icon">⏱️</span>
+            <span class="stat-label">Duração:</span>
+            <span class="stat-value" id="game-duration">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">⚔️</span>
+            <span class="stat-label">Total de Ataques:</span>
+            <span class="stat-value" id="total-attacks">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">🌍</span>
+            <span class="stat-label">Continentes em Disputa:</span>
+            <span class="stat-value" id="continents-count">--</span>
+          </div>
+        </div>
+
+        <!-- Cards dos jogadores -->
+        <div class="players-summary">
+          <h5 class="players-title">👥 Resultado dos Jogadores</h5>
+          <div class="players-grid" id="players-grid">
+            <!-- Os cards dos jogadores serão inseridos aqui dinamicamente -->
+          </div>
+        </div>
+
+        <!-- Tabela de objetivos -->
+        <div class="objectives-summary">
+          <h5 class="objectives-title">🎯 Objetivos dos Jogadores</h5>
+          <div class="objectives-list" id="objectives-list">
+            <!-- Os objetivos serão inseridos aqui dinamicamente -->
+          </div>
+        </div>
+      </div>
+      
       <div class="victory-actions">
-        <button class="victory-btn primary" id="victory-restart">Jogar Novamente</button>
-        <button class="victory-btn secondary" id="victory-menu">Voltar ao Menu</button>
+        <button class="victory-btn primary" id="victory-restart">🎮 Jogar Novamente</button>
+        <button class="victory-btn secondary" id="victory-menu">🏠 Voltar ao Menu</button>
       </div>
     </div>
   </div>

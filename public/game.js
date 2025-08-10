@@ -845,6 +845,266 @@ function confirmarRemanejamento() {
   }
 }
 
+function setupDebugMode() {
+  let debugModeEnabled = false;
+  let debugIndicator = null;
+  
+  // Event listener para teclas de debug
+  document.addEventListener('keydown', (event) => {
+    // Ignorar se estiver digitando em um input
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    
+    // Verificar se uma modal está aberta (para não interferir)
+    const modalsAbertas = document.querySelector('.victory-popup[style*="flex"]') ||
+                         document.querySelector('.remanejamento-popup[style*="flex"]') ||
+                         document.querySelector('.reinforce-popup[style*="flex"]') ||
+                         document.querySelector('.transfer-popup[style*="flex"]');
+    
+    switch(event.key.toLowerCase()) {
+      case 'v':
+        // Debug: Mostrar tela de vitória
+        if (!modalsAbertas) {
+          event.preventDefault();
+          showDebugVictoryScreen();
+        }
+        break;
+        
+      case 'd':
+        // Toggle debug mode
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          debugModeEnabled = !debugModeEnabled;
+          toggleDebugIndicator(debugModeEnabled);
+          showDebugMessage(debugModeEnabled ? '🛠️ Modo Debug ATIVADO' : '🛠️ Modo Debug DESATIVADO');
+          if (debugModeEnabled) {
+            showDebugCommands();
+          }
+        }
+        break;
+        
+      case 'escape':
+        // Fechar qualquer modal aberta
+        if (modalsAbertas) {
+          event.preventDefault();
+          fecharTodasModais();
+          hideVictoryModal();
+        }
+        break;
+    }
+  });
+  
+  console.log('🛠️ Modo Debug configurado - Pressione Ctrl+D para ativar/desativar');
+  console.log('🛠️ Comandos disponíveis:');
+  console.log('  • V - Mostrar tela de vitória (debug)');
+  console.log('  • ESC - Fechar modais abertas');
+  console.log('  • Ctrl+D - Toggle modo debug');
+}
+
+function showDebugCommands() {
+  const commands = [
+    '🛠️ COMANDOS DE DEBUG DISPONÍVEIS:',
+    '  • V - Mostrar tela de vitória',
+    '  • ESC - Fechar modais',
+    '  • Ctrl+D - Toggle debug mode',
+    '',
+    '📝 FUNÇÕES DE CONSOLE:',
+    '  • testVictoryScreen() - Teste da tela de vitória',
+    '  • showDebugVictoryScreen() - Vitória com dados variados'
+  ];
+  
+  commands.forEach(cmd => console.log(cmd));
+  showDebugMessage('🛠️ Comandos listados no console');
+}
+
+function showDebugMessage(message) {
+  // Criar uma notificação temporária na tela
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 119, 204, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border: 1px solid #0077cc;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  `;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Animar entrada
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+  }, 10);
+  
+  // Remover após 3 segundos
+  setTimeout(() => {
+    notification.style.transform = 'translateX(300px)';
+    notification.style.opacity = '0';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
+function toggleDebugIndicator(enabled) {
+  const existingIndicator = document.getElementById('debug-indicator');
+  
+  if (enabled && !existingIndicator) {
+    // Criar indicador visual
+    const indicator = document.createElement('div');
+    indicator.id = 'debug-indicator';
+    indicator.style.cssText = `
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 69, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      border: 1px solid #ff4500;
+      backdrop-filter: blur(5px);
+      animation: debugPulse 2s infinite;
+    `;
+    
+    indicator.innerHTML = `
+      🛠️ DEBUG MODE<br>
+      <span style="font-size: 10px; opacity: 0.8;">V = Victory Screen</span>
+    `;
+    
+    // Adicionar animação CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes debugPulse {
+        0%, 100% { opacity: 0.9; }
+        50% { opacity: 0.7; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(indicator);
+    
+  } else if (!enabled && existingIndicator) {
+    // Remover indicador
+    existingIndicator.remove();
+  }
+}
+
+function showDebugVictoryScreen() {
+  console.log('🛠️ Exibindo tela de vitória (modo debug)');
+  
+  // Gerar dados aleatórios para cada teste
+  const jogadoresExemplo = [
+    'Jogador1', 'CPU Fácil', 'CPU Médio', 'CPU Difícil', 'CPU Expert'
+  ];
+  
+  const tiposVitoria = ['eliminacao', 'objetivo'];
+  const objetivosExemplo = [
+    'Eliminar todos os adversários',
+    'Conquistar 18 territórios',
+    'Conquistar América do Sul e Europa',
+    'Conquistar América do Norte e África',
+    'Conquistar Ásia e Oceania',
+    'Conquistar 3 continentes completos'
+  ];
+  
+  // Escolher vencedor aleatório
+  const vencedor = jogadoresExemplo[Math.floor(Math.random() * jogadoresExemplo.length)];
+  const tipoVitoria = tiposVitoria[Math.floor(Math.random() * tiposVitoria.length)];
+  
+  // Dados simulados variados
+  const dadosSimulados = {
+    nomeVencedor: vencedor,
+    resumoJogo: {
+      tipoVitoria: tipoVitoria,
+      estatisticas: {
+        duracao: `${Math.floor(Math.random() * 45) + 10}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
+        totalAtaques: Math.floor(Math.random() * 100) + 20,
+        continentesConquistados: Math.floor(Math.random() * 6) + 1
+      }
+    },
+    gameState: {
+      meuNome: 'Jogador1',
+      vencedor: vencedor,
+      jogadores: jogadoresExemplo.slice(0, Math.floor(Math.random() * 4) + 2).map(nome => ({ nome })),
+      paises: generateRandomTerritories(jogadoresExemplo, vencedor),
+      objetivos: {}
+    }
+  };
+  
+  // Gerar objetivos aleatórios
+  dadosSimulados.gameState.jogadores.forEach((jogador, index) => {
+    dadosSimulados.gameState.objetivos[jogador.nome] = objetivosExemplo[index % objetivosExemplo.length];
+  });
+  
+  // Simular gameState global temporariamente
+  const originalGetGameState = window.getGameState;
+  window.getGameState = () => dadosSimulados.gameState;
+  
+  // Mostrar tela de vitória
+  showVictoryModal(dadosSimulados.nomeVencedor, dadosSimulados.resumoJogo);
+  
+  // Restaurar função original após 30 segundos
+  setTimeout(() => {
+    window.getGameState = originalGetGameState;
+  }, 30000);
+  
+  showDebugMessage(`🏆 Vitória de ${vencedor} (${tipoVitoria})`);
+  console.log('🛠️ Dados gerados:', dadosSimulados);
+}
+
+function generateRandomTerritories(jogadores, vencedor) {
+  const territorios = [
+    'Brasil', 'Argentina', 'Peru', 'Uruguai', 'Venezuela', 'Colombia',
+    'Mexico', 'Estados Unidos', 'Canada', 'Groelandia', 'Islandia',
+    'Reino Unido', 'Suecia', 'Alemanha', 'França', 'Espanha', 'Polônia',
+    'Turquia', 'Egito', 'Sudan', 'Nigeria', 'Congo', 'Africa do Sul',
+    'Madagascar', 'India', 'China', 'Japão', 'Mongólia', 'Sibéria',
+    'Aral', 'Oriente Médio', 'Afeganistão', 'Irkutsk', 'Vladivostok',
+    'Kamchatka', 'Ucrânia', 'Omsk', 'Tchita', 'Sumatra', 'Bornéu',
+    'Nova Guiné', 'Austrália', 'Áustria'
+  ];
+  
+  const paises = [];
+  const jogadoresAtivos = jogadores.filter(j => Math.random() > 0.3 || j === vencedor); // Alguns podem estar eliminados
+  
+  territorios.forEach((nome, index) => {
+    // Dar mais territórios para o vencedor
+    let dono;
+    if (Math.random() < 0.4 && jogadoresAtivos.includes(vencedor)) {
+      dono = vencedor;
+    } else {
+      dono = jogadoresAtivos[Math.floor(Math.random() * jogadoresAtivos.length)];
+    }
+    
+    paises.push({
+      nome: nome,
+      dono: dono,
+      tropas: Math.floor(Math.random() * 15) + 1
+    });
+  });
+  
+  return paises;
+}
+
 function initializeGame() {
   console.log('🔧 DEBUG: initializeGame() iniciada');
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
@@ -1256,6 +1516,9 @@ function initializeGame() {
   
   // Configurar event listeners da interface de remanejamento HTML
   setupRemanejamentoEventListeners();
+  
+  // Configurar modo debug
+  setupDebugMode();
   
   console.log('🔧 DEBUG: initializeGame() concluída');
   
@@ -5098,31 +5361,192 @@ function showObjectiveModal(objetivo) {
 // Victory Modal (HTML) Functions - global
 function showVictoryModal(nomeJogador, resumoJogo) {
   try { fecharTodasModais(); } catch(_) {}
+  
   const popup = document.getElementById('victory-popup');
   const backdrop = document.getElementById('victory-backdrop');
   const msg = document.getElementById('victory-message');
   const subtitle = document.getElementById('victory-subtitle');
-  const stats = document.getElementById('victory-stats');
-  if (!popup || !msg || !subtitle || !stats) return;
+  
+  if (!popup || !msg || !subtitle) return;
+  
   const gameState = getGameState();
   const isPlayerVictory = gameState && nomeJogador === gameState.meuNome;
+  
+  // Mensagem principal
   msg.textContent = isPlayerVictory ? 'Parabéns! Você venceu!' : `${nomeJogador} venceu o jogo!`;
   subtitle.textContent = resumoJogo && resumoJogo.tipoVitoria
     ? `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`
     : '';
-  // Montar estatísticas simples
-  const statsLines = [];
-  if (resumoJogo && resumoJogo.estatisticas) {
-    const e = resumoJogo.estatisticas;
-    if (e.duracao) statsLines.push(`⏱️ Duração: ${e.duracao}`);
-    if (e.totalAtaques != null) statsLines.push(`⚔️ Ataques: ${e.totalAtaques}`);
-    if (e.continentesConquistados != null) statsLines.push(`🌍 Continentes: ${e.continentesConquistados}`);
-  }
-  stats.innerHTML = statsLines.map(l => `<div>${l}</div>`).join('');
+
+  // Preencher estatísticas gerais do jogo
+  fillGameStats(resumoJogo);
+  
+  // Preencher cards dos jogadores
+  fillPlayersGrid(nomeJogador, gameState);
+  
+  // Preencher objetivos dos jogadores
+  fillObjectivesList(gameState);
+  
+  // Mostrar popup
   popup.style.display = 'flex';
   if (backdrop) backdrop.style.display = 'block';
+  
   // Som de vitória
   try { tocarSomTerritoryWin(); } catch(_) {}
+}
+
+function fillGameStats(resumoJogo) {
+  const gameDuration = document.getElementById('game-duration');
+  const totalAttacks = document.getElementById('total-attacks');
+  const continentsCount = document.getElementById('continents-count');
+  
+  if (resumoJogo && resumoJogo.estatisticas) {
+    const e = resumoJogo.estatisticas;
+    if (gameDuration) gameDuration.textContent = e.duracao || '--';
+    if (totalAttacks) totalAttacks.textContent = e.totalAtaques != null ? e.totalAtaques : '--';
+    if (continentsCount) continentsCount.textContent = e.continentesConquistados != null ? e.continentesConquistados : '--';
+  } else {
+    if (gameDuration) gameDuration.textContent = '--';
+    if (totalAttacks) totalAttacks.textContent = '--';
+    if (continentsCount) continentsCount.textContent = '--';
+  }
+}
+
+function fillPlayersGrid(nomeVencedor, gameState) {
+  const playersGrid = document.getElementById('players-grid');
+  if (!playersGrid || !gameState) return;
+  
+  playersGrid.innerHTML = '';
+  
+  // Obter dados dos jogadores
+  const jogadores = gameState.jogadores || [];
+  const paises = gameState.paises || [];
+  
+  // Mapear territórios por jogador
+  const territoriosPorJogador = {};
+  const tropasPorJogador = {};
+  
+  paises.forEach(pais => {
+    if (pais.dono) {
+      if (!territoriosPorJogador[pais.dono]) {
+        territoriosPorJogador[pais.dono] = 0;
+        tropasPorJogador[pais.dono] = 0;
+      }
+      territoriosPorJogador[pais.dono]++;
+      tropasPorJogador[pais.dono] += pais.tropas || 0;
+    }
+  });
+  
+  // Cores dos jogadores
+  const coresJogadores = {
+    'CPU Fácil': '#ff6b6b',
+    'CPU Médio': '#4ecdc4', 
+    'CPU Difícil': '#45b7d1',
+    'CPU Expert': '#f9ca24'
+  };
+  
+  // Criar cards para todos os jogadores (incluindo eliminados)
+  const todosJogadores = new Set();
+  jogadores.forEach(j => todosJogadores.add(j.nome));
+  Object.keys(territoriosPorJogador).forEach(nome => todosJogadores.add(nome));
+  
+  Array.from(todosJogadores).forEach((nomeJogador, index) => {
+    const isWinner = nomeJogador === nomeVencedor;
+    const isEliminated = !territoriosPorJogador[nomeJogador] || territoriosPorJogador[nomeJogador] === 0;
+    const isHuman = !nomeJogador.startsWith('CPU');
+    
+    const territorios = territoriosPorJogador[nomeJogador] || 0;
+    const tropas = tropasPorJogador[nomeJogador] || 0;
+    
+    // Cor do jogador
+    let corJogador = coresJogadores[nomeJogador];
+    if (!corJogador) {
+      if (isHuman) {
+        corJogador = '#4a90e2'; // Azul para humanos
+      } else {
+        const cores = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#a55eea', '#26de81'];
+        corJogador = cores[index % cores.length];
+      }
+    }
+    
+    const card = document.createElement('div');
+    card.className = `player-card ${isWinner ? 'winner' : ''} ${isEliminated ? 'eliminated' : ''}`;
+    
+    card.innerHTML = `
+      <div class="player-info">
+        <div class="player-avatar" style="background: ${corJogador}">
+          ${isHuman ? '👤' : '🤖'}
+        </div>
+        <div class="player-details">
+          <div class="player-name">${nomeJogador}</div>
+          <div class="player-status">
+            ${isWinner ? 'VENCEDOR' : isEliminated ? 'Eliminado' : 'Ativo'}
+          </div>
+        </div>
+        ${isWinner ? '<div class="player-crown">👑</div>' : ''}
+      </div>
+      <div class="player-stats">
+        <div class="player-stat">
+          <span class="player-stat-label">🗺️ Territórios</span>
+          <span class="player-stat-value">${territorios}</span>
+        </div>
+        <div class="player-stat">
+          <span class="player-stat-label">⚔️ Tropas</span>
+          <span class="player-stat-value">${tropas}</span>
+        </div>
+        <div class="player-stat">
+          <span class="player-stat-label">🎯 Tipo</span>
+          <span class="player-stat-value">${isHuman ? 'Humano' : 'CPU'}</span>
+        </div>
+        <div class="player-stat">
+          <span class="player-stat-label">🏆 Status</span>
+          <span class="player-stat-value">${isWinner ? 'Venceu' : isEliminated ? 'Perdeu' : 'Ativo'}</span>
+        </div>
+      </div>
+    `;
+    
+    playersGrid.appendChild(card);
+  });
+}
+
+function fillObjectivesList(gameState) {
+  const objectivesList = document.getElementById('objectives-list');
+  if (!objectivesList || !gameState) return;
+  
+  objectivesList.innerHTML = '';
+  
+  const jogadores = gameState.jogadores || [];
+  const objetivos = gameState.objetivos || {};
+  
+  // Definir objetivos padrão se não existirem
+  const objetivosPadrao = {
+    'eliminacao': 'Eliminar todos os outros jogadores',
+    'continentes': 'Conquistar 2 continentes completos',
+    'territorios': 'Conquistar 24 territórios'
+  };
+  
+  jogadores.forEach(jogador => {
+    const objetivoJogador = objetivos[jogador.nome] || objetivosPadrao.eliminacao || 'Eliminar todos os adversários';
+    
+    // Verificar se o objetivo foi completado (simplificado)
+    const isCompleted = gameState.vencedor === jogador.nome;
+    
+    const objectiveItem = document.createElement('div');
+    objectiveItem.className = `objective-item ${isCompleted ? 'completed' : ''}`;
+    
+    objectiveItem.innerHTML = `
+      <div class="objective-player">${jogador.nome}</div>
+      <div class="objective-description">${objetivoJogador}</div>
+      <div class="objective-status">${isCompleted ? '✅' : '❌'}</div>
+    `;
+    
+    objectivesList.appendChild(objectiveItem);
+  });
+  
+  // Se não há jogadores, mostrar mensagem
+  if (jogadores.length === 0) {
+    objectivesList.innerHTML = '<div style="color: #ccc; text-align: center; padding: 20px;">Nenhum objetivo registrado</div>';
+  }
 }
 
 function hideVictoryModal() {
@@ -5130,6 +5554,89 @@ function hideVictoryModal() {
   const backdrop = document.getElementById('victory-backdrop');
   if (popup) popup.style.display = 'none';
   if (backdrop) backdrop.style.display = 'none';
+}
+
+// Função de teste para demonstrar a nova tela de vitória
+function testVictoryScreen() {
+  console.log('🧪 Testando nova tela de vitória...');
+  
+  // Dados simulados para teste
+  const dadosSimulados = {
+    nomeVencedor: 'Jogador1',
+    resumoJogo: {
+      tipoVitoria: 'eliminacao',
+      estatisticas: {
+        duracao: '25:43',
+        totalAtaques: 47,
+        continentesConquistados: 3
+      }
+    },
+    gameState: {
+      meuNome: 'Jogador1',
+      vencedor: 'Jogador1',
+      jogadores: [
+        { nome: 'Jogador1' },
+        { nome: 'CPU Fácil' },
+        { nome: 'CPU Médio' },
+        { nome: 'CPU Difícil' }
+      ],
+      paises: [
+        // Jogador1 - Vencedor
+        { nome: 'Brasil', dono: 'Jogador1', tropas: 8 },
+        { nome: 'Argentina', dono: 'Jogador1', tropas: 5 },
+        { nome: 'Peru', dono: 'Jogador1', tropas: 12 },
+        { nome: 'Uruguai', dono: 'Jogador1', tropas: 3 },
+        { nome: 'Venezuela', dono: 'Jogador1', tropas: 7 },
+        { nome: 'Colombia', dono: 'Jogador1', tropas: 4 },
+        { nome: 'Mexico', dono: 'Jogador1', tropas: 6 },
+        { nome: 'Estados Unidos', dono: 'Jogador1', tropas: 9 },
+        { nome: 'Canada', dono: 'Jogador1', tropas: 5 },
+        { nome: 'Groelandia', dono: 'Jogador1', tropas: 2 },
+        { nome: 'Islandia', dono: 'Jogador1', tropas: 3 },
+        { nome: 'Reino Unido', dono: 'Jogador1', tropas: 4 },
+        { nome: 'Suecia', dono: 'Jogador1', tropas: 6 },
+        { nome: 'Alemanha', dono: 'Jogador1', tropas: 8 },
+        { nome: 'França', dono: 'Jogador1', tropas: 5 },
+        { nome: 'Espanha', dono: 'Jogador1', tropas: 3 },
+        { nome: 'Polônia', dono: 'Jogador1', tropas: 4 },
+        { nome: 'Turquia', dono: 'Jogador1', tropas: 7 },
+        { nome: 'Egito', dono: 'Jogador1', tropas: 6 },
+        { nome: 'Sudan', dono: 'Jogador1', tropas: 2 },
+        { nome: 'Nigeria', dono: 'Jogador1', tropas: 5 },
+        { nome: 'Congo', dono: 'Jogador1', tropas: 3 },
+        { nome: 'Africa do Sul', dono: 'Jogador1', tropas: 4 },
+        { nome: 'Madagascar', dono: 'Jogador1', tropas: 2 },
+        
+        // CPU Fácil - Eliminado
+        
+        // CPU Médio - Eliminado
+        
+        // CPU Difícil - Eliminado
+      ],
+      objetivos: {
+        'Jogador1': 'Eliminar todos os adversários',
+        'CPU Fácil': 'Conquistar 18 territórios',
+        'CPU Médio': 'Conquistar América do Sul e Europa',
+        'CPU Difícil': 'Conquistar América do Norte e África'
+      }
+    }
+  };
+  
+  // Simular gameState global
+  const originalGetGameState = window.getGameState;
+  window.getGameState = () => dadosSimulados.gameState;
+  
+  // Chamar a função de vitória
+  showVictoryModal(dadosSimulados.nomeVencedor, dadosSimulados.resumoJogo);
+  
+  // Restaurar função original após 10 segundos
+  setTimeout(() => {
+    window.getGameState = originalGetGameState;
+    console.log('🧪 Teste concluído - gameState restaurado');
+  }, 10000);
+  
+  console.log('🎉 Tela de vitória exibida com dados simulados!');
+  console.log('📊 Dados utilizados:', dadosSimulados);
 }
 
 function showTransferModal(dados) {
