@@ -1029,7 +1029,7 @@ function toggleHTMLTroops() {
 }
 
 // Variável global para ajuste dinâmico do offset das tropas
-let globalTroopOffset = { desktop: 45, mobile: 70, smallMobile: 20 };
+let globalTroopOffset = { desktop: 40, mobile: 20, smallMobile: 20 };
 
 // Função para ajustar o offset vertical das tropas (debug)
 function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
