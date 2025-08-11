@@ -3240,8 +3240,8 @@
   /* Responsive troop indicators for mobile */
   @media (max-width: 768px) {
     .troop-indicator {
-      width: 2px;
-      height: 2px;
+      width: 14px;
+      height: 14px;
       font-size: 4px;
       border-width: 1.5px;
     }
@@ -3249,9 +3249,9 @@
 
   @media (max-width: 480px) {
     .troop-indicator {
-      width: 18px;
-      height: 18px;
-      font-size: 11px;
+      width: 8px;
+      height: 8px;
+      font-size: 4px;
       border-width: 1px;
     }
   }
@@ -3274,24 +3274,6 @@
     }
   }
 
-  /* Landscape phones (e.g., Galaxy S23) often have width > 768px but low height. */
-  @media (orientation: landscape) {
-    .troop-indicator {
-      width: 2px;
-      height: 2px;
-      font-size: 8px;
-      border-width: 1px;
-    }
-  }
-
-  @media (orientation: landscape) and (max-height: 400px) {
-    .troop-indicator {
-      width: 16px;
-      height: 16px;
-      font-size: 10px;
-      border-width: 1px;
-    }
-  }
 
   /* Player color classes for troop indicators */
   .troop-indicator.azul { background: #3366ff; color: white; }
