@@ -410,6 +410,21 @@ function initializeModeSelection() {
   }
 }
 
+// Info modal controls for Mode Selection alerts
+document.addEventListener('DOMContentLoaded', () => {
+  const popup = document.getElementById('mode-info-popup');
+  const backdrop = document.getElementById('mode-info-backdrop');
+  const closeBtn = document.getElementById('mode-info-close');
+  const okBtn = document.getElementById('mode-info-ok');
+  const hide = () => {
+    if (popup) popup.style.display = 'none';
+    if (backdrop) backdrop.style.display = 'none';
+  };
+  if (closeBtn) closeBtn.addEventListener('click', hide);
+  if (okBtn) okBtn.addEventListener('click', hide);
+  if (backdrop) backdrop.addEventListener('click', hide);
+});
+
 function selectSkirmishMode() {
   // Hide mode selection screen and show lobby screen
   const modeSelectionScreen = document.getElementById('mode-selection-screen');
@@ -431,7 +446,19 @@ function selectSkirmishMode() {
 }
 
 function showDominiumUnavailable() {
-  alert('🏰 Modo Dominium está em desenvolvimento!\n\nEste modo incluirá:\n• Campanhas estratégicas\n• Progressão de jogador\n• Conquistas e recompensas\n• Modo história\n\nVolte em breve!');
+  const popup = document.getElementById('mode-info-popup');
+  const backdrop = document.getElementById('mode-info-backdrop');
+  const title = document.getElementById('mode-info-title');
+  const message = document.getElementById('mode-info-message');
+  if (!popup || !backdrop || !title || !message) {
+    // Fallback para alert caso a UI não esteja carregada
+    alert('🏰 Modo Dominium está em desenvolvimento!\n\nEste modo incluirá:\n• Campanhas estratégicas\n• Progressão de jogador\n• Conquistas e recompensas\n• Modo história\n\nVolte em breve!');
+    return;
+  }
+  title.textContent = 'Modo Dominium';
+  message.innerHTML = '🏰 Modo Dominium está em desenvolvimento!<br/><br/>Este modo incluirá:<br/>• Campanhas estratégicas<br/>• Progressão de jogador<br/>• Conquistas e recompensas<br/>• Modo história<br/><br/>Volte em breve!';
+  popup.style.display = 'block';
+  backdrop.style.display = 'block';
 }
 
 function backToLogin() {
@@ -1170,19 +1197,28 @@ function updateContinentLabel(continentName) {
   const continentInfo = continentData[continentName];
   if (!continentInfo) return;
   
-  // Verificar se o continente é controlado pelo jogador atual
-  const isControlled = isContinentControlledByPlayer(continentName, gameState.meuNome, gameState);
-  
-  // Verificar se é continente prioritário para bônus
-  const isPriority = gameState.continentePrioritario?.nome === continentName;
-  
-  // Aplicar classes CSS baseadas no estado
+  // Não aplicar classes que alterem fundo (sem controlled/priority)
   label.className = 'continent-label';
-  if (isControlled) {
-    label.classList.add('controlled');
+  label.style.background = '';
+  
+  // Determinar quem controla o continente (se houver)
+  const controllingPlayer = getControllingPlayer(continentName, gameState);
+  const nameEl = label.querySelector('.continent-name');
+  const bonusEl = label.querySelector('.continent-bonus');
+  if (nameEl) {
+    if (controllingPlayer) {
+      const colorHex = getPlayerColor(controllingPlayer);
+      nameEl.style.color = colorHex || '#ffffff';
+    } else {
+      nameEl.style.color = '#ffffff';
+    }
+    // Garantir que nenhum fundo é aplicado
+    nameEl.style.background = 'transparent';
+    nameEl.style.textShadow = '';
   }
-  if (isPriority) {
-    label.classList.add('priority');
+  if (bonusEl) {
+    bonusEl.style.color = '#ffffff';
+    bonusEl.style.background = 'transparent';
   }
   
   // Atualizar posição (caso tenha mudado com redimensionamento)
@@ -1202,6 +1238,26 @@ function isContinentControlledByPlayer(continentName, playerName, gameState) {
   });
   
   return territoriesControlled.length === continentInfo.territories.length;
+}
+
+// Retorna o nome do jogador que controla totalmente o continente, ou null
+function getControllingPlayer(continentName, gameState) {
+  const continentInfo = continentData[continentName];
+  if (!continentInfo || !gameState || !Array.isArray(gameState.paises)) return null;
+  
+  let owner = null;
+  for (const territoryName of continentInfo.territories) {
+    const territory = gameState.paises.find(p => p.nome === territoryName);
+    if (!territory || !territory.dono) {
+      return null;
+    }
+    if (owner == null) {
+      owner = territory.dono;
+    } else if (owner !== territory.dono) {
+      return null;
+    }
+  }
+  return owner;
 }
 
 function updateAllContinentLabels() {
@@ -2795,8 +2851,14 @@ function create() {
   const cardsCloseBtn = document.getElementById('cards-close');
   const cardsBackdrop = document.getElementById('cards-backdrop');
   const cardsExchangeBtn = document.getElementById('cards-exchange');
-  if (cardsCloseBtn) cardsCloseBtn.addEventListener('click', () => hideCardsModal());
-  if (cardsBackdrop) cardsBackdrop.addEventListener('click', () => hideCardsModal());
+  if (cardsCloseBtn) cardsCloseBtn.addEventListener('click', () => {
+    if (cardsModalForced) return; // Não fechar quando for obrigatório
+    hideCardsModal();
+  });
+  if (cardsBackdrop) cardsBackdrop.addEventListener('click', () => {
+    if (cardsModalForced) return; // Não fechar quando for obrigatório
+    hideCardsModal();
+  });
 
   // Victory modal buttons
   const victoryCloseBtn = document.getElementById('victory-close');
@@ -2885,6 +2947,10 @@ function create() {
       const interfaceHTMLAberta = isAnyHTMLInterfaceOpen();
       if (interfaceHTMLAberta) {
         console.log('🛡️ Clique bloqueado - Interface HTML aberta:', interfaceHTMLAberta);
+        // Impedir propagação do evento para outros handlers
+        if (pointer && pointer.event && typeof pointer.event.stopPropagation === 'function') {
+          try { pointer.event.stopPropagation(); } catch (_) {}
+        }
         return; // Bloquear completamente a interação
       }
       
@@ -2983,6 +3049,9 @@ function atualizarPaises(novosPaises, scene) {
     x: p.x,
     y: p.y
   })));
+  
+  // Disponibilizar os polígonos globalmente para previews HTML
+  try { window.territoryPolygons = window.territoryPolygons || {}; } catch(_) {}
   
   const gameState = getGameState();
   if (!gameState) {
@@ -3205,6 +3274,9 @@ function atualizarPaises(novosPaises, scene) {
    }
   };
 
+  // Expor polígonos dos territórios para componentes HTML (ex.: preview nas cartas)
+  try { window.territoryPolygons = dadosGeograficos; } catch (_) {}
+
   console.log('📊 Verificando criação de territórios...');
   console.log('📊 paises.length:', gameState.paises.length);
   console.log('📊 novosPaises.length:', novosPaises.length);
@@ -3311,7 +3383,18 @@ function atualizarPaises(novosPaises, scene) {
                obj.text.setVisible(false);
              });
              
-             obj.polygon.on('pointerdown', (pointer) => {
+             obj.polygon.on('pointerdown', (pointer, localX, localY, event) => {
+         // Bloquear interação com o mapa caso qualquer interface HTML esteja aberta
+         const interfaceAberta = isAnyHTMLInterfaceOpen();
+         if (interfaceAberta) {
+           console.log('🛡️ Clique em território bloqueado - Interface HTML aberta:', interfaceAberta);
+           if (event && typeof event.stopPropagation === 'function') {
+             try { event.stopPropagation(); } catch (_) {}
+           } else if (pointer && pointer.event && typeof pointer.event.stopPropagation === 'function') {
+             try { pointer.event.stopPropagation(); } catch (_) {}
+           }
+           return;
+         }
          // Fechar indicação de início de turno automaticamente em qualquer interação
          fecharIndicacaoInicioTurnoAutomatico();
          
@@ -5325,15 +5408,27 @@ function showCardsModal(cartas, forcarTroca = false) {
     item.className = 'card-item';
     item.dataset.territorio = carta.territorio;
 
+    // Header com símbolo
+    const header = document.createElement('div');
+    header.className = 'card-header';
     const symbol = document.createElement('div');
     symbol.className = 'card-symbol';
     symbol.textContent = carta.simbolo || '🃏';
+    header.appendChild(symbol);
 
+    // Figura (preview do território)
+    const figure = document.createElement('div');
+    figure.className = 'card-figure';
+    const svg = createTerritorySVG(carta.territorio, 120, 80);
+    if (svg) figure.appendChild(svg);
+
+    // Rodapé com nome
     const name = document.createElement('div');
     name.className = 'card-name';
     name.textContent = carta.territorio;
 
-    item.appendChild(symbol);
+    item.appendChild(header);
+    item.appendChild(figure);
     item.appendChild(name);
     item.addEventListener('click', () => toggleCardSelection(item));
 
@@ -5343,6 +5438,88 @@ function showCardsModal(cartas, forcarTroca = false) {
   popup.style.display = 'flex';
   backdrop.style.display = 'block';
   modalCartasTerritorioAberto = true;
+}
+
+// Cria um SVG com o polígono do território, ajustando para caber no tamanho desejado
+function createTerritorySVG(territorioNome, targetWidth = 120, targetHeight = 80) {
+  try {
+    const polygons = (window && window.territoryPolygons) ? window.territoryPolygons : null;
+    if (!polygons || !polygons[territorioNome] || !Array.isArray(polygons[territorioNome].pontos)) {
+      return null;
+    }
+    const pts = polygons[territorioNome].pontos;
+    if (pts.length < 6) return null;
+
+    // Calcular bounds originais
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < pts.length; i += 2) {
+      const x = pts[i];
+      const y = pts[i + 1];
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+
+    // Calcular escala e offsets para centralizar na viewBox desejada
+    const scale = Math.min(targetWidth / width, targetHeight / height) * 0.9; // margem
+    const scaledWidth = width * scale;
+    const scaledHeight = height * scale;
+    const offsetX = (targetWidth - scaledWidth) / 2;
+    const offsetY = (targetHeight - scaledHeight) / 2;
+
+    // Construir string de pontos já escalados/normalizados
+    const mapped = [];
+    for (let i = 0; i < pts.length; i += 2) {
+      const x = ((pts[i] - minX) * scale) + offsetX;
+      const y = ((pts[i + 1] - minY) * scale) + offsetY;
+      mapped.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', String(targetWidth));
+    svg.setAttribute('height', String(targetHeight));
+    svg.setAttribute('viewBox', `0 0 ${targetWidth} ${targetHeight}`);
+
+    // Fundo sutil
+    const bg = document.createElementNS(svgNS, 'rect');
+    bg.setAttribute('x', '0');
+    bg.setAttribute('y', '0');
+    bg.setAttribute('width', String(targetWidth));
+    bg.setAttribute('height', String(targetHeight));
+    bg.setAttribute('rx', '6');
+    bg.setAttribute('ry', '6');
+    bg.setAttribute('fill', 'rgba(255,255,255,0.03)');
+    svg.appendChild(bg);
+
+    // Polígono do território
+    const poly = document.createElementNS(svgNS, 'polygon');
+    poly.setAttribute('points', mapped.join(' '));
+    poly.setAttribute('fill', 'rgba(0, 119, 204, 0.5)');
+    poly.setAttribute('stroke', '#00aaff');
+    poly.setAttribute('stroke-width', '2');
+    svg.appendChild(poly);
+
+    // Borda decorativa
+    const border = document.createElementNS(svgNS, 'rect');
+    border.setAttribute('x', '0.5');
+    border.setAttribute('y', '0.5');
+    border.setAttribute('width', String(targetWidth - 1));
+    border.setAttribute('height', String(targetHeight - 1));
+    border.setAttribute('rx', '6');
+    border.setAttribute('ry', '6');
+    border.setAttribute('fill', 'none');
+    border.setAttribute('stroke', 'rgba(255,255,255,0.06)');
+    border.setAttribute('stroke-width', '1');
+    svg.appendChild(border);
+
+    return svg;
+  } catch (_) {
+    return null;
+  }
 }
 
 function hideCardsModal() {
@@ -6119,8 +6296,8 @@ function showVictoryModal(nomeJogador, resumoJogo) {
   // Preencher cards dos jogadores
   fillPlayersGrid(nomeJogador, gameState);
   
-  // Preencher objetivos dos jogadores
-  fillObjectivesList(gameState);
+  // Preencher objetivos dos jogadores (preferindo os do resumo de jogo)
+  fillObjectivesList(gameState, resumoJogo);
   
   // Mostrar popup
   popup.style.display = 'flex';
@@ -6188,7 +6365,10 @@ function fillPlayersGrid(nomeVencedor, gameState) {
   Array.from(todosJogadores).forEach((nomeJogador, index) => {
     const isWinner = nomeJogador === nomeVencedor;
     const isEliminated = !territoriosPorJogador[nomeJogador] || territoriosPorJogador[nomeJogador] === 0;
-    const isHuman = !nomeJogador.startsWith('CPU');
+    // Identificar CPU: usar flag do estado se existir, senão fallback pelo nome
+    const jogadorObj = jogadores.find(j => j.nome === nomeJogador);
+    const isCPUFlag = jogadorObj && typeof jogadorObj.isCPU === 'boolean' ? jogadorObj.isCPU : null;
+    const isHuman = isCPUFlag != null ? !isCPUFlag : !nomeJogador.startsWith('CPU');
     
     const territorios = territoriosPorJogador[nomeJogador] || 0;
     const tropas = tropasPorJogador[nomeJogador] || 0;
@@ -6244,14 +6424,15 @@ function fillPlayersGrid(nomeVencedor, gameState) {
   });
 }
 
-function fillObjectivesList(gameState) {
+function fillObjectivesList(gameState, resumoJogo = null) {
   const objectivesList = document.getElementById('objectives-list');
   if (!objectivesList || !gameState) return;
   
   objectivesList.innerHTML = '';
   
   const jogadores = gameState.jogadores || [];
-  const objetivos = gameState.objetivos || {};
+  // Preferir objetivos vindos do resumo do jogo (servidor)
+  const objetivos = (resumoJogo && resumoJogo.objetivos) ? resumoJogo.objetivos : (gameState.objetivos || {});
   
   // Definir objetivos padrão se não existirem
   const objetivosPadrao = {
@@ -6261,7 +6442,11 @@ function fillObjectivesList(gameState) {
   };
   
   jogadores.forEach(jogador => {
-    const objetivoJogador = objetivos[jogador.nome] || objetivosPadrao.eliminacao || 'Eliminar todos os adversários';
+    // Suportar formatos: string ou objeto { descricao }
+    const objValor = objetivos[jogador.nome];
+    const objetivoJogador = objValor
+      ? (typeof objValor === 'string' ? objValor : (objValor.descricao || objetivosPadrao.eliminacao))
+      : (objetivosPadrao.eliminacao || 'Eliminar todos os adversários');
     
     // Verificar se o objetivo foi completado (simplificado)
     const isCompleted = gameState.vencedor === jogador.nome;

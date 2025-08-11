@@ -2118,92 +2118,74 @@ function continuarTurnoCPU(jogadorCPU, room) {
 // Função para executar reforços sequencialmente - ESTRATÉGIA DE CAMPEÃO MUNDIAL
 function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCPU, objetivo, index, room) {
   if (room.vitoria || room.derrota) return;
-  
-  // ESTRATÉGIA DE CAMPEÃO: Concentrar TODAS as tropas em UM SÓ lugar estratégico
-  const totalTropas = tropasReforcoCPU + Object.values(tropasBonusCPU).reduce((sum, qty) => sum + qty, 0);
-  
-  if (totalTropas > 0) {
-    // Encontrar o território MAIS estratégico para concentrar todas as tropas
-    const territoriosDoJogador = room.paises.filter(p => p.dono === jogadorCPU.nome);
-    let melhorTerritorio = null;
-    let melhorPontuacao = -1;
-    
-    territoriosDoJogador.forEach(territorio => {
-      const pais = room.paises.find(p => p.nome === territorio.nome);
-      let pontuacao = 0;
-      
-      // 1. FRONTEIRAS COM INIMIGOS (mais importante)
-      const vizinhosInimigos = pais.vizinhos.filter(vizinho => {
-        const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        return paisVizinho && paisVizinho.dono !== jogadorCPU.nome;
-      });
-      pontuacao += vizinhosInimigos.length * 50; // Muito mais peso
-      
-      // 2. VULNERABILIDADE ATUAL
-      if (pais.tropas <= 1) pontuacao += 100; // Prioridade máxima
-      else if (pais.tropas <= 2) pontuacao += 80;
-      else if (pais.tropas <= 3) pontuacao += 60;
-      
-      // 3. OBJETIVO ESTRATÉGICO
-      if (objetivo?.tipo === 'conquistar3Continentes') {
-        const continente = Object.keys(room.continentes).find(cont => 
-          room.continentes[cont].territorios.includes(territorio.nome)
-        );
-        if (continente === objetivo.continente1 || continente === objetivo.continente2) {
-          pontuacao += 200; // Prioridade absoluta
-        }
-      }
-      
-      // 4. POSIÇÃO CENTRAL (muitos vizinhos próprios para defesa)
-      const vizinhosProprios = pais.vizinhos.filter(vizinho => {
-        const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        return paisVizinho && paisVizinho.dono === jogadorCPU.nome;
-      });
-      pontuacao += vizinhosProprios.length * 20;
-      
-      // 5. OPORTUNIDADES DE ATAQUE
-      vizinhosInimigos.forEach(vizinho => {
-        const paisVizinho = room.paises.find(p => p.nome === vizinho);
-        if (paisVizinho.tropas <= 2) pontuacao += 30; // Alvos fracos próximos
-      });
-      
-      if (pontuacao > melhorPontuacao) {
-        melhorPontuacao = pontuacao;
-        melhorTerritorio = territorio;
-      }
+
+  // Função utilitária: calcula se território é fronteira (tem pelo menos 1 inimigo vizinho)
+  function ehFronteira(p) {
+    const pais = room.paises.find(x => x.nome === p.nome);
+    return pais.vizinhos.some(v => {
+      const pv = room.paises.find(x => x.nome === v);
+      return pv && pv.dono !== jogadorCPU.nome;
     });
-    
-    // Fallback: território com menos tropas
-    if (!melhorTerritorio) {
-      melhorTerritorio = territoriosDoJogador.reduce((min, atual) => 
-        atual.tropas < min.tropas ? atual : min
-      );
-    }
-    
-    // CONCENTRAR TODAS AS TROPAS NO TERRITÓRIO ESCOLHIDO
-    const pais = room.paises.find(p => p.nome === melhorTerritorio.nome);
-    pais.tropas += totalTropas;
-    
-    console.log(`🏆 CPU ${jogadorCPU.nome} CONCENTROU ${totalTropas} tropas em ${melhorTerritorio.nome} (pontuação estratégica: ${melhorPontuacao})`);
-    io.to(room.roomId).emit('adicionarAoHistorico', `🏆 CPU ${jogadorCPU.nome} CONCENTROU ${totalTropas} tropas em ${melhorTerritorio.nome}`);
-    io.to(room.roomId).emit('tocarSomMovimento');
-    
-    // Mostrar efeito visual de reforço
-    io.to(room.roomId).emit('mostrarEfeitoReforco', {
-      territorio: melhorTerritorio.nome,
-      jogador: jogadorCPU.nome,
-      tipo: 'reforco'
-    });
-    
-    // Atualizar estado para todos os jogadores
-    enviarEstadoParaTodos(room);
   }
-  
-  // Iniciar ataques imediatamente após concentrar tropas
+
+  // Pontuar território para receber reforço
+  function pontuarParaReforco(p) {
+    const pais = room.paises.find(x => x.nome === p.nome);
+    let score = 0;
+    const inimigos = pais.vizinhos.filter(v => {
+      const pv = room.paises.find(x => x.nome === v);
+      return pv && pv.dono !== jogadorCPU.nome;
+    });
+    const fracos = inimigos.filter(v => (room.paises.find(x => x.nome === v)?.tropas || 0) <= 2);
+    score += inimigos.length * 80; // fronteiras valem mais
+    score += fracos.length * 40;   // alvos fracos por perto
+    if (pais.tropas <= 1) score += 100; else if (pais.tropas === 2) score += 60;
+
+    // Objetivo: priorizar continentes-alvo
+    if (objetivo?.tipo === 'conquistar3Continentes') {
+      const cont = Object.keys(room.continentes).find(c => room.continentes[c].territorios.includes(p.nome));
+      if (cont === objetivo.continente1 || cont === objetivo.continente2) score += 150;
+    }
+    if (objetivo?.tipo === 'eliminarJogador') {
+      const alvo = objetivo.jogadorAlvo;
+      // mais inimigos do alvo ao redor → maior prioridade
+      const alvoVizinhos = inimigos.filter(v => room.paises.find(x => x.nome === v)?.dono === alvo).length;
+      score += alvoVizinhos * 120;
+    }
+    return score;
+  }
+
+  const meus = room.paises.filter(p => p.dono === jogadorCPU.nome);
+  const fronteiras = meus.filter(ehFronteira);
+
+  // Distribuir bônus de continente primeiro, dentro do próprio continente
+  for (const [continenteNome, qtd] of Object.entries(tropasBonusCPU || {})) {
+    for (let i = 0; i < qtd; i++) {
+      const candidatos = fronteiras.filter(t => room.continentes[continenteNome]?.territorios.includes(t.nome));
+      const alvo = (candidatos.length > 0 ? candidatos : fronteiras).sort((a,b) => pontuarParaReforco(b)-pontuarParaReforco(a))[0] || meus[0];
+      if (!alvo) continue;
+      const pais = room.paises.find(p => p.nome === alvo.nome);
+      pais.tropas += 1;
+      io.to(room.roomId).emit('mostrarEfeitoReforco', { territorio: alvo.nome, jogador: jogadorCPU.nome, tipo: 'reforco_bonus' });
+    }
+  }
+
+  // Distribuir reforço base, 1 a 1, entre as melhores fronteiras
+  for (let i = 0; i < tropasReforcoCPU; i++) {
+    const alvo = (fronteiras.length > 0 ? fronteiras : meus).sort((a,b) => pontuarParaReforco(b)-pontuarParaReforco(a))[0];
+    if (!alvo) break;
+    const pais = room.paises.find(p => p.nome === alvo.nome);
+    pais.tropas += 1;
+    io.to(room.roomId).emit('mostrarEfeitoReforco', { territorio: alvo.nome, jogador: jogadorCPU.nome, tipo: 'reforco' });
+  }
+
+  enviarEstadoParaTodos(room);
+
+  // Após reforçar de forma distribuída, seguir para ataques
   setTimeout(() => {
     if (room.vitoria || room.derrota) return;
     executarAtaquesSequenciais(jogadorCPU, objetivo, room);
-  }, 1000);
+  }, 800);
 }
 
 // Função para executar remanejamento inteligente da CPU - ESTRATÉGIA AVANÇADA
@@ -2418,8 +2400,8 @@ function executarRemanejamentoCPU(jogadorCPU, objetivo, room) {
   // Ordenar movimentos por prioridade
   movimentos.sort((a, b) => b.prioridade - a.prioridade);
   
-  // Limitar a 4 movimentos por turno para estratégia mais complexa
-  const movimentosLimitados = movimentos.slice(0, 4);
+  // Permitir mais movimentos para redistribuir melhor as linhas de frente
+  const movimentosLimitados = movimentos.slice(0, 6);
   
   console.log(`🎯 CPU ${jogadorCPU.nome} planejou ${movimentosLimitados.length} movimentos estratégicos:`);
   movimentosLimitados.forEach((mov, index) => {
@@ -2745,8 +2727,18 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
     if (oportunidade.destino.tropas <= 0) {
         // Ataque bem-sucedido - conquista o território
         oportunidade.destino.dono = jogadorCPU.nome;
-        oportunidade.destino.tropas = 1; // Colocar 1 tropa no território conquistado
-        oportunidade.origem.tropas -= 1; // Remover 1 tropa do território atacante
+        // Transferir uma quantidade razoável respeitando a regra (origem deve ficar com pelo menos 1)
+        const maxTransferivel = Math.max(1, oportunidade.origem.tropas - 1);
+        // Preferir mover mais se o novo território tiver inimigos ao redor
+        const vizinhosInimigosNovo = oportunidade.destino.vizinhos.filter(v => {
+          const pv = room.paises.find(p => p.nome === v);
+          return pv && pv.dono !== jogadorCPU.nome;
+        }).length;
+        let transferir = Math.min(maxTransferivel, vizinhosInimigosNovo >= 2 ? 3 : (vizinhosInimigosNovo === 1 ? 2 : 1));
+        // Se ainda há muita tropa na origem, pode mover um pouco mais
+        if (oportunidade.origem.tropas - transferir >= 4) transferir = Math.min(maxTransferivel, transferir + 1);
+        oportunidade.destino.tropas = transferir;
+        oportunidade.origem.tropas -= transferir;
         resultadoMensagem += `${oportunidade.destino.nome} foi conquistado por ${jogadorCPU.nome}!\n`;
         
         // Registrar território conquistado no turno atual
@@ -2777,8 +2769,8 @@ function executarAtaqueIndividual(jogadorCPU, oportunidadesAtaque, index, objeti
         io.to(room.roomId).emit('territorioConquistado', {
           territorioConquistado: oportunidade.destino.nome,
           territorioAtacante: oportunidade.origem.nome,
-          tropasDisponiveis: 1, // CPU sempre transfere apenas 1 tropa
-          tropasAdicionais: 0, // CPU não transfere tropas adicionais
+          tropasDisponiveis: transferir,
+          tropasAdicionais: 0,
           jogadorAtacante: jogadorCPU.nome
         });
         

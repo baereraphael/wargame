@@ -1236,7 +1236,7 @@
   .cards-close:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
   .cards-content {
-    padding: 16px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1251,30 +1251,35 @@
 
   .cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
+    justify-items: center; /* centraliza o item dentro da célula */
+    justify-content: center; /* centraliza a grade quando sobra espaço */
   }
 
   .card-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #444;
-    border-radius: 10px;
-    padding: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 8px 10px;
     color: white;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
   }
 
-  .card-item:hover { background: rgba(255, 255, 255, 0.1); }
-  .card-item.selected { border-color: #ffaa00; box-shadow: 0 0 8px rgba(255, 170, 0, 0.4); }
+  .card-item:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.35); }
+  .card-item.selected { border-color: #ffaa00; box-shadow: 0 0 12px rgba(255, 170, 0, 0.5), 0 6px 14px rgba(0,0,0,0.35); }
 
-  .card-symbol { font-size: 28px; }
-  .card-name { font-size: 12px; text-align: center; color: #ddd; }
+  .card-header { width: 100%; display: flex; justify-content: flex-end; }
+  .card-symbol { font-size: 22px; opacity: 0.9; }
+  .card-figure { width: 100%; height: 86px; display: flex; align-items: center; justify-content: center; }
+  .card-name { font-size: 12px; text-align: center; color: #ddd; margin-top: 2px; }
 
   .cards-actions { display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
   .cards-exchange {
@@ -1292,7 +1297,7 @@
 
   @media (max-width: 480px) {
     .cards-popup { width: 92vw; }
-    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    .cards-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); justify-items: center; justify-content: center; }
   }
 
   /* Victory Popup Styles */
@@ -3756,6 +3761,22 @@
     </div>
   </div>
 
+  <!-- Info Popup (HTML-based) -->
+  <div class="info-backdrop" id="mode-info-backdrop" style="display:none;"></div>
+  <div class="info-popup" id="mode-info-popup" style="display:none;">
+    <div class="info-header">
+      <h3 id="mode-info-title">Aviso</h3>
+      <button class="info-close" id="mode-info-close" aria-label="Fechar">✖</button>
+    </div>
+    <div class="info-content">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-message" id="mode-info-message">Mensagem</div>
+      <div class="info-actions">
+        <button class="info-ok" id="mode-info-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Victory Popup (HTML-based) -->
   <div class="victory-backdrop" id="victory-backdrop"></div>
   <div class="victory-popup" id="victory-popup">
@@ -3815,6 +3836,39 @@
       </div>
     </div>
   </div>
+
+  <style>
+    /* Info Popup Styles */
+    .info-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9997;
+      display: none;
+    }
+    .info-popup {
+      position: fixed;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: min(480px, 90vw);
+      background: #0e0e12;
+      border: 1px solid #2a2a35;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      z-index: 9998;
+      display: none;
+      color: #eaeaea;
+    }
+    .info-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #20202a; }
+    .info-header h3 { margin: 0; font-size: 16px; color: #67b7ff; }
+    .info-close { background: transparent; border: none; color: #aaa; font-size: 16px; cursor: pointer; }
+    .info-close:hover { color: #fff; }
+    .info-content { padding: 18px 16px; display: grid; grid-template-columns: 40px 1fr; grid-gap: 12px; align-items: center; }
+    .info-icon { font-size: 28px; text-align: center; }
+    .info-message { color: #d0d0d5; line-height: 1.45; }
+    .info-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 12px; }
+    .info-ok { background: #0077cc; border: none; color: #fff; padding: 10px 16px; border-radius: 10px; cursor: pointer; }
+    .info-ok:hover { background: #005fa3; }
+  </style>
 
   <!-- Reinforcement Popup (HTML-based) -->
   <div class="reinforce-backdrop" id="reinforce-backdrop"></div>
