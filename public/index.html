@@ -288,6 +288,460 @@
     color: #fff;
   }
 
+  /* Skirmish Mode Screen Styles */
+  .skirmish-mode-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('assets/background2.png') center center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+  }
+
+  .skirmish-mode-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #444;
+    border-radius: 20px;
+    padding: 40px;
+    width: 700px;
+    max-width: 90vw;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+  }
+
+  .skirmish-mode-header h1 {
+    color: #fff;
+    font-size: 32px;
+    margin: 0 0 10px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .skirmish-mode-header p {
+    color: #ccc;
+    font-size: 16px;
+    margin: 0 0 30px 0;
+  }
+
+  .skirmish-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .skirmish-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 25px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #444;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-height: 180px;
+  }
+
+  .skirmish-option:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #0077cc;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 119, 204, 0.3);
+  }
+
+  .skirmish-option-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+
+  .skirmish-option-content h3 {
+    color: #fff;
+    font-size: 20px;
+    margin: 0 0 8px 0;
+  }
+
+  .skirmish-option-content p {
+    color: #ccc;
+    font-size: 14px;
+    margin: 0 0 15px 0;
+    line-height: 1.4;
+  }
+
+  .skirmish-option-status {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: #0077cc;
+    color: white;
+  }
+
+  .skirmish-mode-footer {
+    border-top: 1px solid #444;
+    padding-top: 20px;
+  }
+
+  /* Responsive adjustments for skirmish mode */
+  @media (max-width: 768px) {
+    .skirmish-mode-container {
+      width: 90vw;
+      padding: 30px 20px;
+    }
+    
+    .skirmish-options {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    
+    .skirmish-option {
+      min-height: 150px;
+      padding: 20px 15px;
+    }
+    
+    .skirmish-mode-header h1 {
+      font-size: 28px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .skirmish-mode-container {
+      padding: 25px 15px;
+    }
+    
+    .skirmish-option {
+      min-height: 130px;
+      padding: 15px 10px;
+    }
+    
+    .skirmish-option-icon {
+      font-size: 36px;
+    }
+    
+    .skirmish-option-content h3 {
+      font-size: 18px;
+    }
+    
+    .skirmish-option-content p {
+      font-size: 13px;
+    }
+  }
+
+  /* Tutorial Screen Styles */
+  .tutorial-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('assets/background2.png') center center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1600;
+    padding: 20px;
+  }
+
+  .tutorial-container {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #444;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 1000px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .tutorial-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #444;
+  }
+
+  .tutorial-header h1 {
+    font-size: 2.5rem;
+    margin: 0 0 10px 0;
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+  }
+
+  .tutorial-header p {
+    font-size: 1.1rem;
+    color: #ccc;
+    margin: 0;
+  }
+
+  .tutorial-content {
+    margin-bottom: 30px;
+  }
+
+  .tutorial-section {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .tutorial-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 1px solid #444;
+  }
+
+  .tutorial-section-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #ffd700;
+  }
+
+  .tutorial-progress {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+
+  .tutorial-section-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    align-items: start;
+  }
+
+  .tutorial-text {
+    line-height: 1.6;
+  }
+
+  .tutorial-text p {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    color: #fff;
+  }
+
+  .tutorial-text ul {
+    margin: 15px 0;
+    padding-left: 20px;
+  }
+
+  .tutorial-text li {
+    margin: 8px 0;
+    font-size: 1rem;
+    color: #fff;
+  }
+
+  .tutorial-phase, .tutorial-combat, .tutorial-cards, .tutorial-continents, .tutorial-tips {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    border-left: 4px solid #4CAF50;
+  }
+
+  .tutorial-phase h3, .tutorial-combat h3, .tutorial-cards h3, .tutorial-continents h3, .tutorial-tips h3 {
+    margin: 0 0 10px 0;
+    color: #4CAF50;
+    font-size: 1.1rem;
+  }
+
+  .tutorial-phase p, .tutorial-combat p, .tutorial-cards p, .tutorial-continents p, .tutorial-tips p {
+    margin: 5px 0;
+    font-size: 0.95rem;
+    color: #ccc;
+  }
+
+  .tutorial-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+  }
+
+  .tutorial-image-placeholder {
+    font-size: 6rem;
+    opacity: 0.7;
+    background: rgba(255, 255, 255, 0.1);
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #444;
+  }
+
+  .tutorial-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    border: 1px solid #444;
+  }
+
+  .tutorial-nav-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  }
+
+  .tutorial-nav-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+  }
+
+  .tutorial-nav-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .tutorial-dots {
+    display: flex;
+    gap: 10px;
+  }
+
+  .tutorial-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .tutorial-dot.active {
+    background: #4CAF50;
+    transform: scale(1.2);
+  }
+
+  .tutorial-dot:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .tutorial-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #444;
+  }
+
+  .tutorial-btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 180px;
+  }
+
+  .tutorial-btn.primary {
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    color: #1a1a2e;
+  }
+
+  .tutorial-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+  }
+
+  .tutorial-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid #444;
+  }
+
+  .tutorial-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #0077cc;
+  }
+
+  .tutorial-final-tip {
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    color: #1a1a2e;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 20px;
+  }
+
+  /* Responsive Design for Tutorial */
+  @media (max-width: 768px) {
+    .tutorial-container {
+      padding: 20px;
+      margin: 10px;
+    }
+    
+    .tutorial-section-content {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .tutorial-header h1 {
+      font-size: 2rem;
+    }
+    
+    .tutorial-section-header h2 {
+      font-size: 1.5rem;
+    }
+    
+    .tutorial-navigation {
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .tutorial-footer {
+      flex-direction: column;
+    }
+    
+    .tutorial-btn {
+      min-width: auto;
+      width: 100%;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Lobby Screen Styles */
   .lobby-screen {
     position: fixed;
@@ -418,6 +872,51 @@
     color: #00ff00;
     font-size: 12px;
     margin-left: auto;
+  }
+
+  /* Scrollbar styling for lobby players list */
+  .lobby-players-list::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .lobby-players-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+  }
+
+  .lobby-players-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .lobby-players-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Firefox scrollbar styling */
+  .lobby-players-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
+
+  /* Responsive adjustments for lobby scrollbar */
+  @media (max-width: 768px) {
+    .lobby-players-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .lobby-players-list {
+      scrollbar-width: thin;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .lobby-players-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .lobby-players-list {
+      max-height: 150px;
+    }
   }
 
   .lobby-player-status.connecting {
@@ -1363,6 +1862,94 @@
     gap: 20px; 
     overflow-y: auto; 
     max-height: calc(90vh - 120px);
+  }
+
+  /* Scrollbar styling for victory content */
+  .victory-content::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .victory-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .victory-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .victory-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Firefox scrollbar styling */
+  .victory-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
+
+  /* Scrollbar styling for other victory elements that might have scroll */
+  .players-grid::-webkit-scrollbar,
+  .objectives-list::-webkit-scrollbar,
+  .game-stats::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .players-grid::-webkit-scrollbar-track,
+  .objectives-list::-webkit-scrollbar-track,
+  .game-stats::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .players-grid::-webkit-scrollbar-thumb,
+  .objectives-list::-webkit-scrollbar-thumb,
+  .game-stats::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .players-grid::-webkit-scrollbar-thumb:hover,
+  .objectives-list::-webkit-scrollbar-thumb:hover,
+  .game-stats::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Firefox scrollbar styling for other elements */
+  .players-grid,
+  .objectives-list,
+  .game-stats {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
+
+  /* Horizontal scrollbar styling for elements that might need it */
+  .players-grid::-webkit-scrollbar:horizontal,
+  .objectives-list::-webkit-scrollbar:horizontal,
+  .game-stats::-webkit-scrollbar:horizontal {
+    height: 8px;
+  }
+  
+  .players-grid::-webkit-scrollbar-track:horizontal,
+  .objectives-list::-webkit-scrollbar-track:horizontal,
+  .game-stats::-webkit-scrollbar-track:horizontal {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .players-grid::-webkit-scrollbar-thumb:horizontal,
+  .objectives-list::-webkit-scrollbar-thumb:horizontal,
+  .game-stats::-webkit-scrollbar-thumb:horizontal {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .players-grid::-webkit-scrollbar-thumb:horizontal:hover,
+  .objectives-list::-webkit-scrollbar-thumb:horizontal:hover,
+  .game-stats::-webkit-scrollbar-thumb:horizontal:hover {
+    background: rgba(255, 255, 255, 0.5);
   }
 
   /* Victory Header Content */
@@ -3616,6 +4203,268 @@
     </div>
   </div>
 
+  <!-- Skirmish Mode Screen (initially hidden) -->
+  <div class="skirmish-mode-screen" id="skirmish-mode-screen" style="display: none;">
+    <div class="skirmish-mode-container">
+      <div class="skirmish-mode-header">
+        <h1>⚔️ Modo Skirmish</h1>
+        <p>Jogo rápido e intenso com jogadores do mundo todo</p>
+      </div>
+      
+      <div class="skirmish-options">
+        <div class="skirmish-option" id="skirmish-start-match">
+          <div class="skirmish-option-icon">🚀</div>
+          <div class="skirmish-option-content">
+            <h3>Iniciar Partida</h3>
+            <p>Entre no lobby global e aguarde outros jogadores</p>
+            <div class="skirmish-option-status">Disponível</div>
+          </div>
+        </div>
+        
+        <div class="skirmish-option" id="skirmish-ranking">
+          <div class="skirmish-option-icon">🏆</div>
+          <div class="skirmish-option-content">
+            <h3>Ranking Geral</h3>
+            <p>Veja os melhores jogadores e suas estatísticas</p>
+            <div class="skirmish-option-status">Disponível</div>
+          </div>
+        </div>
+        
+        <div class="skirmish-option" id="skirmish-stats">
+          <div class="skirmish-option-icon">📊</div>
+          <div class="skirmish-option-content">
+            <h3>Minhas Estatísticas</h3>
+            <p>Visualize seu histórico de jogos e conquistas</p>
+            <div class="skirmish-option-status">Disponível</div>
+          </div>
+        </div>
+        
+        <div class="skirmish-option" id="skirmish-tutorial">
+          <div class="skirmish-option-icon">📚</div>
+          <div class="skirmish-option-content">
+            <h3>Tutorial</h3>
+            <p>Aprenda as regras e estratégias do jogo</p>
+            <div class="skirmish-option-status">Disponível</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="skirmish-mode-footer">
+        <button class="back-button" id="back-to-mode-selection">← Voltar aos Modos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial Screen (initially hidden) -->
+  <div class="tutorial-screen" id="tutorial-screen" style="display: none;">
+    <div class="tutorial-container">
+      <div class="tutorial-header">
+        <h1>📚 Tutorial do Jogo</h1>
+        <p>Aprenda as regras básicas e estratégias para dominar o mundo!</p>
+      </div>
+      
+      <div class="tutorial-content">
+        <div class="tutorial-section" id="tutorial-section-1">
+          <div class="tutorial-section-header">
+            <h2>🎯 Objetivo do Jogo</h2>
+            <div class="tutorial-progress">1 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Conquiste territórios e elimine seus oponentes!</strong></p>
+              <p>O objetivo é simples: expandir seu império, conquistar continentes inteiros e ser o último jogador de pé no mapa.</p>
+              <p>Para vencer, você precisa:</p>
+              <ul>
+                <li>🎯 <strong>Conquistar territórios</strong> - Atacar territórios vizinhos</li>
+                <li>🌍 <strong>Dominar continentes</strong> - Controlar todos os territórios de um continente</li>
+                <li>⚔️ <strong>Eliminar oponentes</strong> - Destruir todas as tropas inimigas</li>
+              </ul>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">🗺️</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tutorial-section" id="tutorial-section-2" style="display: none;">
+          <div class="tutorial-section-header">
+            <h2>🎲 Fases do Turno</h2>
+            <div class="tutorial-progress">2 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Cada turno tem 3 fases principais:</strong></p>
+              <div class="tutorial-phase">
+                <h3>🔄 <strong>1. Reforços</strong></h3>
+                <p>Receba tropas base + bônus por continentes dominados</p>
+                <p><em>Dica: Domine continentes para receber mais tropas!</em></p>
+              </div>
+              <div class="tutorial-phase">
+                <h3>⚔️ <strong>2. Ataques</strong></h3>
+                <p>Atacar territórios vizinhos para expandir seu império</p>
+                <p><em>Dica: Use dados para determinar o resultado dos ataques!</em></p>
+              </div>
+              <div class="tutorial-phase">
+                <h3>🚚 <strong>3. Remanejamento</strong></h3>
+                <p>Mover tropas entre territórios para fortalecer posições</p>
+                <p><em>Dica: Concentre tropas nas fronteiras!</em></p>
+              </div>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">⚔️</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tutorial-section" id="tutorial-section-3" style="display: none;">
+          <div class="tutorial-section-header">
+            <h2>🎯 Sistema de Combate</h2>
+            <div class="tutorial-progress">3 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Como funciona o combate:</strong></p>
+              <div class="tutorial-combat">
+                <h3>🎲 <strong>Dados de Ataque</strong></h3>
+                <p>• <strong>1-2 tropas:</strong> 1 dado</p>
+                <p>• <strong>3+ tropas:</strong> 2 dados</p>
+                <p>• <strong>4+ tropas:</strong> 3 dados (máximo)</p>
+              </div>
+              <div class="tutorial-combat">
+                <h3>🛡️ <strong>Dados de Defesa</strong></h3>
+                <p>• <strong>1+ tropas:</strong> 1 dado</p>
+                <p>• <strong>2+ tropas:</strong> 2 dados (máximo)</p>
+              </div>
+              <div class="tutorial-combat">
+                <h3>⚔️ <strong>Resultado</strong></h3>
+                <p>• <strong>Maior valor vence</strong> - Tropa inimiga é eliminada</p>
+                <p>• <strong>Empate:</strong> Atacante perde (defesa tem vantagem)</p>
+                <p><em>Dica: Atacar com mais tropas aumenta suas chances!</em></p>
+              </div>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">🎲</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tutorial-section" id="tutorial-section-4" style="display: none;">
+          <div class="tutorial-section-header">
+            <h2>🃏 Cartas Território</h2>
+            <div class="tutorial-progress">4 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Cartas são essenciais para a estratégia:</strong></p>
+              <div class="tutorial-cards">
+                <h3>📋 <strong>Como Ganhar Cartas</strong></h3>
+                <p>• <strong>Conquistar territórios</strong> - 1 carta por conquista</p>
+                <p>• <strong>Eliminar jogadores</strong> - Todas as cartas do oponente</p>
+              </div>
+              <div class="tutorial-cards">
+                <h3>🔄 <strong>Como Trocar Cartas</strong></h3>
+                <p>• <strong>3 cartas do mesmo tipo:</strong> +2 tropas</p>
+                <p>• <strong>3 cartas diferentes:</strong> +2 tropas</p>
+                <p>• <strong>1 carta + 2 territórios:</strong> +2 tropas</p>
+              </div>
+              <div class="tutorial-cards">
+                <h3>⚠️ <strong>Troca Obrigatória</strong></h3>
+                <p>• <strong>5+ cartas:</strong> Deve trocar antes de continuar</p>
+                <p><em>Dica: Troque cartas estrategicamente para maximizar tropas!</em></p>
+              </div>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">🃏</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tutorial-section" id="tutorial-section-5" style="display: none;">
+          <div class="tutorial-section-header">
+            <h2>🌍 Bônus de Continentes</h2>
+            <div class="tutorial-progress">5 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Dominar continentes traz vantagens poderosas:</strong></p>
+              <div class="tutorial-continents">
+                <h3>🎯 <strong>Bônus de Tropas</strong></h3>
+                <p>• <strong>América do Norte:</strong> +5 tropas</p>
+                <p>• <strong>Europa:</strong> +5 tropas</p>
+                <p>• <strong>Ásia:</strong> +7 tropas</p>
+                <p>• <strong>África:</strong> +3 tropas</p>
+                <p>• <strong>América do Sul:</strong> +2 tropas</p>
+                <p>• <strong>Oceania:</strong> +2 tropas</p>
+              </div>
+              <div class="tutorial-continents">
+                <h3>💡 <strong>Estratégias</strong></h3>
+                <p>• <strong>Comece pequeno:</strong> Domine Oceania ou América do Sul</p>
+                <p>• <strong>Expanda gradualmente:</strong> Conquiste continentes vizinhos</p>
+                <p>• <strong>Proteja suas fronteiras:</strong> Concentre tropas nas bordas</p>
+                <p><em>Dica: Oceania é excelente para iniciantes - fácil de defender!</em></p>
+              </div>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">🌍</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tutorial-section" id="tutorial-section-6" style="display: none;">
+          <div class="tutorial-section-header">
+            <h2>🏆 Dicas para Vencer</h2>
+            <div class="tutorial-progress">6 de 6</div>
+          </div>
+          <div class="tutorial-section-content">
+            <div class="tutorial-text">
+              <p><strong>Estratégias que podem levar você à vitória:</strong></p>
+              <div class="tutorial-tips">
+                <h3>🎯 <strong>Estratégia Inicial</strong></h3>
+                <p>• <strong>Escolha um continente pequeno</strong> para começar</p>
+                <p>• <strong>Concentre tropas</strong> nas fronteiras</p>
+                <p>• <strong>Não se espalhe</strong> muito no início</p>
+              </div>
+              <div class="tutorial-tips">
+                <h3>⚔️ <strong>Durante o Jogo</strong></h3>
+                <p>• <strong>Troque cartas</strong> regularmente</p>
+                <p>• <strong>Proteja continentes</strong> dominados</p>
+                <p>• <strong>Observe oponentes</strong> e suas fraquezas</p>
+              </div>
+              <div class="tutorial-tips">
+                <h3>🏁 <strong>Final do Jogo</strong></h3>
+                <p>• <strong>Elimine jogadores</strong> mais fracos primeiro</p>
+                <p>• <strong>Use cartas</strong> para reforços finais</p>
+                <p>• <strong>Mantenha reservas</strong> para ataques surpresa</p>
+              </div>
+              <p class="tutorial-final-tip"><em>🎯 Lembre-se: A melhor estratégia é se adaptar ao que acontece no jogo!</em></p>
+            </div>
+            <div class="tutorial-image">
+              <div class="tutorial-image-placeholder">🏆</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tutorial-navigation">
+        <button class="tutorial-nav-btn" id="tutorial-prev" disabled>← Anterior</button>
+        <div class="tutorial-dots">
+          <span class="tutorial-dot active" data-section="1"></span>
+          <span class="tutorial-dot" data-section="2"></span>
+          <span class="tutorial-dot" data-section="3"></span>
+          <span class="tutorial-dot" data-section="4"></span>
+          <span class="tutorial-dot" data-section="5"></span>
+          <span class="tutorial-dot" data-section="6"></span>
+        </div>
+        <button class="tutorial-nav-btn" id="tutorial-next">Próximo →</button>
+      </div>
+      
+      <div class="tutorial-footer">
+        <button class="tutorial-btn secondary" id="tutorial-back">← Voltar ao Skirmish</button>
+        <button class="tutorial-btn primary" id="tutorial-start-game">🎮 Começar a Jogar!</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lobby Screen (initially hidden) -->
   <div class="lobby-screen" id="lobby-screen" style="display: none;">
     <div class="lobby-container">
@@ -3777,6 +4626,54 @@
     </div>
   </div>
 
+  <!-- Server Error Popup (HTML-based) -->
+  <div class="info-backdrop" id="server-error-backdrop" style="display:none;"></div>
+  <div class="info-popup" id="server-error-popup" style="display:none;">
+    <div class="info-header">
+      <h3 id="server-error-title">❌ Erro de Conexão</h3>
+      <button class="info-close" id="server-error-close" aria-label="Fechar">✖</button>
+    </div>
+    <div class="info-content">
+      <div class="info-icon">🌐</div>
+      <div class="info-message" id="server-error-message">Erro ao conectar com o servidor. Tente novamente.</div>
+      <div class="info-actions">
+        <button class="info-ok" id="server-error-ok">Tentar Novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Validation Error Popup (HTML-based) -->
+  <div class="info-backdrop" id="login-error-backdrop" style="display:none;"></div>
+  <div class="info-popup" id="login-error-popup" style="display:none;">
+    <div class="info-header">
+      <h3 id="login-error-title">⚠️ Erro de Validação</h3>
+      <button class="info-close" id="login-error-close" aria-label="Fechar">✖</button>
+    </div>
+    <div class="info-content">
+      <div class="info-icon">👤</div>
+      <div class="info-message" id="login-error-message">Mensagem de erro</div>
+      <div class="info-actions">
+        <button class="info-ok" id="login-error-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dominium Development Popup (HTML-based) -->
+  <div class="info-backdrop" id="dominium-dev-backdrop" style="display:none;"></div>
+  <div class="info-popup" id="dominium-dev-popup" style="display:none;">
+    <div class="info-header">
+      <h3 id="dominium-dev-title">🏰 Modo Dominium</h3>
+      <button class="info-close" id="dominium-dev-close" aria-label="Fechar">✖</button>
+    </div>
+    <div class="info-content">
+      <div class="info-icon">🚧</div>
+      <div class="info-message" id="dominium-dev-message">Modo Dominium está em desenvolvimento! Este modo incluirá campanhas estratégicas, progressão de jogador, conquistas e recompensas, e modo história. Volte em breve!</div>
+      <div class="info-actions">
+        <button class="info-ok" id="dominium-dev-ok">Entendi</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Victory Popup (HTML-based) -->
   <div class="victory-backdrop" id="victory-backdrop"></div>
   <div class="victory-popup" id="victory-popup">
@@ -3831,7 +4728,6 @@
       </div>
       
       <div class="victory-actions">
-        <button class="victory-btn primary" id="victory-restart">🎮 Jogar Novamente</button>
         <button class="victory-btn secondary" id="victory-menu">🏠 Voltar ao Menu</button>
       </div>
     </div>

@@ -1,6 +1,23 @@
 // Login System
 let playerLoggedIn = false;
 let playerUsername = '';
+// Mapeamento de nomes de cores para nomes de usuário reais
+let playerColorToUsernameMap = {};
+
+// Função auxiliar para obter o nome de usuário real a partir do nome da cor
+function getRealUsername(colorName) {
+  // Primeiro, tentar encontrar o jogador no gameState para obter o nomeReal
+  const gameState = getGameState();
+  if (gameState && gameState.jogadores) {
+    const jogador = gameState.jogadores.find(j => j.nome === colorName);
+    if (jogador && jogador.nomeReal) {
+      return jogador.nomeReal;
+    }
+  }
+  
+  // Fallback para o mapeamento antigo
+  return playerColorToUsernameMap[colorName] || colorName;
+}
 
 // Room Selection System
 let currentRoomId = null;
@@ -348,18 +365,21 @@ function handleLogin() {
   const username = usernameInput.value.trim();
   
   if (username.length < 2) {
-    alert('Por favor, digite um nome com pelo menos 2 caracteres.');
+    showLoginErrorModal('Por favor, digite um nome com pelo menos 2 caracteres.');
     return;
   }
   
   if (username.length > 20) {
-    alert('Por favor, digite um nome com no máximo 20 caracteres.');
+    showLoginErrorModal('Por favor, digite um nome com no máximo 20 caracteres.');
     return;
   }
   
   // Store username and mark as logged in
   playerUsername = username;
   playerLoggedIn = true;
+  
+  // Limpar mapeamento anterior
+  playerColorToUsernameMap = {};
   
   // Hide login screen and show mode selection screen
   const loginScreen = document.getElementById('login-screen');
@@ -378,6 +398,9 @@ function handleLogin() {
   
   // Initialize mode selection system
   initializeModeSelection();
+  
+  // Update HUD to reflect new player color
+  updateCSSHUD();
 }
 
 function initializeModeSelection() {
@@ -426,13 +449,85 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function selectSkirmishMode() {
-  // Hide mode selection screen and show lobby screen
+  // Hide mode selection screen and show skirmish mode screen
   const modeSelectionScreen = document.getElementById('mode-selection-screen');
-  const lobbyScreen = document.getElementById('lobby-screen');
+  const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
   
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'none';
     console.log('✅ Tela de seleção de modos ocultada');
+  }
+  if (skirmishModeScreen) {
+    skirmishModeScreen.style.display = 'flex';
+    console.log('✅ Tela do modo Skirmish exibida');
+  } else {
+    console.log('❌ Tela do modo Skirmish não encontrada!');
+  }
+  
+  // Initialize skirmish mode system
+  initializeSkirmishMode();
+}
+
+function showDominiumUnavailable() {
+  showDominiumDevModal();
+}
+
+// Initialize skirmish mode system
+function initializeSkirmishMode() {
+  console.log('🔧 Inicializando sistema do modo Skirmish...');
+  
+  // Add event listeners for skirmish options
+  const startMatchBtn = document.getElementById('skirmish-start-match');
+  const rankingBtn = document.getElementById('skirmish-ranking');
+  const statsBtn = document.getElementById('skirmish-stats');
+  const tutorialBtn = document.getElementById('skirmish-tutorial');
+  const backButton = document.getElementById('back-to-mode-selection');
+  
+  if (startMatchBtn) {
+    startMatchBtn.addEventListener('click', () => {
+      console.log('🚀 Iniciando partida Skirmish');
+      startSkirmishMatch();
+    });
+  }
+  
+  if (rankingBtn) {
+    rankingBtn.addEventListener('click', () => {
+      console.log('🏆 Abrindo ranking geral');
+      showSkirmishRanking();
+    });
+  }
+  
+  if (statsBtn) {
+    statsBtn.addEventListener('click', () => {
+      console.log('📊 Abrindo estatísticas pessoais');
+      showSkirmishStats();
+    });
+  }
+  
+  if (tutorialBtn) {
+    tutorialBtn.addEventListener('click', () => {
+      console.log('📚 Abrindo tutorial');
+      showSkirmishTutorial();
+    });
+  }
+  
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      console.log('← Voltando à seleção de modos');
+      backToModeSelectionFromSkirmish();
+    });
+  }
+}
+
+// Skirmish mode functions
+function startSkirmishMatch() {
+  // Hide skirmish mode screen and show lobby screen
+  const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
+  const lobbyScreen = document.getElementById('lobby-screen');
+  
+  if (skirmishModeScreen) {
+    skirmishModeScreen.style.display = 'none';
+    console.log('✅ Tela do modo Skirmish ocultada');
   }
   if (lobbyScreen) {
     lobbyScreen.style.display = 'flex';
@@ -445,20 +540,208 @@ function selectSkirmishMode() {
   initializeLobby();
 }
 
-function showDominiumUnavailable() {
-  const popup = document.getElementById('mode-info-popup');
-  const backdrop = document.getElementById('mode-info-backdrop');
-  const title = document.getElementById('mode-info-title');
-  const message = document.getElementById('mode-info-message');
-  if (!popup || !backdrop || !title || !message) {
-    // Fallback para alert caso a UI não esteja carregada
-    alert('🏰 Modo Dominium está em desenvolvimento!\n\nEste modo incluirá:\n• Campanhas estratégicas\n• Progressão de jogador\n• Conquistas e recompensas\n• Modo história\n\nVolte em breve!');
-    return;
+function showSkirmishRanking() {
+  // TODO: Implementar tela de ranking geral
+  console.log('🏆 Ranking geral - Funcionalidade em desenvolvimento');
+  alert('🏆 Ranking Geral\n\nEsta funcionalidade será implementada em breve!\n\nVocê poderá ver:\n• Top jogadores por vitórias\n• Estatísticas de jogos\n• Conquistas e medalhas\n• Histórico de partidas');
+}
+
+function showSkirmishStats() {
+  // TODO: Implementar tela de estatísticas pessoais
+  console.log('📊 Estatísticas pessoais - Funcionalidade em desenvolvimento');
+  alert('📊 Minhas Estatísticas\n\nEsta funcionalidade será implementada em breve!\n\nVocê poderá ver:\n• Total de partidas jogadas\n• Taxa de vitória\n• Territórios conquistados\n• Conquistas desbloqueadas');
+}
+
+function showSkirmishTutorial() {
+  console.log('📚 Abrindo tutorial do jogo');
+  
+  // Esconder tela de skirmish
+  const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
+  if (skirmishModeScreen) {
+    skirmishModeScreen.style.display = 'none';
   }
-  title.textContent = 'Modo Dominium';
-  message.innerHTML = '🏰 Modo Dominium está em desenvolvimento!<br/><br/>Este modo incluirá:<br/>• Campanhas estratégicas<br/>• Progressão de jogador<br/>• Conquistas e recompensas<br/>• Modo história<br/><br/>Volte em breve!';
-  popup.style.display = 'block';
-  backdrop.style.display = 'block';
+  
+  // Mostrar tela de tutorial
+  const tutorialScreen = document.getElementById('tutorial-screen');
+  if (tutorialScreen) {
+    tutorialScreen.style.display = 'flex';
+    
+    // Inicializar tutorial
+    initializeTutorial();
+  }
+}
+
+function initializeTutorial() {
+  let currentSection = 1;
+  const totalSections = 6;
+  
+  // Função para mostrar seção específica
+  function showSection(sectionNumber) {
+    // Esconder todas as seções
+    for (let i = 1; i <= totalSections; i++) {
+      const section = document.getElementById(`tutorial-section-${i}`);
+      if (section) {
+        section.style.display = 'none';
+      }
+    }
+    
+    // Mostrar seção atual
+    const currentSectionEl = document.getElementById(`tutorial-section-${sectionNumber}`);
+    if (currentSectionEl) {
+      currentSectionEl.style.display = 'block';
+    }
+    
+    // Atualizar navegação
+    updateNavigation();
+  }
+  
+  // Função para atualizar navegação
+  function updateNavigation() {
+    const prevBtn = document.getElementById('tutorial-prev');
+    const nextBtn = document.getElementById('tutorial-next');
+    const dots = document.querySelectorAll('.tutorial-dot');
+    
+    // Atualizar botões
+    if (prevBtn) {
+      prevBtn.disabled = currentSection === 1;
+    }
+    
+    if (nextBtn) {
+      if (currentSection === totalSections) {
+        nextBtn.textContent = 'Finalizar';
+      } else {
+        nextBtn.textContent = 'Próximo →';
+      }
+    }
+    
+    // Atualizar dots
+    dots.forEach((dot, index) => {
+      if (index + 1 === currentSection) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+  
+  // Função para ir para próxima seção
+  function nextSection() {
+    if (currentSection < totalSections) {
+      currentSection++;
+      showSection(currentSection);
+    } else {
+      // Finalizar tutorial
+      finishTutorial();
+    }
+  }
+  
+  // Função para ir para seção anterior
+  function prevSection() {
+    if (currentSection > 1) {
+      currentSection--;
+      showSection(currentSection);
+    }
+  }
+  
+  // Função para ir para seção específica (clique nos dots)
+  function goToSection(sectionNumber) {
+    currentSection = sectionNumber;
+    showSection(currentSection);
+  }
+  
+  // Função para finalizar tutorial
+  function finishTutorial() {
+    console.log('📚 Tutorial finalizado');
+    
+    // Esconder tela de tutorial
+    const tutorialScreen = document.getElementById('tutorial-screen');
+    if (tutorialScreen) {
+      tutorialScreen.style.display = 'none';
+    }
+    
+    // Voltar para tela de skirmish
+    const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
+    if (skirmishModeScreen) {
+      skirmishModeScreen.style.display = 'flex';
+    }
+  }
+  
+  // Função para voltar ao skirmish
+  function backToSkirmish() {
+    console.log('📚 Voltando ao skirmish');
+    
+    // Esconder tela de tutorial
+    const tutorialScreen = document.getElementById('tutorial-screen');
+    if (tutorialScreen) {
+      tutorialScreen.style.display = 'none';
+    }
+    
+    // Voltar para tela de skirmish
+    const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
+    if (skirmishModeScreen) {
+      skirmishModeScreen.style.display = 'flex';
+    }
+  }
+  
+  // Função para começar a jogar
+  function startGame() {
+    console.log('🎮 Iniciando jogo após tutorial');
+    
+    // Esconder tela de tutorial
+    const tutorialScreen = document.getElementById('tutorial-screen');
+    if (tutorialScreen) {
+      tutorialScreen.style.display = 'none';
+    }
+    
+    // Iniciar partida skirmish
+    startSkirmishMatch();
+  }
+  
+  // Adicionar event listeners
+  const prevBtn = document.getElementById('tutorial-prev');
+  const nextBtn = document.getElementById('tutorial-next');
+  const backBtn = document.getElementById('tutorial-back');
+  const startGameBtn = document.getElementById('tutorial-start-game');
+  const dots = document.querySelectorAll('.tutorial-dot');
+  
+  if (prevBtn) {
+    prevBtn.addEventListener('click', prevSection);
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', nextSection);
+  }
+  
+  if (backBtn) {
+    backBtn.addEventListener('click', backToSkirmish);
+  }
+  
+  if (startGameBtn) {
+    startGameBtn.addEventListener('click', startGame);
+  }
+  
+  // Adicionar event listeners para os dots
+  dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => goToSection(index + 1));
+  });
+  
+  // Mostrar primeira seção
+  showSection(1);
+}
+
+function backToModeSelectionFromSkirmish() {
+  // Hide skirmish mode screen and show mode selection screen
+  const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
+  const modeSelectionScreen = document.getElementById('mode-selection-screen');
+  
+  if (skirmishModeScreen) {
+    skirmishModeScreen.style.display = 'none';
+    console.log('✅ Tela do modo Skirmish ocultada');
+  }
+  if (modeSelectionScreen) {
+    modeSelectionScreen.style.display = 'flex';
+    console.log('✅ Tela de seleção de modos exibida');
+  }
 }
 
 function backToLogin() {
@@ -483,6 +766,16 @@ function backToLogin() {
     usernameInput.value = '';
     usernameInput.focus();
   }
+  
+  // Reset player avatar color to default
+  const playerAvatarEl = document.querySelector('.player-avatar');
+  if (playerAvatarEl) {
+    playerAvatarEl.style.background = '#4444ff'; // Default blue color
+  }
+  
+  // Limpar mapeamento de nomes de cores para nomes de usuário
+  playerColorToUsernameMap = {};
+  console.log('🧹 Mapeamento de nomes de cores limpo (backToLogin)');
 }
 
 function backToModeSelection() {
@@ -869,7 +1162,8 @@ const htmlConnections = [
   { origem: "Kaer'Tai", destino: 'Duskmere' },
   { origem: 'Highmoor', destino: 'Frosthollow' },
   { origem: 'Eldoria', destino: 'Frosthollow' },
-  { origem: 'Frosthelm', destino: 'Frosthollow' },
+  { origem: 'Thalengarde', destino: "Zul'Marak" },
+  { origem: 'Duskmere', destino: "Zul'Marak" },
   { origem: 'Stormfen', destino: 'Frosthollow' },
   { origem: "Ravenspire", destino: "Zul'Marak" },
   { origem: "Winterholde", destino: "Aetheris" },
@@ -1296,17 +1590,33 @@ function highlightContinentTerritories(continentName) {
       ? { width: polygon.strokeStyle.width, color: polygon.strokeStyle.color, alpha: polygon.strokeStyle.alpha }
       : { width: 4, color: 0x000000, alpha: 1 };
 
-    // Apply white border highlight
-    polygon.setStrokeStyle(6, 0xffffff, 1);
+    // Verificar se o território é prioritário (tem tropas de bônus para colocar)
+    const isPrioritario = gameState.continentePrioritario && 
+                         gameState.continentePrioritario.nome === continentName &&
+                         gameState.meuNome === gameState.turno &&
+                         Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0) > 0;
 
-    // Apply elevation only if not already elevated
-    let elevatedApplied = false;
-    if (!territory.elevado && scene) {
-      criarElevacaoTerritorio(territory.nome, scene);
-      elevatedApplied = true;
+    // Só aplicar efeitos de hover se não for prioritário
+    if (!isPrioritario) {
+      // Apply white border highlight
+      polygon.setStrokeStyle(6, 0xffffff, 1);
+
+      // Apply elevation only if not already elevated
+      let elevatedApplied = false;
+      if (!territory.elevado && scene) {
+        criarElevacaoTerritorio(territory.nome, scene);
+        elevatedApplied = true;
+      }
+
+      hoveredTerritoryState.set(territory.nome, { prevStroke: prev, elevatedApplied });
+    } else {
+      // Para territórios prioritários, apenas salvar o estado atual sem aplicar efeitos
+      hoveredTerritoryState.set(territory.nome, { 
+        prevStroke: prev, 
+        elevatedApplied: false,
+        isPrioritario: true 
+      });
     }
-
-    hoveredTerritoryState.set(territory.nome, { prevStroke: prev, elevatedApplied });
   });
 }
 
@@ -1321,7 +1631,13 @@ function unhighlightContinentTerritories(continentName) {
     if (!territory || !territory.polygon) return;
 
     const polygon = territory.polygon;
-    const { prevStroke, elevatedApplied } = state;
+    const { prevStroke, elevatedApplied, isPrioritario } = state;
+
+    // Se o território é prioritário, não restaurar o estado anterior
+    if (isPrioritario) {
+      console.log(`🎯 Território ${territoryName} é prioritário - mantendo efeitos visuais`);
+      return;
+    }
 
     // Restore previous border
     polygon.setStrokeStyle(prevStroke.width, prevStroke.color, prevStroke.alpha);
@@ -1958,6 +2274,13 @@ function initializeGame() {
     gameState.vitoria = estado.vitoria;
     gameState.derrota = estado.derrota;
     gameState.meuNome = estado.meuNome;
+    
+    // Mapear o nome da cor para o nome de usuário real
+    if (gameState.meuNome && playerUsername) {
+      playerColorToUsernameMap[gameState.meuNome] = playerUsername;
+      console.log(`🎨 Mapeamento criado: ${gameState.meuNome} -> ${playerUsername}`);
+    }
+    
     gameState.continentes = estado.continentes || {};
     gameState.continentePrioritario = estado.continentePrioritario || null;
     gameState.faseRemanejamento = estado.faseRemanejamento || false;
@@ -2030,7 +2353,7 @@ function initializeGame() {
   });
 
   socket.on('mostrarEfeitoReforco', (dados) => {
-    mostrarEfeitoReforco(dados.territorio, dados.jogador, currentScene);
+    mostrarEfeitoReforco(dados.territorio, dados.jogador, currentScene, dados.quantidade);
   });
 
   socket.on('mostrarEfeitoExplosaoTropas', (dados) => {
@@ -2338,7 +2661,7 @@ function initializeLobby() {
   // Handle connection errors
   socket.on('connect_error', (error) => {
     console.error('Erro ao conectar com o servidor:', error);
-    alert('Erro ao conectar com o servidor. Tente novamente.');
+    showServerErrorModal();
   });
   
   // Lobby events
@@ -2566,6 +2889,16 @@ function clearGameState(roomId) {
     gameStates.delete(roomId);
     console.log(`🧹 Game state cleared for room: ${roomId}`);
   }
+  
+  // Reset player avatar color to default when clearing game state
+  const playerAvatarEl = document.querySelector('.player-avatar');
+  if (playerAvatarEl) {
+    playerAvatarEl.style.background = '#4444ff'; // Default blue color
+  }
+  
+  // Limpar mapeamento de nomes de cores para nomes de usuário
+  playerColorToUsernameMap = {};
+  console.log('🧹 Mapeamento de nomes de cores limpo');
 }
 
 // Process pending game state when scene is ready
@@ -2591,6 +2924,13 @@ function processarEstadoPendente() {
   gameState.vitoria = pendingGameState.vitoria;
   gameState.derrota = pendingGameState.derrota;
   gameState.meuNome = pendingGameState.meuNome;
+  
+  // Mapear o nome da cor para o nome de usuário real
+  if (gameState.meuNome && playerUsername) {
+    playerColorToUsernameMap[gameState.meuNome] = playerUsername;
+    console.log(`🎨 Mapeamento criado (pendente): ${gameState.meuNome} -> ${playerUsername}`);
+  }
+  
   gameState.continentes = pendingGameState.continentes || {};
   gameState.continentePrioritario = pendingGameState.continentePrioritario || null;
   gameState.faseRemanejamento = pendingGameState.faseRemanejamento || false;
@@ -2863,15 +3203,9 @@ function create() {
   // Victory modal buttons
   const victoryCloseBtn = document.getElementById('victory-close');
   const victoryBackdrop = document.getElementById('victory-backdrop');
-  const victoryRestartBtn = document.getElementById('victory-restart');
   const victoryMenuBtn = document.getElementById('victory-menu');
   if (victoryCloseBtn) victoryCloseBtn.addEventListener('click', () => hideVictoryModal());
   if (victoryBackdrop) victoryBackdrop.addEventListener('click', () => hideVictoryModal());
-  if (victoryRestartBtn) victoryRestartBtn.addEventListener('click', () => {
-    tocarSomClick();
-    emitWithRoom('reiniciarJogo');
-    hideVictoryModal();
-  });
   if (victoryMenuBtn) victoryMenuBtn.addEventListener('click', () => {
     tocarSomClick();
     hideVictoryModal();
@@ -4747,7 +5081,7 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
 }
 
 // Função para mostrar efeito visual de reforço
-function mostrarEfeitoReforco(territorio, jogador, scene) {
+function mostrarEfeitoReforco(territorio, jogador, scene, quantidade = 1) {
   const gameState = getGameState();
   if (!gameState) return;
   
@@ -4791,8 +5125,8 @@ function mostrarEfeitoReforco(territorio, jogador, scene) {
     }
   });
 
-  // Criar texto flutuante
-  const textoReforco = scene.add.text(posX, posY - 50, `🛡️ +1`, {
+  // Criar texto flutuante com a quantidade correta
+  const textoReforco = scene.add.text(posX, posY - 50, `🛡️ +${quantidade}`, {
     fontSize: getResponsiveFontSize(20, 0.8, 0.6),
     fill: '#00ff00',
     stroke: '#000000',
@@ -5035,10 +5369,11 @@ function confirmarTransferenciaConquista() {
   
   if (dadosConquista && tropasParaTransferir >= 0) {
     console.log('DEBUG: Enviando transferirTropasConquista para o servidor');
+    const totalTropas = 1 + tropasParaTransferir; // 1 obrigatória + opcionais
     emitWithRoom('transferirTropasConquista', {
       territorioAtacante: dadosConquista.territorioAtacante,
       territorioConquistado: dadosConquista.territorioConquistado,
-      quantidade: tropasParaTransferir
+      quantidade: totalTropas
     });
     esconderInterfaceTransferenciaConquista(false);
   } else {
@@ -5388,19 +5723,31 @@ function showCardsModal(cartas, forcarTroca = false) {
   const grid = document.getElementById('cards-grid');
   const instructions = document.getElementById('cards-instructions');
   const exchangeBtn = document.getElementById('cards-exchange');
-  if (!popup || !backdrop || !grid || !instructions || !exchangeBtn) return;
+  const titleEl = document.querySelector('#cards-popup .cards-header h3');
+  if (!popup || !backdrop || !grid || !instructions || !exchangeBtn || !titleEl) return;
 
   cardsModalForced = !!forcarTroca;
   cardsSelected = [];
   cardsCurrentList = Array.isArray(cartas) ? cartas : [];
   exchangeBtn.disabled = true;
+  
+  // Update title based on whether exchange is forced
+  if (forcarTroca) {
+    titleEl.textContent = '⚠️ TROCA OBRIGATÓRIA - Suas Cartas Território';
+  } else {
+    titleEl.textContent = '🎴 Suas Cartas Território';
+  }
 
   // Render grid
   grid.innerHTML = '';
   if (cardsCurrentList.length === 0) {
     instructions.textContent = 'Você ainda não possui cartas território.';
+  } else if (forcarTroca) {
+    instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.';
+    exchangeBtn.textContent = '🔄 TROCAR CARTAS (OBRIGATÓRIO)';
   } else {
     instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
+    exchangeBtn.textContent = '🔄 Trocar Cartas';
   }
 
   cardsCurrentList.forEach((carta) => {
@@ -5551,10 +5898,31 @@ function updateCardsInstructionsAndButton() {
   const instructions = document.getElementById('cards-instructions');
   const exchangeBtn = document.getElementById('cards-exchange');
   if (!instructions || !exchangeBtn) return;
+  
   const count = cardsSelected.length;
-  if (count === 0) instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
-  else if (count < 3) instructions.textContent = `Selecionadas: ${count}/3`;
-  else instructions.textContent = 'Selecionadas: 3/3 - Clique em Trocar Cartas';
+  
+  if (cardsModalForced) {
+    // Troca obrigatória - mostrar instruções específicas
+    if (count === 0) {
+      instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Selecione 3 cartas para trocar antes de continuar jogando.';
+    } else if (count < 3) {
+      instructions.textContent = `⚠️ TROCA OBRIGATÓRIA: Selecionadas: ${count}/3 - Selecione mais ${3-count} carta(s)`;
+    } else {
+      instructions.textContent = '✅ TROCA OBRIGATÓRIA: 3/3 selecionadas - Clique em Trocar Cartas para continuar';
+    }
+    exchangeBtn.textContent = '🔄 TROCAR CARTAS (OBRIGATÓRIO)';
+  } else {
+    // Troca opcional - instruções normais
+    if (count === 0) {
+      instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
+    } else if (count < 3) {
+      instructions.textContent = `Selecionadas: ${count}/3`;
+    } else {
+      instructions.textContent = 'Selecionadas: 3/3 - Clique em Trocar Cartas';
+    }
+    exchangeBtn.textContent = '🔄 Trocar Cartas';
+  }
+  
   exchangeBtn.disabled = count !== 3;
 }
 
@@ -5774,6 +6142,20 @@ function updateCSSHUD() {
     // Use logged in username first, then server-assigned name, then loading
     const displayName = playerUsername || gameState.meuNome || 'Carregando...';
     playerNameEl.textContent = displayName;
+    
+    // Update player avatar color
+    const playerAvatarEl = document.querySelector('.player-avatar');
+    if (playerAvatarEl && displayName !== 'Carregando...') {
+      // Use gameState.meuNome (cor atribuída pelo servidor) instead of displayName
+      if (gameState.meuNome) {
+        const playerColor = getPlayerColor(gameState.meuNome);
+        console.log(`🎨 Avatar color: ${gameState.meuNome} -> ${playerColor}`);
+        playerAvatarEl.style.background = playerColor;
+      } else {
+        console.log(`⚠️ gameState.meuNome não definido, usando cor padrão`);
+        playerAvatarEl.style.background = '#4444ff'; // Default blue
+      }
+    }
   }
 
   // Update player stats
@@ -5799,8 +6181,8 @@ function updateCSSHUD() {
       }
     });
 
-    // Create marks for each player in clockwise order (Azul, Vermelho, Verde, Amarelo, Preto, Roxo)
-    const playerOrder = ['Azul', 'Vermelho', 'Verde', 'Amarelo', 'Preto', 'Roxo'];
+    // Create marks for each player in the actual game order (from gameState.jogadores)
+    const playerOrder = gameState.jogadores.map(j => j.nome);
     const players = playerOrder.filter(player => playerTerritories[player] > 0);
     const totalMarks = players.reduce((sum, player) => sum + playerTerritories[player], 0);
     
@@ -6082,7 +6464,7 @@ function adicionarIndicadoresContinentes(scene) {
     if (territorio && territorio.x && territorio.y) {
       // Criar uma linha do território ao indicador
       const linha = scene.add.graphics();
-      linha.lineStyle(2, 0xffffff, 0.7); // Linha branca semi-transparente
+      linha.lineStyle(1, 0xffffff, 0.3); // Linha branca mais discreta: espessura 1, opacidade 0.3
       linha.beginPath();
       linha.moveTo(territorio.x, territorio.y);
       linha.lineTo(indicador.x, indicador.y);
@@ -6176,7 +6558,7 @@ function atualizarLinhasContinentes(scene, scaleX, scaleY) {
 
       // Limpar e redesenhar a linha
       item.linha.clear();
-      item.linha.lineStyle(2, 0xffffff, 0.7);
+      item.linha.lineStyle(1, 0xffffff, 0.3); // Reduzido: espessura 1, opacidade 0.3
       item.linha.beginPath();
       item.linha.moveTo(novoTerritorioX, novoTerritorioY);
       item.linha.lineTo(novoIndicadorX, novoIndicadorY);
@@ -6290,8 +6672,10 @@ function showVictoryModal(nomeJogador, resumoJogo) {
     ? `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`
     : '';
 
-  // Preencher estatísticas gerais do jogo
-  fillGameStats(resumoJogo);
+  // Definir o vencedor no gameState para que fillObjectivesList funcione corretamente
+  if (gameState) {
+    gameState.vencedor = nomeJogador;
+  }
   
   // Preencher cards dos jogadores
   fillPlayersGrid(nomeJogador, gameState);
@@ -6307,22 +6691,7 @@ function showVictoryModal(nomeJogador, resumoJogo) {
   try { tocarSomTerritoryWin(); } catch(_) {}
 }
 
-function fillGameStats(resumoJogo) {
-  const gameDuration = document.getElementById('game-duration');
-  const totalAttacks = document.getElementById('total-attacks');
-  const continentsCount = document.getElementById('continents-count');
-  
-  if (resumoJogo && resumoJogo.estatisticas) {
-    const e = resumoJogo.estatisticas;
-    if (gameDuration) gameDuration.textContent = e.duracao || '--';
-    if (totalAttacks) totalAttacks.textContent = e.totalAtaques != null ? e.totalAtaques : '--';
-    if (continentsCount) continentsCount.textContent = e.continentesConquistados != null ? e.continentesConquistados : '--';
-  } else {
-    if (gameDuration) gameDuration.textContent = '--';
-    if (totalAttacks) totalAttacks.textContent = '--';
-    if (continentsCount) continentsCount.textContent = '--';
-  }
-}
+
 
 function fillPlayersGrid(nomeVencedor, gameState) {
   const playersGrid = document.getElementById('players-grid');
@@ -6393,7 +6762,7 @@ function fillPlayersGrid(nomeVencedor, gameState) {
           ${isHuman ? '👤' : '🤖'}
         </div>
         <div class="player-details">
-          <div class="player-name">${nomeJogador}</div>
+          <div class="player-name">${getRealUsername(nomeJogador)}</div>
           <div class="player-status">
             ${isWinner ? 'VENCEDOR' : isEliminated ? 'Eliminado' : 'Ativo'}
           </div>
@@ -6455,7 +6824,7 @@ function fillObjectivesList(gameState, resumoJogo = null) {
     objectiveItem.className = `objective-item ${isCompleted ? 'completed' : ''}`;
     
     objectiveItem.innerHTML = `
-      <div class="objective-player">${jogador.nome}</div>
+      <div class="objective-player">${getRealUsername(jogador.nome)}</div>
       <div class="objective-description">${objetivoJogador}</div>
       <div class="objective-status">${isCompleted ? '✅' : '❌'}</div>
     `;
@@ -6563,7 +6932,7 @@ function showTransferModal(dados) {
   console.log('DEBUG: showTransferModal chamada com dados:', dados);
   esconderInterfaceTransferenciaConquista(true);
   dadosConquista = dados;
-  tropasParaTransferir = 1;
+  tropasParaTransferir = 0; // Começa com 0 tropas opcionais (1 obrigatória sempre)
   
   const popup = document.getElementById('transfer-popup');
   const backdrop = document.getElementById('transfer-backdrop');
@@ -6591,12 +6960,15 @@ function showTransferModal(dados) {
   if (destinoTroopsEl) destinoTroopsEl.textContent = `Tropas: ${dados.tropasDestino ?? '-'}`;
   
   function updateQty() { 
-    if (qtyEl) qtyEl.textContent = `${tropasParaTransferir}/${maxDisponivel}`; 
+    if (qtyEl) {
+      const totalTropas = 1 + tropasParaTransferir; // 1 obrigatória + opcionais
+      qtyEl.textContent = `${totalTropas}/3`;
+    }
   }
   updateQty();
   
   if (minusBtn) minusBtn.onclick = () => { 
-    if (tropasParaTransferir > 0) { 
+    if (tropasParaTransferir > 0) { // Mínimo é 0 opcionais (1 obrigatória sempre)
       tropasParaTransferir--; 
       updateQty(); 
     } 
@@ -7054,7 +7426,7 @@ function updatePlayerInfoPanel() {
           <div class="player-avatar-modal" style="background: ${getPlayerColor(jogador.nome)};">
             ${avatar}
           </div>
-          <div class="player-name-modal">${jogador.nome}</div>
+          <div class="player-name-modal">${getRealUsername(jogador.nome)}</div>
           ${isCurrentTurn ? '<div class="turn-badge">TURNO ATUAL</div>' : ''}
         </div>
         <div class="player-stats-modal">
@@ -7114,6 +7486,85 @@ function getPlayerColor(playerName) {
   const colors = Object.values(colorMap);
   const index = playerName.length % colors.length;
   return colors[index];
+}
+
+// Funções para mostrar modais de erro e informação
+function showServerErrorModal() {
+  const popup = document.getElementById('server-error-popup');
+  const backdrop = document.getElementById('server-error-backdrop');
+  const closeBtn = document.getElementById('server-error-close');
+  const okBtn = document.getElementById('server-error-ok');
+  
+  if (!popup || !backdrop) {
+    // Fallback para alert caso a UI não esteja carregada
+    alert('Erro ao conectar com o servidor. Tente novamente.');
+    return;
+  }
+  
+  const hide = () => {
+    popup.style.display = 'none';
+    backdrop.style.display = 'none';
+  };
+  
+  if (closeBtn) closeBtn.addEventListener('click', hide);
+  if (okBtn) okBtn.addEventListener('click', hide);
+  if (backdrop) backdrop.addEventListener('click', hide);
+  
+  popup.style.display = 'block';
+  backdrop.style.display = 'block';
+}
+
+function showLoginErrorModal(message) {
+  const popup = document.getElementById('login-error-popup');
+  const backdrop = document.getElementById('login-error-backdrop');
+  const closeBtn = document.getElementById('login-error-close');
+  const okBtn = document.getElementById('login-error-ok');
+  const messageEl = document.getElementById('login-error-message');
+  
+  if (!popup || !backdrop || !messageEl) {
+    // Fallback para alert caso a UI não esteja carregada
+    alert(message);
+    return;
+  }
+  
+  messageEl.textContent = message;
+  
+  const hide = () => {
+    popup.style.display = 'none';
+    backdrop.style.display = 'none';
+  };
+  
+  if (closeBtn) closeBtn.addEventListener('click', hide);
+  if (okBtn) okBtn.addEventListener('click', hide);
+  if (backdrop) backdrop.addEventListener('click', hide);
+  
+  popup.style.display = 'block';
+  backdrop.style.display = 'block';
+}
+
+function showDominiumDevModal() {
+  const popup = document.getElementById('dominium-dev-popup');
+  const backdrop = document.getElementById('dominium-dev-backdrop');
+  const closeBtn = document.getElementById('dominium-dev-close');
+  const okBtn = document.getElementById('dominium-dev-ok');
+  
+  if (!popup || !backdrop) {
+    // Fallback para alert caso a UI não esteja carregada
+    alert('🏰 Modo Dominium está em desenvolvimento!\n\nEste modo incluirá:\n• Campanhas estratégicas\n• Progressão de jogador\n• Conquistas e recompensas\n• Modo história\n\nVolte em breve!');
+    return;
+  }
+  
+  const hide = () => {
+    popup.style.display = 'none';
+    backdrop.style.display = 'none';
+  };
+  
+  if (closeBtn) closeBtn.addEventListener('click', hide);
+  if (okBtn) okBtn.addEventListener('click', hide);
+  if (backdrop) backdrop.addEventListener('click', hide);
+  
+  popup.style.display = 'block';
+  backdrop.style.display = 'block';
 }
 
 // Função para tornar uma interface arrastável
@@ -8040,7 +8491,7 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   overlay.style.inset = '0';
   overlay.style.zIndex = '999999';
   overlay.innerHTML = `
-    <div class=\"turn-confirm-modal show\" style=\"max-width:480px;\">\n      <div class=\"turn-confirm-header\"><span>🎯</span><span class=\"turn-confirm-title\">SEU TURNO!</span></div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">É a vez de ${nomeJogador} jogar!</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-start-close\">OK</button>\n      </div>\n    </div>`;
+    <div class=\"turn-confirm-modal show\" style=\"max-width:480px;\">\n      <div class=\"turn-confirm-header\"><span>🎯</span><span class=\"turn-confirm-title\">SEU TURNO!</span></div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">É a sua vez de jogar! Você é o ${nomeJogador}!</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-start-close\">OK</button>\n      </div>\n    </div>`;
 
   const btn = document.getElementById('turn-start-close');
   if (btn) btn.onclick = () => { tocarSomClick(); fecharIndicacaoInicioTurno(); };
@@ -8134,9 +8585,9 @@ function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
   // Configurações da linha tracejada
   const dashLength = 8; // Comprimento de cada traço
   const gapLength = 4;  // Comprimento do espaço entre traços
-  const lineWidth = 3;  // Espessura da linha
+  const lineWidth = 2;  // Espessura da linha (reduzida de 3 para 2)
   const lineColor = 0xffffff; // Cor branca
-  const lineAlpha = 0.8; // Transparência
+  const lineAlpha = 0.4; // Transparência (reduzida de 0.8 para 0.4)
   
   // Calcular a distância total entre os pontos
   const dx = x2 - x1;

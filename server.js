@@ -287,13 +287,43 @@ function createRoomFromGlobalLobby() {
   const room = getOrCreateRoom(roomId);
   console.log(`🔧 DEBUG: Sala ${roomId} obtida/criada`);
   
-  // Assign players to the room
-  console.log(`🔧 DEBUG: Atribuindo ${globalLobby.players.length} jogadores à sala`);
+  // Randomize the order of players (colors) for this game
+  console.log('🔧 DEBUG: Embaralhando ordem das cores/turnos para randomização');
+  
+  // Create a new array with randomized player order
+  const nomesCores = ['Azul', 'Vermelho', 'Verde', 'Amarelo', 'Preto', 'Roxo'];
+  const nomesEmbaralhados = [...nomesCores];
+  
+  // Fisher-Yates shuffle
+  for (let i = nomesEmbaralhados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [nomesEmbaralhados[i], nomesEmbaralhados[j]] = [nomesEmbaralhados[j], nomesEmbaralhados[i]];
+  }
+  
+  // Create new player objects with randomized names
+  room.jogadores = nomesEmbaralhados.map(nome => ({
+    nome: nome,
+    ativo: true,
+    socketId: null,
+    isCPU: false
+  }));
+  
+  console.log(`🎨 Ordem das cores embaralhada: ${nomesEmbaralhados.join(', ')}`);
+  
+  // Randomize who plays first (real players vs CPUs)
+  console.log('🔧 DEBUG: Randomizando quem joga primeiro (jogadores reais vs CPUs)');
+  
+  // First, create all player objects (real players + CPUs)
+  const todosJogadores = [];
+  
+  // Add real players
   globalLobby.players.forEach((player, index) => {
     if (index < 6) { // Maximum 6 players
       const jogador = room.jogadores[index];
       jogador.socketId = player.socketId;
       jogador.isCPU = false;
+      jogador.nomeReal = player.username; // Preservar o nome de usuário real
+      todosJogadores.push({ jogador, player, isReal: true });
       
       console.log(`🔧 DEBUG: Jogador ${player.username} atribuído a ${jogador.nome} (socket: ${player.socketId})`);
       
@@ -308,16 +338,32 @@ function createRoomFromGlobalLobby() {
     }
   });
   
-  // Fill remaining slots with CPUs
+  // Add CPUs
   const cpuSlots = 6 - globalLobby.players.length;
-  console.log(`🔧 DEBUG: Preenchendo ${cpuSlots} slots com CPUs`);
+  console.log(`🔧 DEBUG: Preenchendo ${cpuSlots} slots com CPUs usando cores aleatórias`);
   for (let i = globalLobby.players.length; i < 6; i++) {
-    room.jogadores[i].isCPU = true;
-    room.jogadores[i].socketId = null;
-    console.log(`🔧 DEBUG: CPU ativada para ${room.jogadores[i].nome}`);
+    const jogador = room.jogadores[i];
+    jogador.isCPU = true;
+    jogador.socketId = null;
+    todosJogadores.push({ jogador, isReal: false });
+    console.log(`🔧 DEBUG: CPU ativada para ${jogador.nome}`);
   }
   
+  // Shuffle the order of who plays first (real players and CPUs mixed)
+  console.log('🔧 DEBUG: Embaralhando ordem de jogo para randomizar quem joga primeiro');
+  for (let i = todosJogadores.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [todosJogadores[i], todosJogadores[j]] = [todosJogadores[j], todosJogadores[i]];
+  }
+  
+  // Reorder room.jogadores based on the shuffled play order
+  room.jogadores = todosJogadores.map(slot => slot.jogador);
+  
+  console.log(`🎲 Ordem de jogo randomizada: ${room.jogadores.map(j => `${j.nome}${j.isCPU ? ' (CPU)' : ' (Jogador)'}`).join(', ')}`);
+  console.log(`🎯 Primeiro a jogar: ${room.jogadores[0].nome}${room.jogadores[0].isCPU ? ' (CPU)' : ' (Jogador)'}`);
+  
   console.log(`🎮 Sala ${roomId} criada com ${globalLobby.players.length} jogadores reais e ${6 - globalLobby.players.length} CPUs`);
+  console.log(`🎨 Ordem das cores para este jogo: ${room.jogadores.map(j => j.nome).join(', ')}`);
   
   // Notify all players that game is starting
   console.log(`🔧 DEBUG: Emitindo gameStarting para sala ${roomId}`);
@@ -660,7 +706,8 @@ io.on('connection', (socket) => {
       io.to(playerRoom.roomId).emit('mostrarEfeitoReforco', {
         territorio: nomePais,
         jogador: playerRoom.turno,
-        tipo: 'reforco'
+        tipo: 'reforco',
+        quantidade: 1
       });
 
       // Send updated state to all clients in this room
@@ -1191,7 +1238,8 @@ io.on('connection', (socket) => {
         io.to(playerRoom.roomId).emit('mostrarEfeitoReforco', {
           territorio: territorioNome,
           jogador: jogador.nome,
-          tipo: 'carta'
+          tipo: 'carta',
+          quantidade: 2
         });
       }
     });
@@ -2045,7 +2093,8 @@ function executarTurnoCPU(jogadorCPU, room) {
             io.to(room.roomId).emit('mostrarEfeitoReforco', {
               territorio: territorioNome,
               jogador: jogadorCPU.nome,
-              tipo: 'carta'
+              tipo: 'carta',
+              quantidade: 2
             });
           }
         });
@@ -2063,7 +2112,9 @@ function executarTurnoCPU(jogadorCPU, room) {
             // Emitir efeito visual e som para todos os jogadores verem
             io.to(room.roomId).emit('mostrarEfeitoReforco', {
               territorio: territorioEstrategico.nome,
-              jogador: jogadorCPU.nome
+              jogador: jogadorCPU.nome,
+              tipo: 'reforco',
+              quantidade: 1
             });
             
             console.log(`🎯 CPU ${jogadorCPU.nome} reforçou ${territorioEstrategico.nome} com tropa de troca de cartas (${territorioEstrategico.tropas} tropas)`);
@@ -2159,6 +2210,7 @@ function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCP
   const fronteiras = meus.filter(ehFronteira);
 
   // Distribuir bônus de continente primeiro, dentro do próprio continente
+  const reforcosBonus = {};
   for (const [continenteNome, qtd] of Object.entries(tropasBonusCPU || {})) {
     for (let i = 0; i < qtd; i++) {
       const candidatos = fronteiras.filter(t => room.continentes[continenteNome]?.territorios.includes(t.nome));
@@ -2166,17 +2218,48 @@ function executarReforcosSequenciais(jogadorCPU, tropasBonusCPU, tropasReforcoCP
       if (!alvo) continue;
       const pais = room.paises.find(p => p.nome === alvo.nome);
       pais.tropas += 1;
-      io.to(room.roomId).emit('mostrarEfeitoReforco', { territorio: alvo.nome, jogador: jogadorCPU.nome, tipo: 'reforco_bonus' });
+      
+      // Acumular reforços por território para mostrar efeito único
+      if (!reforcosBonus[alvo.nome]) reforcosBonus[alvo.nome] = 0;
+      reforcosBonus[alvo.nome]++;
     }
   }
 
   // Distribuir reforço base, 1 a 1, entre as melhores fronteiras
+  const reforcosBase = {};
   for (let i = 0; i < tropasReforcoCPU; i++) {
     const alvo = (fronteiras.length > 0 ? fronteiras : meus).sort((a,b) => pontuarParaReforco(b)-pontuarParaReforco(a))[0];
     if (!alvo) break;
     const pais = room.paises.find(p => p.nome === alvo.nome);
     pais.tropas += 1;
-    io.to(room.roomId).emit('mostrarEfeitoReforco', { territorio: alvo.nome, jogador: jogadorCPU.nome, tipo: 'reforco' });
+    
+    // Acumular reforços por território para mostrar efeito único
+    if (!reforcosBase[alvo.nome]) reforcosBase[alvo.nome] = 0;
+    reforcosBase[alvo.nome]++;
+  }
+
+  // Enviar efeitos visuais únicos para cada território
+  for (const [territorio, quantidade] of Object.entries(reforcosBonus)) {
+    io.to(room.roomId).emit('mostrarEfeitoReforco', { 
+      territorio: territorio, 
+      jogador: jogadorCPU.nome, 
+      tipo: 'reforco_bonus',
+      quantidade: quantidade 
+    });
+  }
+  
+  for (const [territorio, quantidade] of Object.entries(reforcosBase)) {
+    io.to(room.roomId).emit('mostrarEfeitoReforco', { 
+      territorio: territorio, 
+      jogador: jogadorCPU.nome, 
+      tipo: 'reforco',
+      quantidade: quantidade 
+    });
+  }
+
+  // Emitir som de movimento para os reforços da CPU
+  if (Object.keys(reforcosBonus).length > 0 || Object.keys(reforcosBase).length > 0) {
+    io.to(room.roomId).emit('tocarSomMovimento');
   }
 
   enviarEstadoParaTodos(room);
@@ -3203,7 +3286,8 @@ function passarTurno(room) {
             io.to(room.roomId).emit('mostrarEfeitoReforco', {
               territorio: territorioNome,
               jogador: room.turno,
-              tipo: 'carta'
+              tipo: 'carta',
+              quantidade: 2
             });
           }
         });
@@ -3221,7 +3305,9 @@ function passarTurno(room) {
             // Emitir efeito visual e som para todos os jogadores verem
             io.to(room.roomId).emit('mostrarEfeitoReforco', {
               territorio: territorioEstrategico.nome,
-              jogador: room.turno
+              jogador: room.turno,
+              tipo: 'reforco',
+              quantidade: 1
             });
             
             console.log(`🎯 CPU ${room.turno} reforçou ${territorioEstrategico.nome} com tropa de troca obrigatória (${territorioEstrategico.tropas} tropas)`);
@@ -3245,31 +3331,51 @@ function passarTurno(room) {
       } else {
         console.log(`❌ CPU ${room.turno} não conseguiu selecionar 3 cartas para trocar`);
       }
-    } else {
-      // Jogador humano
-      console.log(`👤 Jogador humano ${room.turno} precisa trocar cartas`);
-      io.to(room.roomId).emit('mostrarMensagem', `⚠️ ${room.turno} tem ${cartasJogador.length} cartas território! É obrigatório trocar cartas antes de continuar.`);
-      io.to(room.roomId).emit('forcarTrocaCartas', { jogador: room.turno, cartas: cartasJogador });
-      return; // Não avança o turno até trocar as cartas
+      } else {
+    // Jogador humano
+    console.log(`👤 Jogador humano ${room.turno} precisa trocar cartas`);
+    
+    // Calcular reforços ANTES de forçar a troca para definir o continente prioritário
+    const resultadoReforco = calcularReforco(room.turno, room);
+    room.tropasReforco = resultadoReforco.base;
+    room.tropasBonusContinente = resultadoReforco.bonus;
+    
+    // Calcular e definir o continente prioritário para as tropas de bônus
+    const continentePrioritario = calcularContinentePrioritario(room);
+    if (continentePrioritario) {
+      console.log(`🎯 Continente prioritário definido para ${room.turno}: ${continentePrioritario.nome} (${continentePrioritario.quantidade} tropas)`);
     }
-  } else {
-    console.log(`✅ ${room.turno} tem ${cartasJogador.length} cartas (não precisa trocar)`);
+    
+    io.to(room.roomId).emit('mostrarMensagem', `⚠️ ${room.turno} tem ${cartasJogador.length} cartas território! É obrigatório trocar cartas antes de continuar.`);
+    io.to(room.roomId).emit('forcarTrocaCartas', { jogador: room.turno, cartas: cartasJogador });
+    
+    // Atualizar estado para mostrar o continente prioritário
+    io.sockets.sockets.forEach((s) => {
+      if (s.rooms.has(room.roomId)) {
+        s.emit('estadoAtualizado', getEstado(s.id, room));
+      }
+    });
+    
+    return; // Não avança o turno até trocar as cartas
   }
-  
-  const resultadoReforco = calcularReforco(room.turno, room);
-  room.tropasReforco = resultadoReforco.base;
-  room.tropasBonusContinente = resultadoReforco.bonus;
-  
-  io.to(room.roomId).emit('mostrarMensagem', `🔄 Turno de ${room.turno}. Reforços: ${room.tropasReforco} base + ${Object.values(room.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
-  
-  io.sockets.sockets.forEach((s) => {
-    if (s.rooms.has(room.roomId)) {
-      s.emit('estadoAtualizado', getEstado(s.id, room));
-    }
-  });
-  
-  // Verificar se é turno de CPU
-  verificarTurnoCPU(room);
+} else {
+  console.log(`✅ ${room.turno} tem ${cartasJogador.length} cartas (não precisa trocar)`);
+}
+
+const resultadoReforco = calcularReforco(room.turno, room);
+room.tropasReforco = resultadoReforco.base;
+room.tropasBonusContinente = resultadoReforco.bonus;
+
+io.to(room.roomId).emit('mostrarMensagem', `🔄 Turno de ${room.turno}. Reforços: ${room.tropasReforco} base + ${Object.values(room.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
+
+io.sockets.sockets.forEach((s) => {
+  if (s.rooms.has(room.roomId)) {
+    s.emit('estadoAtualizado', getEstado(s.id, room));
+  }
+});
+
+// Verificar se é turno de CPU
+verificarTurnoCPU(room);
 }
 
 
@@ -3350,7 +3456,8 @@ function startGame(roomId) {
   
   // Notify all clients that game is starting
   console.log(`🔧 DEBUG: Enviando mensagem de início para sala ${roomId}`);
-  io.to(roomId).emit('mostrarMensagem', '🎮 Jogo iniciado! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
+  const primeiroJogador = room.jogadores[0].nome;
+  io.to(roomId).emit('mostrarMensagem', `🎮 Jogo iniciado! É a vez do jogador ${primeiroJogador}. Clique em "Encerrar" para começar a jogar.`);
   
   // Send initial state to all clients in the room
   console.log(`🔧 DEBUG: Enviando estado inicial para todos os clientes na sala ${roomId}`);
@@ -3390,6 +3497,44 @@ function startGameWithCPUs(roomId) {
     room.lobbyTimer = null;
   }
   
+  // Randomize the order of players (colors) for this game
+  console.log('🔧 DEBUG: Embaralhando ordem das cores/turnos para jogo com CPUs');
+  
+  // Create a new array with randomized player order
+  const nomesCores = ['Azul', 'Vermelho', 'Verde', 'Amarelo', 'Preto', 'Roxo'];
+  const nomesEmbaralhados = [...nomesCores];
+  
+  // Fisher-Yates shuffle
+  for (let i = nomesEmbaralhados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [nomesEmbaralhados[i], nomesEmbaralhados[j]] = [nomesEmbaralhados[j], nomesEmbaralhados[i]];
+  }
+  
+  // Create new player objects with randomized names
+  room.jogadores = nomesEmbaralhados.map(nome => ({
+    nome: nome,
+    nomeReal: null, // Nome de usuário real (será null para CPUs)
+    ativo: true,
+    socketId: null,
+    isCPU: false
+  }));
+  
+  console.log(`🎨 Ordem das cores embaralhada para CPUs: ${nomesEmbaralhados.join(', ')}`);
+  
+  // Randomize the play order for CPU-only games
+  console.log('🔧 DEBUG: Randomizando ordem de jogo para partida apenas com CPUs');
+  const jogadoresEmbaralhados = [...room.jogadores];
+  for (let i = jogadoresEmbaralhados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [jogadoresEmbaralhados[i], jogadoresEmbaralhados[j]] = [jogadoresEmbaralhados[j], jogadoresEmbaralhados[i]];
+  }
+  
+  // Update room.jogadores with the shuffled order
+  room.jogadores = jogadoresEmbaralhados;
+  
+  console.log(`🎲 Ordem de jogo randomizada para CPUs: ${room.jogadores.map(j => j.nome).join(', ')}`);
+  console.log(`🎯 Primeiro a jogar: ${room.jogadores[0].nome} (CPU)`);
+  
   // Activate CPUs for unconnected players
   ativarCPUs(room);
   
@@ -3397,7 +3542,8 @@ function startGameWithCPUs(roomId) {
   inicializarJogo(room);
   
   // Notify all clients that game is starting
-  io.to(roomId).emit('mostrarMensagem', '🎮 Jogo iniciado com CPUs! É a vez do jogador Azul. Clique em "Encerrar" para começar a jogar.');
+  const primeiroJogador = room.jogadores[0].nome;
+  io.to(roomId).emit('mostrarMensagem', `🎮 Jogo iniciado com CPUs! É a vez do jogador ${primeiroJogador}. Clique em "Encerrar" para começar a jogar.`);
   
   // Send initial state to all clients in the room
   io.sockets.sockets.forEach((s) => {
