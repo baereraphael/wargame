@@ -1038,10 +1038,6 @@ function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
   
   if (htmlTroopsEnabled) {
     updateAllHTMLTroops();
-    // Manter labels de continentes sincronizados com o novo offset
-    if (htmlContinentsEnabled) {
-      updateAllContinentLabels();
-    }
     showDebugMessage(`Offset ajustado: Desktop=${desktop}, Mobile=${mobile}, Small=${smallMobile}`);
   }
   
@@ -1146,16 +1142,8 @@ function updateContinentLabelPosition(label, position) {
   // Aplicar offset do canvas (HUD offset)
   const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
   
-  // Aplicar os mesmos offsets utilizados pelos indicadores de tropas (para mobile)
-  const isMobile = window.innerHeight <= 500;
-  const isSmallMobile = window.innerWidth <= 480;
-  const verticalOffset = isSmallMobile ? globalTroopOffset.smallMobile :
-                        (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
-  const horizontalOffset = isSmallMobile ? globalTroopOffset.smallMobile :
-                        (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
-  
-  label.style.left = `${cssX + horizontalOffset}px`;
-  label.style.top = `${cssY + canvasOffsetTop + verticalOffset}px`;
+  label.style.left = `${cssX}px`;
+  label.style.top = `${cssY + canvasOffsetTop}px`;
 }
 
 function createAllContinentLabels() {
