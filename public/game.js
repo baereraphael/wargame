@@ -923,7 +923,7 @@ function updateHTMLTroopPosition(indicator, territorio) {
   const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
   
   // Adicionar offset vertical para baixar os indicadores (ajustável por tamanho de tela)
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth <= 1024;
   const isSmallMobile = window.innerWidth <= 480;
   const verticalOffset = isSmallMobile ? globalTroopOffset.smallMobile : 
                         (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
