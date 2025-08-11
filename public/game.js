@@ -2139,15 +2139,15 @@ function initializeGame() {
   // Create Phaser game only after login
   const config = {
     type: Phaser.AUTO,
-    width: 1280, // resolução base
-    height: 720,
+    width: window.innerWidth,
+    height: window.innerHeight,
     backgroundColor: '#1a1a1a',
     parent: 'game-container',
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: '100%',
-      height: '100%'
+      width: window.innerWidth,
+      height: window.innerHeight,
     },
     scene: {
       preload,
