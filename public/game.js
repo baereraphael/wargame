@@ -4798,12 +4798,12 @@ function resizeHTMLTroops() {
 
 // Dados dos continentes com posições calculadas baseadas nos territórios
 const continentPositions = {
-  'Thaloria': { x: 15, y: 15 },      // Região noroeste
-  'Zarandis': { x: 15, y: 15 },      // Região central-oeste  
-  'Elyndra': { x: 15, y: 15 },       // Região norte-central
-  'Kharune': { x: 15, y: 15 },       // Região central-leste
-  'Xanthera': { x: 15, y: 15 },      // Região leste
-  'Mythara': { x: 15, y: 15 }       // Região sudeste
+  'Thaloria': { x: 21, y: 19 },      // Região noroeste - centro dos territórios Redwyn, Stormfen, etc.
+  'Zarandis': { x: 35, y: 57 },      // Região central-oeste - centro dos territórios Stonevale, Emberlyn, etc.
+  'Elyndra': { x: 55, y: 18 },       // Região norte-central - centro dos territórios Frosthelm, Eldoria, etc.
+  'Kharune': { x: 45, y: 69 },       // Região central-leste - centro dos territórios Zul'Marak, Emberwaste, etc.
+  'Xanthera': { x: 85, y: 19 },      // Região leste - centro dos territórios Nihadara, Shōrenji, etc.
+  'Mythara': { x: 95, y: 70 }        // Região sudeste - centro dos territórios Mistveil, Dawnwatch, etc.
 };
 
 const continentData = {
