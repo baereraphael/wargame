@@ -11,13 +11,13 @@ const SERVER_CONFIG = {
   
   // Railway production server
   railway: {
-    url: 'web-production-f6a26.up.railway.app', // CHANGE THIS TO YOUR RAILWAY URL
+    url: 'https://web-production-f6a26.up.railway.app', // CHANGE THIS TO YOUR RAILWAY URL
     name: 'Railway Production'
   },
   
   // itch.io deployment
   itch: {
-    url: 'web-production-f6a26.up.railway.app', // SAME AS RAILWAY
+    url: 'https://web-production-f6a26.up.railway.app', // SAME AS RAILWAY
     name: 'itch.io Production'
   }
 };
