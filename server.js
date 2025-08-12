@@ -1,10 +1,39 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+
+// CORS middleware for Express
+app.use(cors({
+  origin: [
+    "https://*.itch.io",
+    "https://*.itchgames.com", 
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://web-production-f6a26.up.railway.app"
+  ],
+  credentials: true
+}));
+
+// CORS configuration for itch.io and other domains
+const io = socketIo(server, {
+  cors: {
+    origin: [
+      "https://*.itch.io",
+      "https://*.itchgames.com", 
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://web-production-f6a26.up.railway.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+
 
 // Game translations for objectives
 const gameTranslations = {
