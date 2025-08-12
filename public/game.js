@@ -4798,12 +4798,12 @@ function resizeHTMLTroops() {
 
 // Dados dos continentes com posições calculadas baseadas nos territórios
 const continentPositions = {
-  'Thaloria': { x: 200, y: 100 },      // Região noroeste
-  'Zarandis': { x: 450, y: 350 },      // Região central-oeste  
-  'Elyndra': { x: 620, y: 90 },       // Região norte-central
-  'Kharune': { x: 620, y: 480 },       // Região central-leste
-  'Xanthera': { x: 980, y: 90 },      // Região leste
-  'Mythara': { x: 1050, y: 520 }       // Região sudeste
+  'Thaloria': { x: 15, y: 15 },      // Região noroeste
+  'Zarandis': { x: 15, y: 15 },      // Região central-oeste  
+  'Elyndra': { x: 15, y: 15 },       // Região norte-central
+  'Kharune': { x: 15, y: 15 },       // Região central-leste
+  'Xanthera': { x: 15, y: 15 },      // Região leste
+  'Mythara': { x: 15, y: 15 }       // Região sudeste
 };
 
 const continentData = {
@@ -4882,8 +4882,8 @@ function updateContinentLabelPosition(label, position) {
   // Aplicar offset do canvas (HUD offset)
   const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
   
-  label.style.left = `${cssX}px`;
-  label.style.top = `${cssY + canvasOffsetTop}px`;
+  label.style.left = `${cssX}%`;
+  label.style.top = `${cssY + canvasOffsetTop}%`;
 }
 
 function createAllContinentLabels() {
