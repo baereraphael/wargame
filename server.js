@@ -213,7 +213,7 @@ class GameRoom {
     this.movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
     
     // Sistema de rastreamento de tropas individuais movidas
-    this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y } } }
+    this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y, tropasIndividuais: [] } } }
 
     // Sistema de cartas território
     this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
@@ -1485,15 +1485,32 @@ io.on('connection', (socket) => {
     if (!playerRoom.tropasMovidas[playerRoom.turno][dados.origem]) {
       playerRoom.tropasMovidas[playerRoom.turno][dados.origem] = {
         tropasOriginais: territorioOrigem.tropas,
-        tropasMovidas: 0
+        tropasMovidas: 0,
+        tropasIndividuais: [] // Array para rastrear cada tropa individualmente
+      };
+    }
+    
+    // Inicializar rastreamento para o território de destino se não existir
+    if (!playerRoom.tropasMovidas[playerRoom.turno][dados.destino]) {
+      playerRoom.tropasMovidas[playerRoom.turno][dados.destino] = {
+        tropasOriginais: territorioDestino.tropas,
+        tropasMovidas: 0,
+        tropasIndividuais: []
       };
     }
     
     // Calcular quantas tropas já foram movidas deste território
     const tropasJaMovidas = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas;
-    const tropasDisponiveis = territorioOrigem.tropas - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
     
-    if (tropasDisponiveis <= 0) {
+    // Calcular tropas disponíveis considerando as regras:
+    // 1. Máximo de tropas transferíveis = tropas originais - 1 (sempre deve permanecer 1 tropa)
+    // 2. O território de destino NÃO limita o movimento - pode receber quantas tropas quiser
+    const tropasDisponiveis = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasOriginais - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
+    
+    // Garantir que não seja negativo
+    const tropasDisponiveisFinal = Math.max(0, tropasDisponiveis);
+    
+    if (tropasDisponiveisFinal <= 0) {
       socket.emit('resultadoVerificacaoMovimento', { 
         podeMover: false, 
         quantidadeMaxima: 0, 
@@ -1503,7 +1520,7 @@ io.on('connection', (socket) => {
     }
 
     // A quantidade máxima é o mínimo entre as tropas disponíveis e o que pode ser movido
-    const quantidadeMaxima = Math.min(tropasDisponiveis, territorioOrigem.tropas - 1);
+    const quantidadeMaxima = Math.min(tropasDisponiveisFinal, playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasOriginais - 1);
 
     console.log('🔧 DEBUG: Movimento aprovado, quantidade máxima:', quantidadeMaxima);
     const resposta = { 
@@ -1552,15 +1569,23 @@ io.on('connection', (socket) => {
     if (!playerRoom.tropasMovidas[playerRoom.turno][dados.origem]) {
       playerRoom.tropasMovidas[playerRoom.turno][dados.origem] = {
         tropasOriginais: territorioOrigem.tropas,
-        tropasMovidas: 0
+        tropasMovidas: 0,
+        tropasIndividuais: [] // Array para rastrear cada tropa individualmente
       };
     }
     
     // Calcular quantas tropas já foram movidas deste território
     const tropasJaMovidas = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas;
-    const tropasDisponiveis = territorioOrigem.tropas - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
     
-    if (tropasDisponiveis <= 0) {
+    // Calcular tropas disponíveis considerando as regras:
+    // 1. Máximo de tropas transferíveis = tropas originais - 1 (sempre deve permanecer 1 tropa)
+    // 2. O território de destino NÃO limita o movimento - pode receber quantas tropas quiser
+    const tropasDisponiveis = playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasOriginais - tropasJaMovidas - 1; // Deixar pelo menos 1 tropa
+    
+    // Garantir que não seja negativo
+    const tropasDisponiveisFinal = Math.max(0, tropasDisponiveis);
+    
+    if (tropasDisponiveisFinal <= 0) {
       const mensagemErro = `Não é possível mover mais tropas de ${dados.origem} - todas as tropas disponíveis já foram movidas ou precisa deixar pelo menos 1 tropa.`;
       socket.emit('mostrarMensagem', mensagemErro);
       return;
@@ -1569,14 +1594,37 @@ io.on('connection', (socket) => {
 
 
     // Verificar se a quantidade é válida (não exceder tropas disponíveis)
-    if (dados.quantidade > tropasDisponiveis) {
-      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} - apenas ${tropasDisponiveis} tropas estão disponíveis para movimento.`;
+    if (dados.quantidade > tropasDisponiveisFinal) {
+      const mensagemErro = `Não é possível mover ${dados.quantidade} tropas de ${dados.origem} - apenas ${tropasDisponiveisFinal} tropas estão disponíveis para movimento.`;
       socket.emit('mostrarMensagem', mensagemErro);
       return;
     }
 
     // Registrar o movimento no sistema de rastreamento de tropas
     playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasMovidas += dados.quantidade;
+    
+    // Rastrear cada tropa individualmente para garantir que não seja movida mais de uma vez
+    for (let i = 0; i < dados.quantidade; i++) {
+      const tropaId = `${dados.origem}_${Date.now()}_${i}`;
+      playerRoom.tropasMovidas[playerRoom.turno][dados.origem].tropasIndividuais.push({
+        id: tropaId,
+        origem: dados.origem,
+        destino: dados.destino,
+        turno: playerRoom.turno
+      });
+    }
+    
+    // Inicializar rastreamento para o território de destino se não existir
+    if (!playerRoom.tropasMovidas[playerRoom.turno][dados.destino]) {
+      playerRoom.tropasMovidas[playerRoom.turno][dados.destino] = {
+        tropasOriginais: territorioDestino.tropas,
+        tropasMovidas: 0,
+        tropasIndividuais: []
+      };
+    }
+    
+    // Registrar as tropas movidas no território de destino
+    playerRoom.tropasMovidas[playerRoom.turno][dados.destino].tropasMovidas += dados.quantidade;
     
     // Manter o registro no sistema antigo para compatibilidade
     if (!playerRoom.movimentosRemanejamento[playerRoom.turno]) playerRoom.movimentosRemanejamento[playerRoom.turno] = {};
