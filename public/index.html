@@ -144,6 +144,150 @@
     margin: 0;
   }
 
+  /* Flag Selector Styles */
+  .flag-selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    margin-bottom: 10px;
+  }
+
+  .flag-selector-container label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .flag-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .flag-selector:hover {
+    border-color: #0077cc;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .flag-nav-btn {
+    background: rgba(0, 119, 204, 0.3);
+    border: 1px solid #0077cc;
+    color: #fff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    min-width: 40px;
+  }
+
+  .flag-nav-btn:hover {
+    background: rgba(0, 119, 204, 0.5);
+    border-color: #005fa3;
+    transform: scale(1.05);
+  }
+
+  .flag-nav-btn:active {
+    transform: scale(0.95);
+  }
+
+  .flag-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    min-height: 60px;
+    justify-content: center;
+  }
+
+  .flag-emoji {
+    font-size: 32px;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+
+  .flag-name {
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* Responsive adjustments for login */
+  @media (max-width: 768px) {
+    .login-container {
+      width: 90vw;
+      padding: 30px 20px;
+    }
+    
+    .login-header h1 {
+      font-size: 28px;
+    }
+    
+    .login-header p {
+      font-size: 14px;
+    }
+    
+    .flag-selector {
+      padding: 6px;
+    }
+    
+    .flag-nav-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      min-width: 35px;
+    }
+    
+    .flag-emoji {
+      font-size: 28px;
+    }
+    
+    .flag-name {
+      font-size: 11px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .login-container {
+      padding: 25px 15px;
+    }
+    
+    .flag-selector {
+      padding: 5px;
+      gap: 8px;
+    }
+    
+    .flag-nav-btn {
+      padding: 5px 8px;
+      font-size: 11px;
+      min-width: 30px;
+    }
+    
+    .flag-emoji {
+      font-size: 24px;
+    }
+    
+    .flag-name {
+      font-size: 10px;
+    }
+    
+    .flag-display {
+      min-height: 50px;
+      padding: 6px;
+    }
+  }
+
 
 
   /* Mode Selection Screen Styles */
@@ -385,6 +529,38 @@
     color: white;
   }
 
+  /* Estilo para opções indisponíveis */
+  .skirmish-option-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #666;
+  }
+
+  .skirmish-option-disabled:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #666;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .skirmish-option-disabled .skirmish-option-status {
+    background: #666;
+    color: #ccc;
+  }
+
+  .skirmish-option-disabled .skirmish-option-content h3 {
+    color: #999;
+  }
+
+  .skirmish-option-disabled .skirmish-option-content p {
+    color: #777;
+  }
+
+  .skirmish-option-disabled .skirmish-option-icon {
+    opacity: 0.7;
+  }
+
   .skirmish-mode-footer {
     border-top: 1px solid #444;
     padding-top: 20px;
@@ -433,6 +609,40 @@
     .skirmish-option-content p {
       font-size: 13px;
     }
+    
+    /* Ajustes para botões indisponíveis em mobile */
+    .skirmish-option-disabled .skirmish-option-status {
+      font-size: 10px;
+      padding: 4px 12px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .skirmish-mode-container {
+      padding: 20px 10px;
+    }
+    
+    .skirmish-option {
+      min-height: 120px;
+      padding: 12px 8px;
+    }
+    
+    .skirmish-option-icon {
+      font-size: 32px;
+    }
+    
+    .skirmish-option-content h3 {
+      font-size: 16px;
+    }
+    
+    .skirmish-option-content p {
+      font-size: 12px;
+    }
+    
+    .skirmish-option-status {
+      font-size: 9px;
+      padding: 3px 10px;
+    }
   }
 
   /* Tutorial Screen Styles */
@@ -447,185 +657,139 @@
     align-items: center;
     justify-content: center;
     z-index: 1600;
-    padding: 20px;
+    overflow-y: auto;
   }
 
   .tutorial-container {
     background: rgba(0, 0, 0, 0.9);
-    border: 2px solid #444;
+    border: 2px solid #0077cc;
     border-radius: 20px;
-    padding: 30px;
-    max-width: 1000px;
-    width: 100%;
+    padding: 40px;
+    width: 800px;
+    max-width: 95vw;
     max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-  }
-
-  .tutorial-header {
+    backdrop-filter: blur(15px);
+    box-shadow: 0 15px 40px rgba(0, 119, 204, 0.4);
     text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #444;
+    overflow-y: auto;
   }
 
   .tutorial-header h1 {
-    font-size: 2.5rem;
-    margin: 0 0 10px 0;
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
+    color: #fff;
+    font-size: 36px;
+    margin: 0 0 15px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   .tutorial-header p {
-    font-size: 1.1rem;
     color: #ccc;
-    margin: 0;
+    font-size: 18px;
+    margin: 0 0 40px 0;
+    line-height: 1.5;
   }
 
   .tutorial-content {
-    margin-bottom: 30px;
+    margin-bottom: 40px;
   }
 
   .tutorial-section {
-    animation: fadeIn 0.5s ease-in-out;
-  }
-
-  .tutorial-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    padding: 15px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    border: 1px solid #444;
+    text-align: left;
   }
 
   .tutorial-section-header h2 {
-    margin: 0;
-    font-size: 1.8rem;
-    color: #ffd700;
-  }
-
-  .tutorial-progress {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
+    color: #0077cc;
+    font-size: 28px;
+    margin: 0 0 25px 0;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   .tutorial-section-content {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 25px;
+    gap: 30px;
     align-items: start;
   }
 
   .tutorial-text {
+    color: #fff;
     line-height: 1.6;
   }
 
   .tutorial-text p {
-    margin: 0 0 15px 0;
-    font-size: 1rem;
-    color: #fff;
+    margin: 0 0 20px 0;
+    font-size: 16px;
   }
 
-  .tutorial-text ul {
-    margin: 15px 0;
-    padding-left: 20px;
+  .tutorial-text ul, .tutorial-text ol {
+    margin: 0 0 20px 0;
+    padding-left: 25px;
   }
 
   .tutorial-text li {
-    margin: 8px 0;
-    font-size: 1rem;
-    color: #fff;
+    margin: 0 0 12px 0;
+    font-size: 15px;
   }
 
-  .tutorial-phase, .tutorial-combat, .tutorial-cards, .tutorial-continents, .tutorial-tips {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 15px;
-    border-radius: 10px;
-    margin: 15px 0;
-    border-left: 4px solid #4CAF50;
+  .tutorial-text strong {
+    color: #0077cc;
   }
 
-  .tutorial-phase h3, .tutorial-combat h3, .tutorial-cards h3, .tutorial-continents h3, .tutorial-tips h3 {
-    margin: 0 0 10px 0;
-    color: #4CAF50;
-    font-size: 1.1rem;
-  }
-
-  .tutorial-phase p, .tutorial-combat p, .tutorial-cards p, .tutorial-continents p, .tutorial-tips p {
-    margin: 5px 0;
-    font-size: 0.95rem;
-    color: #ccc;
+  .tutorial-text em {
+    color: #ffcc00;
+    font-style: italic;
   }
 
   .tutorial-image {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     height: 200px;
   }
 
-  .tutorial-image-placeholder {
-    font-size: 6rem;
+  .tutorial-placeholder {
+    font-size: 120px;
     opacity: 0.7;
-    background: rgba(255, 255, 255, 0.1);
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid #444;
+    color: #0077cc;
   }
 
   .tutorial-navigation {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 30px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    border: 1px solid #444;
+    padding: 20px 0;
+    border-top: 1px solid #444;
+    border-bottom: 1px solid #444;
   }
 
   .tutorial-nav-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #444;
+    color: #fff;
     padding: 12px 24px;
     border-radius: 25px;
-    font-size: 1rem;
-    font-weight: bold;
     cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
     transition: all 0.3s ease;
     min-width: 120px;
   }
 
   .tutorial-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #0077cc;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
   }
 
   .tutorial-nav-btn:disabled {
-    background: #666;
+    opacity: 0.5;
     cursor: not-allowed;
-    opacity: 0.6;
   }
 
   .tutorial-dots {
     display: flex;
-    gap: 10px;
+    gap: 8px;
   }
 
   .tutorial-dot {
@@ -637,70 +801,62 @@
     transition: all 0.3s ease;
   }
 
-  .tutorial-dot.active {
-    background: #4CAF50;
-    transform: scale(1.2);
-  }
-
   .tutorial-dot:hover {
     background: rgba(255, 255, 255, 0.5);
   }
 
-  .tutorial-footer {
+  .tutorial-dot.active {
+    background: #0077cc;
+    transform: scale(1.2);
+  }
+
+  .tutorial-actions {
     display: flex;
-    justify-content: space-between;
     gap: 20px;
-    padding-top: 20px;
-    border-top: 2px solid #444;
+    justify-content: center;
   }
 
   .tutorial-btn {
     padding: 15px 30px;
-    border: none;
     border-radius: 25px;
-    font-size: 1.1rem;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
+    border: none;
     min-width: 180px;
   }
 
   .tutorial-btn.primary {
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
-    color: #1a1a2e;
+    background: linear-gradient(135deg, #0077cc, #0055aa);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 119, 204, 0.4);
   }
 
   .tutorial-btn.primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 119, 204, 0.6);
   }
 
   .tutorial-btn.secondary {
     background: rgba(255, 255, 255, 0.1);
-    color: white;
     border: 2px solid #444;
+    color: #ccc;
   }
 
   .tutorial-btn.secondary:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: #0077cc;
+    color: #fff;
+    transform: translateY(-2px);
   }
 
-  .tutorial-final-tip {
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
-    color: #1a1a2e;
-    padding: 15px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: bold;
-    margin-top: 20px;
-  }
-
-  /* Responsive Design for Tutorial */
+  /* Responsive adjustments for tutorial */
   @media (max-width: 768px) {
     .tutorial-container {
-      padding: 20px;
-      margin: 10px;
+      width: 95vw;
+      padding: 30px 20px;
+      max-height: 95vh;
     }
     
     .tutorial-section-content {
@@ -709,37 +865,110 @@
     }
     
     .tutorial-header h1 {
-      font-size: 2rem;
+      font-size: 28px;
+    }
+    
+    .tutorial-header p {
+      font-size: 16px;
     }
     
     .tutorial-section-header h2 {
-      font-size: 1.5rem;
+      font-size: 24px;
     }
     
     .tutorial-navigation {
       flex-direction: column;
-      gap: 15px;
+      gap: 20px;
     }
     
-    .tutorial-footer {
+    .tutorial-actions {
       flex-direction: column;
+      align-items: center;
     }
     
     .tutorial-btn {
-      min-width: auto;
-      width: 100%;
+      min-width: 200px;
     }
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+  @media (max-width: 480px) {
+    .tutorial-container {
+      padding: 25px 15px;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    
+    .tutorial-header h1 {
+      font-size: 24px;
     }
+    
+    .tutorial-header p {
+      font-size: 14px;
+    }
+    
+    .tutorial-section-header h2 {
+      font-size: 20px;
+    }
+    
+    .tutorial-text p {
+      font-size: 14px;
+    }
+    
+    .tutorial-text li {
+      font-size: 13px;
+    }
+    
+    .tutorial-placeholder {
+      font-size: 80px;
+    }
+  }
+
+  /* Scrollbar styling for tutorial screen */
+  .tutorial-screen::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .tutorial-screen::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .tutorial-screen::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .tutorial-screen::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Firefox scrollbar styling for tutorial screen */
+  .tutorial-screen {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
+
+  /* Scrollbar styling for tutorial container */
+  .tutorial-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .tutorial-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .tutorial-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .tutorial-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Firefox scrollbar styling for tutorial container */
+  .tutorial-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
   }
 
   /* Lobby Screen Styles */
@@ -994,8 +1223,8 @@
   /* Mobile portrait specific adjustments */
   @media (max-width: 768px) and (orientation: portrait) {
     .game-container canvas {
-      height: calc(100vh - 25px - env(safe-area-inset-top)) !important; /* Account for safe area */
-      top: calc(25px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area */
+      height: calc(100vh - 28px - env(safe-area-inset-top)) !important; /* Account for safe area */
+      top: calc(28px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area */
     }
   }
 
@@ -1013,12 +1242,12 @@
     
     .game-container canvas {
       position: absolute !important;
-      top: 25px !important;
+      top: 28px !important;
       left: 0 !important;
       right: 0 !important;
       bottom: 0 !important;
       width: 100% !important;
-      height: calc(100vh - 25px) !important;
+      height: calc(100vh - 28px) !important;
       object-fit: fill !important;
     }
   }
@@ -1028,7 +1257,7 @@
     .game-container canvas {
       top: -10 !important;
       height: 100vh !important;
-      margin-top: 25px !important;
+      margin-top: 28px !important;
     }
   }
 
@@ -1046,8 +1275,8 @@
     
     .game-container canvas {
       width: 100% !important;
-      height: calc(100vh - 25px - env(safe-area-inset-top)) !important; /* Use viewport height minus HUD and safe area on iPhone */
-      top: calc(25px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area on iPhone */
+      height: calc(100vh - 28px - env(safe-area-inset-top)) !important; /* Use viewport height minus HUD and safe area on iPhone */
+      top: calc(28px + env(safe-area-inset-top)) !important; /* Position below HUD and safe area on iPhone */
       object-fit: fill !important; /* Stretch to fill entire area */
       touch-action: none;
       -webkit-user-select: none;
@@ -1064,14 +1293,14 @@
       }
       
       .game-container canvas {
-        top: 22px !important;
+        top: 26px !important;
         width: 100% !important;
-        height: calc(100vh - 22px) !important;
+        height: calc(100vh - 26px) !important;
         object-fit: fill !important;
       }
       
       .hud-top {
-        height: 22px !important;
+        height: 26px !important;
       }
     }
     
@@ -1081,14 +1310,14 @@
       }
       
       .game-container canvas {
-        top: 18px !important;
+        top: 22px !important;
         width: 100% !important;
-        height: calc(100vh - 18px) !important;
+        height: calc(100vh - 22px) !important;
         object-fit: fill !important;
       }
       
       .hud-top {
-        height: 18px !important;
+        height: 22px !important;
       }
     }
   }
@@ -1185,13 +1414,15 @@
     background: rgba(74, 144, 226, 0.2);
     border: 1px solid rgba(74, 144, 226, 0.4);
     border-radius: 20px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
+    white-space: normal; /* Allow text to wrap */
+    overflow: visible; /* Show full text */
+    text-overflow: clip; /* Remove ellipsis */
+    max-width: none; /* Remove fixed max-width to allow growth */
     transition: all 0.3s ease;
     min-width: 0; /* Allow element to shrink */
     flex-shrink: 1; /* Allow shrinking in flex container */
+    word-wrap: break-word; /* Break long words if necessary */
+    line-height: 1.3; /* Better line height for wrapped text */
   }
 
   .instruction-text.highlight {
@@ -1542,7 +1773,11 @@
     .instruction-text {
       font-size: 12px;
       padding: 6px 12px;
-      max-width: 200px;
+      max-width: none; /* Remove fixed max-width to allow text to grow */
+      white-space: normal; /* Allow text to wrap */
+      overflow: visible; /* Show full text */
+      text-overflow: clip; /* Remove ellipsis */
+      word-wrap: break-word; /* Break long words if necessary */
     }
   }
 
@@ -3382,28 +3617,41 @@
   @media (max-width: 768px) {
     /* Top HUD Bar - Mobile */
     .hud-top {
-      height: 25px;
-      padding: 0 5px;
+      height: 28px;
+      padding: 0 8px;
     }
 
     /* Player Info - Mobile */
     .player-info {
-      gap: 4px;
+      gap: 6px;
+      min-width: 0;
+      flex-shrink: 0;
     }
 
     .player-avatar {
-      width: 16px;
-      height: 16px;
-      font-size: 8px;
+      width: 18px;
+      height: 18px;
+      font-size: 9px;
       border: 1px solid #fff;
+      flex-shrink: 0;
     }
 
     .player-name {
-      font-size: 9px;
+      font-size: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80px;
+      min-width: 0;
     }
 
     .player-stats {
-      font-size: 7px;
+      font-size: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+      min-width: 0;
     }
 
     /* Action Buttons - Mobile */
@@ -3441,10 +3689,12 @@
       font-size: 8px;
       padding: 2px 4px;
       max-width: none; /* Remove fixed max-width */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal; /* Allow text to wrap on mobile */
+      overflow: visible; /* Show full text */
+      text-overflow: clip; /* Remove ellipsis */
       border-radius: 4px;
+      word-wrap: break-word; /* Break long words if necessary */
+      line-height: 1.2; /* Better line height for mobile */
     }
 
     /* Game Info - Mobile */
@@ -3469,38 +3719,50 @@
     }
     
     .game-container canvas {
-      top: 20px !important; /* Position below extra small mobile HUD */
-      height: calc(100vh - 20px) !important; /* Use viewport height minus extra small mobile HUD */
+      top: 24px !important; /* Position below extra small mobile HUD */
+      height: calc(100vh - 24px) !important; /* Use viewport height minus extra small mobile HUD */
     }
     
     .hud-top {
-      height: 20px;
-      padding: 0 4px;
+      height: 24px;
+      padding: 0 6px;
     }
 
     /* Game Instructions - Extra Small Mobile */
     .game-instructions {
-      margin: 0 3px;
+      margin: 0 4px;
     }
 
     .instruction-text {
-      font-size: 7px;
-      padding: 1px 3px;
+      font-size: 8px;
+      padding: 2px 4px;
       line-height: 1.2;
+      white-space: normal; /* Allow text to wrap on extra small mobile */
+      overflow: visible; /* Show full text */
+      text-overflow: clip; /* Remove ellipsis */
+      word-wrap: break-word; /* Break long words if necessary */
+    }
+
+    /* Player Info - Extra Small Mobile */
+    .player-info {
+      gap: 5px;
     }
 
     .player-avatar {
-      width: 14px;
-      height: 14px;
-      font-size: 7px;
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
+      flex-shrink: 0;
     }
 
     .player-name {
-      font-size: 8px;
+      font-size: 9px;
+      max-width: 70px;
     }
 
     .player-stats {
-      font-size: 6px;
+      font-size: 7px;
+      max-width: 90px;
     }
 
     .hud-button {
@@ -3522,33 +3784,45 @@
   /* Very Small Mobile Devices */
   @media (max-width: 400px) {
     .hud-top {
-      height: 18px;
-      padding: 0 3px;
+      height: 22px;
+      padding: 0 5px;
     }
 
     /* Game Instructions - Very Small Mobile */
     .game-instructions {
-      margin: 0 2px;
+      margin: 0 3px;
     }
 
     .instruction-text {
-      font-size: 6px;
-      padding: 1px 2px;
+      font-size: 7px;
+      padding: 2px 3px;
       line-height: 1.1;
+      white-space: normal; /* Allow text to wrap on very small mobile */
+      overflow: visible; /* Show full text */
+      text-overflow: clip; /* Remove ellipsis */
+      word-wrap: break-word; /* Break long words if necessary */
+    }
+    
+    /* Player Info - Very Small Mobile */
+    .player-info {
+      gap: 4px;
     }
     
     .player-avatar {
-      width: 12px;
-      height: 12px;
-      font-size: 6px;
+      width: 14px;
+      height: 14px;
+      font-size: 7px;
+      flex-shrink: 0;
     }
     
     .player-name {
-      font-size: 7px;
+      font-size: 8px;
+      max-width: 60px;
     }
     
     .player-stats {
-      font-size: 5px;
+      font-size: 6px;
+      max-width: 80px;
     }
     
     .hud-button {
@@ -3567,41 +3841,47 @@
     }
     
     .game-container canvas {
-      top: 18px !important;
-      height: calc(100vh - 18px) !important;
+      top: 22px !important;
+      height: calc(100vh - 22px) !important;
     }
   }
 
   /* Landscape Mobile Devices */
   @media (max-height: 500px) and (orientation: landscape) {
     .hud-top {
-      height: 22px !important;
-      padding: 0 4px !important;
+      height: 26px !important;
+      padding: 0 6px !important;
     }
 
     /* Game Instructions - Landscape Mobile */
     .game-instructions {
-      margin: 0 4px !important;
+      margin: 0 5px !important;
     }
 
     .instruction-text {
-      font-size: 7px !important;
-      padding: 1px 3px !important;
+      font-size: 8px !important;
+      padding: 2px 4px !important;
       line-height: 1.2 !important;
+      white-space: normal !important; /* Allow text to wrap in landscape */
+      overflow: visible !important; /* Show full text */
+      text-overflow: clip !important; /* Remove ellipsis */
+      word-wrap: break-word !important; /* Break long words if necessary */
     }
     
     .player-info {
-      gap: 3px !important;
+      gap: 4px !important;
     }
     
     .player-avatar {
-      width: 14px !important;
-      height: 14px !important;
-      font-size: 8px !important;
+      width: 16px !important;
+      height: 16px !important;
+      font-size: 9px !important;
+      flex-shrink: 0 !important;
     }
     
     .player-name {
-      font-size: 9px !important;
+      font-size: 10px !important;
+      max-width: 80px !important;
     }
     
     .player-stats {
@@ -3643,29 +3923,39 @@
   /* Extra Compact for Very Small Landscape */
   @media (max-height: 400px) and (orientation: landscape) {
     .hud-top {
-      height: 18px !important;
-      padding: 0 3px !important;
+      height: 22px !important;
+      padding: 0 4px !important;
     }
 
     /* Game Instructions - Very Small Landscape */
     .game-instructions {
-      margin: 0 2px !important;
+      margin: 0 3px !important;
     }
 
     .instruction-text {
-      font-size: 6px !important;
-      padding: 1px 2px !important;
+      font-size: 7px !important;
+      padding: 2px 3px !important;
       line-height: 1.1 !important;
+      white-space: normal !important; /* Allow text to wrap in very small landscape */
+      overflow: visible !important; /* Show full text */
+      text-overflow: clip !important; /* Remove ellipsis */
+      word-wrap: break-word !important; /* Break long words if necessary */
+    }
+    
+    .player-info {
+      gap: 3px !important;
     }
     
     .player-avatar {
-      width: 12px !important;
-      height: 12px !important;
-      font-size: 7px !important;
+      width: 14px !important;
+      height: 14px !important;
+      font-size: 8px !important;
+      flex-shrink: 0 !important;
     }
     
     .player-name {
-      font-size: 8px !important;
+      font-size: 9px !important;
+      max-width: 70px !important;
     }
     
     .hud-button {
@@ -3688,9 +3978,9 @@
     }
     
     .game-container canvas {
-      top: 18px !important;
+      top: 22px !important;
       width: 100% !important;
-      height: calc(100vh - 18px) !important;
+      height: calc(100vh - 22px) !important;
       object-fit: fill !important;
     }
   }
@@ -3743,37 +4033,49 @@
   /* Ultra-compact mode for very small screens */
   @media (max-width: 360px) {
     .hud-top {
-      height: 16px;
-      padding: 0 2px;
+      height: 20px;
+      padding: 0 4px;
     }
 
     /* Game Instructions - Ultra Compact */
     .game-instructions {
-      margin: 0 1px;
+      margin: 0 2px;
     }
 
     .instruction-text {
-      font-size: 5px;
-      padding: 1px;
+      font-size: 6px;
+      padding: 2px;
       line-height: 1;
-      min-height: 8px;
+      min-height: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
+      white-space: normal; /* Allow text to wrap on ultra compact */
+      overflow: visible; /* Show full text */
+      text-overflow: clip; /* Remove ellipsis */
+      word-wrap: break-word; /* Break long words if necessary */
+    }
+    
+    /* Player Info - Ultra Compact */
+    .player-info {
+      gap: 3px;
     }
     
     .player-avatar {
-      width: 10px;
-      height: 10px;
-      font-size: 5px;
+      width: 12px;
+      height: 12px;
+      font-size: 6px;
+      flex-shrink: 0;
     }
     
     .player-name {
-      font-size: 6px;
+      font-size: 7px;
+      max-width: 50px;
     }
     
     .player-stats {
-      font-size: 4px;
+      font-size: 5px;
+      max-width: 70px;
     }
     
     .hud-button {
@@ -3794,8 +4096,8 @@
     }
     
     .game-container canvas {
-      top: 16px !important;
-      height: calc(100vh - 16px) !important;
+      top: 20px !important;
+      height: calc(100vh - 20px) !important;
     }
   }
 
@@ -4146,6 +4448,7 @@
   <div class="login-screen" id="login-screen">
     <div class="login-container">
       <div class="login-header">
+        <h1>🌍 Domino</h1>
         <p>Entre com seu nome para começar</p>
       </div>
       
@@ -4153,6 +4456,19 @@
         <div class="input-group">
           <label for="username">Nome do Jogador</label>
           <input type="text" id="username" name="username" placeholder="Digite seu nome..." required>
+        </div>
+        
+        <div class="flag-selector-container">
+          <label>Selecione seu país:</label>
+          <div class="flag-selector">
+            <button type="button" class="flag-nav-btn" id="flag-prev">◀</button>
+            <div class="flag-display" id="flag-display">
+              <span class="flag-emoji" id="current-flag">🇺🇸</span>
+              <span class="flag-name" id="current-flag-name">Estados Unidos</span>
+            </div>
+            <button type="button" class="flag-nav-btn" id="flag-next">▶</button>
+          </div>
+          <input type="hidden" id="selected-country" name="selected-country" value="US">
         </div>
         
         <button type="submit" class="login-button">
@@ -4221,21 +4537,21 @@
           </div>
         </div>
         
-        <div class="skirmish-option" id="skirmish-ranking">
+        <div class="skirmish-option skirmish-option-disabled" id="skirmish-ranking">
           <div class="skirmish-option-icon">🏆</div>
           <div class="skirmish-option-content">
             <h3>Ranking Geral</h3>
             <p>Veja os melhores jogadores e suas estatísticas</p>
-            <div class="skirmish-option-status">Disponível</div>
+            <div class="skirmish-option-status">Em Breve</div>
           </div>
         </div>
         
-        <div class="skirmish-option" id="skirmish-stats">
+        <div class="skirmish-option skirmish-option-disabled" id="skirmish-stats">
           <div class="skirmish-option-icon">📊</div>
           <div class="skirmish-option-content">
             <h3>Minhas Estatísticas</h3>
             <p>Visualize seu histórico de jogos e conquistas</p>
-            <div class="skirmish-option-status">Disponível</div>
+            <div class="skirmish-option-status">Em Breve</div>
           </div>
         </div>
         
@@ -4264,182 +4580,132 @@
       </div>
       
       <div class="tutorial-content">
+        <!-- Tutorial Section 1: Objetivo do Jogo -->
         <div class="tutorial-section" id="tutorial-section-1">
           <div class="tutorial-section-header">
             <h2>🎯 Objetivo do Jogo</h2>
-            <div class="tutorial-progress">1 de 6</div>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
-              <p><strong>Conquiste territórios e elimine seus oponentes!</strong></p>
-              <p>O objetivo é simples: expandir seu império, conquistar continentes inteiros e ser o último jogador de pé no mapa.</p>
-              <p>Para vencer, você precisa:</p>
+              <p><strong>Conquiste territórios e domine continentes para vencer!</strong></p>
               <ul>
-                <li>🎯 <strong>Conquistar territórios</strong> - Atacar territórios vizinhos</li>
-                <li>🌍 <strong>Dominar continentes</strong> - Controlar todos os territórios de um continente</li>
-                <li>⚔️ <strong>Eliminar oponentes</strong> - Destruir todas as tropas inimigas</li>
+                <li>🎯 <strong>Objetivo Principal:</strong> Completar seus objetivos para vencer o jogo. Podem ser dominar continentes, eliminar jogadores..</li>
+                <li>🗺️ <strong>Mapa:</strong> Mundo dividido em territórios e continentes</li>
+                <li>⚔️ <strong>Combate:</strong> Use suas tropas para atacar territórios inimigos</li>
+                <li>🏆 <strong>Vitória:</strong> Seja o último sobrevivente ou complete seu objetivo secreto</li>
               </ul>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">🗺️</div>
+              <div class="tutorial-placeholder">🗺️</div>
             </div>
           </div>
         </div>
 
+        <!-- Tutorial Section 2: Fases do Turno -->
         <div class="tutorial-section" id="tutorial-section-2" style="display: none;">
           <div class="tutorial-section-header">
-            <h2>🎲 Fases do Turno</h2>
-            <div class="tutorial-progress">2 de 6</div>
+            <h2>🔄 Fases do Turno</h2>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
               <p><strong>Cada turno tem 3 fases principais:</strong></p>
-              <div class="tutorial-phase">
-                <h3>🔄 <strong>1. Reforços</strong></h3>
-                <p>Receba tropas base + bônus por continentes dominados</p>
-                <p><em>Dica: Domine continentes para receber mais tropas!</em></p>
-              </div>
-              <div class="tutorial-phase">
-                <h3>⚔️ <strong>2. Ataques</strong></h3>
-                <p>Atacar territórios vizinhos para expandir seu império</p>
-                <p><em>Dica: Use dados para determinar o resultado dos ataques!</em></p>
-              </div>
-              <div class="tutorial-phase">
-                <h3>🚚 <strong>3. Remanejamento</strong></h3>
-                <p>Mover tropas entre territórios para fortalecer posições</p>
-                <p><em>Dica: Concentre tropas nas fronteiras!</em></p>
-              </div>
+              <ol>
+                <li><strong>🎯 Colocação de Tropas:</strong> Receba tropas base + bônus de continentes</li>
+                <li><strong>⚔️ Ataques:</strong> Conquiste territórios inimigos</li>
+                <li><strong>🚚 Remanejamento:</strong> Mova tropas entre seus territórios</li>
+              </ol>
+              <p><em>Dica: Use a fase de remanejamento para fortalecer suas fronteiras!</em></p>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">⚔️</div>
+              <div class="tutorial-placeholder">🔄</div>
             </div>
           </div>
         </div>
 
+        <!-- Tutorial Section 3: Cartas Território -->
         <div class="tutorial-section" id="tutorial-section-3" style="display: none;">
           <div class="tutorial-section-header">
-            <h2>🎯 Sistema de Combate</h2>
-            <div class="tutorial-progress">3 de 6</div>
+            <h2>🃏 Cartas Território</h2>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
-              <p><strong>Como funciona o combate:</strong></p>
-              <div class="tutorial-combat">
-                <h3>🎲 <strong>Dados de Ataque</strong></h3>
-                <p>• <strong>1-2 tropas:</strong> 1 dado</p>
-                <p>• <strong>3+ tropas:</strong> 2 dados</p>
-                <p>• <strong>4+ tropas:</strong> 3 dados (máximo)</p>
-              </div>
-              <div class="tutorial-combat">
-                <h3>🛡️ <strong>Dados de Defesa</strong></h3>
-                <p>• <strong>1+ tropas:</strong> 1 dado</p>
-                <p>• <strong>2+ tropas:</strong> 2 dados (máximo)</p>
-              </div>
-              <div class="tutorial-combat">
-                <h3>⚔️ <strong>Resultado</strong></h3>
-                <p>• <strong>Maior valor vence</strong> - Tropa inimiga é eliminada</p>
-                <p>• <strong>Empate:</strong> Atacante perde (defesa tem vantagem)</p>
-                <p><em>Dica: Atacar com mais tropas aumenta suas chances!</em></p>
-              </div>
+              <p><strong>As cartas são essenciais para ganhar tropas extras:</strong></p>
+              <ul>
+                <li>📊 <strong>Coleta:</strong> Ganhe uma carta ao conquistar um território</li>
+                <li>🎯 <strong>Combinação:</strong> Troque 3 cartas do mesmo tipo ou 3 diferentes</li>
+                <li>⚡ <strong>Bônus:</strong> Cada combinação te dá tropas extras</li>
+                <li>⚠️ <strong>Limite:</strong> Máximo de 5 cartas na mão</li>
+              </ul>
+              <p><em>Estratégia: Guarde cartas para momentos estratégicos!</em></p>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">🎲</div>
+              <div class="tutorial-placeholder">🃏</div>
             </div>
           </div>
         </div>
 
+        <!-- Tutorial Section 4: Estratégias -->
         <div class="tutorial-section" id="tutorial-section-4" style="display: none;">
           <div class="tutorial-section-header">
-            <h2>🃏 Cartas Território</h2>
-            <div class="tutorial-progress">4 de 6</div>
+            <h2>🧠 Estratégias Básicas</h2>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
-              <p><strong>Cartas são essenciais para a estratégia:</strong></p>
-              <div class="tutorial-cards">
-                <h3>📋 <strong>Como Ganhar Cartas</strong></h3>
-                <p>• <strong>Conquistar territórios</strong> - 1 carta por conquista</p>
-                <p>• <strong>Eliminar jogadores</strong> - Todas as cartas do oponente</p>
-              </div>
-              <div class="tutorial-cards">
-                <h3>🔄 <strong>Como Trocar Cartas</strong></h3>
-                <p>• <strong>3 cartas do mesmo tipo:</strong> +2 tropas</p>
-                <p>• <strong>3 cartas diferentes:</strong> +2 tropas</p>
-                <p>• <strong>1 carta + 2 territórios:</strong> +2 tropas</p>
-              </div>
-              <div class="tutorial-cards">
-                <h3>⚠️ <strong>Troca Obrigatória</strong></h3>
-                <p>• <strong>5+ cartas:</strong> Deve trocar antes de continuar</p>
-                <p><em>Dica: Troque cartas estrategicamente para maximizar tropas!</em></p>
-              </div>
+              <p><strong>Dicas para melhorar suas chances de vitória:</strong></p>
+              <ul>
+                <li>🏔️ <strong>Continentes:</strong> Domine continentes para receber bônus de tropas</li>
+                <li>🛡️ <strong>Defesa:</strong> Fortaleça suas fronteiras com tropas extras</li>
+                <li>⚔️ <strong>Ataque:</strong> Ataque quando tiver vantagem numérica (2:1 ou melhor)</li>
+                <li>🎯 <strong>Foco:</strong> Concentre-se em um objetivo por vez</li>
+                <li>🔄 <strong>Flexibilidade:</strong> Adapte sua estratégia conforme o jogo evolui</li>
+              </ul>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">🃏</div>
+              <div class="tutorial-placeholder">🧠</div>
             </div>
           </div>
         </div>
 
+        <!-- Tutorial Section 5: Dicas Avançadas -->
         <div class="tutorial-section" id="tutorial-section-5" style="display: none;">
           <div class="tutorial-section-header">
-            <h2>🌍 Bônus de Continentes</h2>
-            <div class="tutorial-progress">5 de 6</div>
+            <h2>🚀 Dicas Avançadas</h2>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
-              <p><strong>Dominar continentes traz vantagens poderosas:</strong></p>
-              <div class="tutorial-continents">
-                <h3>🎯 <strong>Bônus de Tropas</strong></h3>
-                <p>• <strong>América do Norte:</strong> +5 tropas</p>
-                <p>• <strong>Europa:</strong> +5 tropas</p>
-                <p>• <strong>Ásia:</strong> +7 tropas</p>
-                <p>• <strong>África:</strong> +3 tropas</p>
-                <p>• <strong>América do Sul:</strong> +2 tropas</p>
-                <p>• <strong>Oceania:</strong> +2 tropas</p>
-              </div>
-              <div class="tutorial-continents">
-                <h3>💡 <strong>Estratégias</strong></h3>
-                <p>• <strong>Comece pequeno:</strong> Domine Oceania ou América do Sul</p>
-                <p>• <strong>Expanda gradualmente:</strong> Conquiste continentes vizinhos</p>
-                <p>• <strong>Proteja suas fronteiras:</strong> Concentre tropas nas bordas</p>
-                <p><em>Dica: Oceania é excelente para iniciantes - fácil de defender!</em></p>
-              </div>
+              <p><strong>Técnicas para jogadores experientes:</strong></p>
+              <ul>
+                <li>🎲 <strong>Probabilidade:</strong> Entenda as chances de sucesso nos ataques</li>
+                <li>🕐 <strong>Timing:</strong> Ataque no momento certo, não apenas quando possível</li>
+                <li>🤝 <strong>Alianças:</strong> Em jogos com mais jogadores, alianças temporárias podem ser úteis</li>
+                <li>🗺️ <strong>Posicionamento:</strong> Controle territórios estratégicos (pontos de estrangulamento)</li>
+                <li>💎 <strong>Recursos:</strong> Use cartas e bônus de continente de forma eficiente</li>
+              </ul>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">🌍</div>
+              <div class="tutorial-placeholder">🚀</div>
             </div>
           </div>
         </div>
 
+        <!-- Tutorial Section 6: Pronto para Jogar -->
         <div class="tutorial-section" id="tutorial-section-6" style="display: none;">
           <div class="tutorial-section-header">
-            <h2>🏆 Dicas para Vencer</h2>
-            <div class="tutorial-progress">6 de 6</div>
+            <h2>🎮 Pronto para Jogar!</h2>
           </div>
           <div class="tutorial-section-content">
             <div class="tutorial-text">
-              <p><strong>Estratégias que podem levar você à vitória:</strong></p>
-              <div class="tutorial-tips">
-                <h3>🎯 <strong>Estratégia Inicial</strong></h3>
-                <p>• <strong>Escolha um continente pequeno</strong> para começar</p>
-                <p>• <strong>Concentre tropas</strong> nas fronteiras</p>
-                <p>• <strong>Não se espalhe</strong> muito no início</p>
-              </div>
-              <div class="tutorial-tips">
-                <h3>⚔️ <strong>Durante o Jogo</strong></h3>
-                <p>• <strong>Troque cartas</strong> regularmente</p>
-                <p>• <strong>Proteja continentes</strong> dominados</p>
-                <p>• <strong>Observe oponentes</strong> e suas fraquezas</p>
-              </div>
-              <div class="tutorial-tips">
-                <h3>🏁 <strong>Final do Jogo</strong></h3>
-                <p>• <strong>Elimine jogadores</strong> mais fracos primeiro</p>
-                <p>• <strong>Use cartas</strong> para reforços finais</p>
-                <p>• <strong>Mantenha reservas</strong> para ataques surpresa</p>
-              </div>
-              <p class="tutorial-final-tip"><em>🎯 Lembre-se: A melhor estratégia é se adaptar ao que acontece no jogo!</em></p>
+              <p><strong>Parabéns! Você está pronto para conquistar o mundo!</strong></p>
+              <ul>
+                <li>✅ <strong>Regras Básicas:</strong> Entendidas e prontas para uso</li>
+                <li>🎯 <strong>Estratégias:</strong> Conhecidas e prontas para implementar</li>
+                <li>🃏 <strong>Cartas:</strong> Sistema compreendido e pronto para uso</li>
+                <li>🧠 <strong>Dicas:</strong> Aplicadas para maximizar suas chances</li>
+              </ul>
+              <p><em>Lembre-se: a prática leva à perfeição! Comece com partidas contra CPUs para testar suas estratégias.</em></p>
             </div>
             <div class="tutorial-image">
-              <div class="tutorial-image-placeholder">🏆</div>
+              <div class="tutorial-placeholder">🎮</div>
             </div>
           </div>
         </div>
@@ -4447,6 +4713,7 @@
       
       <div class="tutorial-navigation">
         <button class="tutorial-nav-btn" id="tutorial-prev" disabled>← Anterior</button>
+        
         <div class="tutorial-dots">
           <span class="tutorial-dot active" data-section="1"></span>
           <span class="tutorial-dot" data-section="2"></span>
@@ -4455,12 +4722,71 @@
           <span class="tutorial-dot" data-section="5"></span>
           <span class="tutorial-dot" data-section="6"></span>
         </div>
+        
         <button class="tutorial-nav-btn" id="tutorial-next">Próximo →</button>
       </div>
       
-      <div class="tutorial-footer">
+      <div class="tutorial-actions">
         <button class="tutorial-btn secondary" id="tutorial-back">← Voltar ao Skirmish</button>
-        <button class="tutorial-btn primary" id="tutorial-start-game">🎮 Começar a Jogar!</button>
+        <button class="tutorial-btn primary" id="tutorial-start-game">🎮 Começar a Jogar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ranking Popup (initially hidden) -->
+  <div class="ranking-popup" id="ranking-popup">
+    <div class="ranking-backdrop" id="ranking-backdrop"></div>
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <div class="ranking-icon">🏆</div>
+        <h3>Ranking Geral</h3>
+        <button class="ranking-close" id="ranking-close">×</button>
+      </div>
+      
+      <div class="ranking-content">
+        <div class="ranking-message">
+          <p>Esta funcionalidade será implementada em breve!</p>
+          <p>Você poderá ver:</p>
+          <ul>
+            <li>🏅 Top jogadores por vitórias</li>
+            <li>📊 Estatísticas de jogos</li>
+            <li>🏆 Conquistas e medalhas</li>
+            <li>📈 Histórico de partidas</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="ranking-actions">
+        <button class="ranking-btn" id="ranking-ok">Entendi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Popup (initially hidden) -->
+  <div class="stats-popup" id="stats-popup">
+    <div class="stats-backdrop" id="stats-backdrop"></div>
+    <div class="stats-container">
+      <div class="stats-header">
+        <div class="stats-icon">📊</div>
+        <h3>Minhas Estatísticas</h3>
+        <button class="stats-close" id="stats-close">×</button>
+      </div>
+      
+      <div class="stats-content">
+        <div class="stats-message">
+          <p>Esta funcionalidade será implementada em breve!</p>
+          <p>Você poderá ver:</p>
+          <ul>
+            <li>🎮 Total de partidas jogadas</li>
+            <li>📈 Taxa de vitória</li>
+            <li>🗺️ Territórios conquistados</li>
+            <li>🏅 Conquistas desbloqueadas</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="stats-actions">
+        <button class="stats-btn" id="stats-ok">Entendi</button>
       </div>
     </div>
   </div>
@@ -4867,5 +5193,293 @@
       </div>
     </div>
   </div>
+
+  <style>
+    /* Ranking and Stats Popup Styles */
+    .ranking-popup, .stats-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ranking-backdrop, .stats-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2001;
+      cursor: pointer;
+    }
+
+    .ranking-container, .stats-container {
+      position: relative;
+      z-index: 2002;
+      background: rgba(0, 0, 0, 0.95);
+      border: 3px solid #0077cc;
+      border-radius: 20px;
+      width: min(500px, 90vw);
+      max-width: 90vw;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 15px 40px rgba(0, 119, 204, 0.4);
+      animation: popupSlideIn 0.3s ease-out;
+    }
+
+    @keyframes popupSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .ranking-header, .stats-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 25px;
+      background: linear-gradient(135deg, rgba(0,119,204,0.3), rgba(0,119,204,0.1));
+      border-bottom: 2px solid #0077cc;
+      border-radius: 17px 17px 0 0;
+    }
+
+    .ranking-icon, .stats-icon {
+      font-size: 32px;
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .ranking-header h3, .stats-header h3 {
+      margin: 0;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      flex: 1;
+    }
+
+    .ranking-close, .stats-close {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ranking-close:hover, .stats-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transform: scale(1.1);
+    }
+
+    .ranking-content, .stats-content {
+      padding: 25px;
+      text-align: center;
+    }
+
+    .ranking-message, .stats-message {
+      color: #fff;
+    }
+
+    .ranking-message p, .stats-message p {
+      margin: 0 0 15px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .ranking-message ul, .stats-message ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      text-align: left;
+      display: inline-block;
+    }
+
+    .ranking-message li, .stats-message li {
+      margin: 0 0 12px 0;
+      font-size: 15px;
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      border-left: 3px solid #0077cc;
+      transition: all 0.2s ease;
+    }
+
+    .ranking-message li:hover, .stats-message li:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(5px);
+    }
+
+    .ranking-actions, .stats-actions {
+      padding: 20px 25px 25px;
+      text-align: center;
+      border-top: 1px solid #333;
+    }
+
+    .ranking-btn, .stats-btn {
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #0077cc, #0055aa);
+      border: none;
+      border-radius: 25px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 119, 204, 0.4);
+      min-width: 120px;
+    }
+
+    .ranking-btn:hover, .stats-btn:hover {
+      background: linear-gradient(135deg, #0055aa, #004488);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 119, 204, 0.6);
+    }
+
+    .ranking-btn:active, .stats-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Responsive adjustments for ranking and stats popups */
+    @media (max-width: 768px) {
+      .ranking-container, .stats-container {
+        width: 95vw;
+        margin: 20px;
+      }
+      
+      .ranking-header, .stats-header {
+        padding: 18px 20px;
+      }
+      
+      .ranking-icon, .stats-icon {
+        font-size: 28px;
+      }
+      
+      .ranking-header h3, .stats-header h3 {
+        font-size: 20px;
+      }
+      
+      .ranking-content, .stats-content {
+        padding: 20px;
+      }
+      
+      .ranking-message p, .stats-message p {
+        font-size: 15px;
+      }
+      
+      .ranking-message li, .stats-message li {
+        font-size: 14px;
+        padding: 6px 12px;
+      }
+      
+      .ranking-actions, .stats-actions {
+        padding: 18px 20px 20px;
+      }
+      
+      .ranking-btn, .stats-btn {
+        padding: 14px 24px;
+        font-size: 15px;
+        min-width: 100px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ranking-container, .stats-container {
+        width: 98vw;
+        margin: 10px;
+      }
+      
+      .ranking-header, .stats-header {
+        padding: 15px 18px;
+      }
+      
+      .ranking-icon, .stats-icon {
+        font-size: 24px;
+      }
+      
+      .ranking-header h3, .stats-header h3 {
+        font-size: 18px;
+      }
+      
+      .ranking-content, .stats-content {
+        padding: 18px;
+      }
+      
+      .ranking-message p, .stats-message p {
+        font-size: 14px;
+      }
+      
+      .ranking-message li, .stats-message li {
+        font-size: 13px;
+        padding: 5px 10px;
+      }
+      
+      .ranking-actions, .stats-actions {
+        padding: 15px 18px 18px;
+      }
+      
+      .ranking-btn, .stats-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-width: 90px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .ranking-container, .stats-container {
+        width: 99vw;
+        margin: 5px;
+      }
+      
+      .ranking-header, .stats-header {
+        padding: 12px 15px;
+      }
+      
+      .ranking-icon, .stats-icon {
+        font-size: 20px;
+      }
+      
+      .ranking-header h3, .stats-header h3 {
+        font-size: 16px;
+      }
+      
+      .ranking-content, .stats-content {
+        padding: 15px;
+      }
+      
+      .ranking-message p, .stats-message p {
+        font-size: 13px;
+      }
+      
+      .ranking-message li, .stats-message li {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+      
+      .ranking-actions, .stats-actions {
+        padding: 12px 15px 15px;
+      }
+      
+      .ranking-btn, .stats-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        min-width: 80px;
+      }
+    }
+  </style>
 </body>
 </html>

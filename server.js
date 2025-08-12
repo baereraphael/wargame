@@ -6,6 +6,55 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Game translations for objectives
+const gameTranslations = {
+  en: {
+    conquerAnyContinents: 'Conquer {continent1}, {continent2} and any other',
+    eliminatePlayer: 'Eliminate player {player}',
+    dominate24Territories: 'Dominate 24 territories',
+    dominate16TerritoriesWith2Troops: 'Dominate 16 territories with at least 2 troops each'
+  },
+  pt: {
+    conquerAnyContinents: 'Conquistar {continent1}, {continent2} e qualquer outro',
+    eliminatePlayer: 'Eliminar o jogador {player}',
+    dominate24Territories: 'Dominar 24 territórios',
+    dominate16TerritoriesWith2Troops: 'Dominar 16 territórios com pelo menos 2 tropas em cada'
+  },
+  ru: {
+    conquerAnyContinents: 'Завоевать {continent1}, {continent2} и любой другой',
+    eliminatePlayer: 'Устранить игрока {player}',
+    dominate24Territories: 'Доминировать над 24 территориями',
+    dominate16TerritoriesWith2Troops: 'Доминировать над 16 территориями с минимум 2 войсками в каждой'
+  },
+  zh: {
+    conquerAnyContinents: '征服{continent1}、{continent2}和任何其他',
+    eliminatePlayer: '消灭玩家{player}',
+    dominate24Territories: '统治24个地区',
+    dominate16TerritoriesWith2Troops: '统治16个地区，每个地区至少2个部队'
+  },
+  hi: {
+    conquerAnyContinents: '{continent1}, {continent2} और कोई अन्य पर विजय प्राप्त करें',
+    eliminatePlayer: 'खिलाड़ी {player} को हराएं',
+    dominate24Territories: '24 क्षेत्रों पर प्रभुत्व स्थापित करें',
+    dominate16TerritoriesWith2Troops: '16 क्षेत्रों पर प्रभुत्व स्थापित करें, प्रत्येक में कम से कम 2 सैनिक'
+  },
+  de: {
+    conquerAnyContinents: '{continent1}, {continent2} und jeden anderen erobern',
+    eliminatePlayer: 'Spieler {player} eliminieren',
+    dominate24Territories: '24 Gebiete dominieren',
+    dominate16TerritoriesWith2Troops: '16 Gebiete mit mindestens 2 Truppen in jedem dominieren'
+  },
+  ja: {
+    conquerAnyContinents: '{continent1}、{continent2}とその他のいずれかを征服する',
+    eliminatePlayer: 'プレイヤー{player}を排除する',
+    dominate24Territories: '24の地域を支配する',
+    dominate16TerritoriesWith2Troops: '各地域に最低2部隊ずつ配置して16の地域を支配する'
+  }
+};
+
+// Default language
+const defaultLang = 'en';
+
 // Game Room Class for Multi-Room Support
 class GameRoom {
   constructor(roomId) {
@@ -133,12 +182,15 @@ class GameRoom {
     // Sistema de rastreamento de tropas individuais movidas
     this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y } } }
 
-// Sistema de cartas território
+    // Sistema de cartas território
     this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
     this.cartasTerritorio = {}; // { jogador: [cartas] }
     this.monteCartas = []; // Monte de cartas território disponíveis
     this.simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
     this.numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
+    
+    // 🎴 Sistema de rastreamento de conquistas para eliminações
+    this.ultimoConquistador = {}; // { territorio: jogador }
 
 // Tipos de objetivos
     this.tiposObjetivos = [
@@ -323,9 +375,10 @@ function createRoomFromGlobalLobby() {
       jogador.socketId = player.socketId;
       jogador.isCPU = false;
       jogador.nomeReal = player.username; // Preservar o nome de usuário real
+      jogador.language = player.language || 'en'; // Armazenar idioma do jogador
       todosJogadores.push({ jogador, player, isReal: true });
       
-      console.log(`🔧 DEBUG: Jogador ${player.username} atribuído a ${jogador.nome} (socket: ${player.socketId})`);
+      console.log(`🔧 DEBUG: Jogador ${player.username} atribuído a ${jogador.nome} (socket: ${player.socketId}, idioma: ${player.language})`);
       
       // Join the player to the room
       const socket = io.sockets.sockets.get(player.socketId);
@@ -378,7 +431,7 @@ function createRoomFromGlobalLobby() {
   console.log('🔧 DEBUG: Lobby global limpo');
 }
 
-function addPlayerToGlobalLobby(socketId, username) {
+function addPlayerToGlobalLobby(socketId, username, language = 'en') {
   // Check if player is already in lobby
   const existingPlayer = globalLobby.players.find(p => p.socketId === socketId);
   if (existingPlayer) return;
@@ -386,7 +439,8 @@ function addPlayerToGlobalLobby(socketId, username) {
   // Add player to global lobby
   globalLobby.players.push({
     socketId: socketId,
-    username: username
+    username: username,
+    language: language || 'en'
   });
   
   console.log(`👤 ${username} adicionado ao lobby global (${globalLobby.players.length}/6)`);
@@ -450,10 +504,10 @@ io.on('connection', (socket) => {
 
   // Handle player joining global lobby
   socket.on('playerJoinedGlobalLobby', (data) => {
-    console.log(`🌍 ${data.username} entrou no lobby global`);
+    console.log(`🌍 ${data.username} entrou no lobby global (idioma: ${data.language || 'en'})`);
     
     // Add player to global lobby
-    addPlayerToGlobalLobby(socket.id, data.username);
+    addPlayerToGlobalLobby(socket.id, data.username, data.language);
   });
 
   // Handle disconnect
@@ -780,6 +834,12 @@ io.on('connection', (socket) => {
     }
 
     if (defensorPais.tropas <= 0) {
+        // 🎴 Registrar quem conquistou este território para rastrear eliminações
+        if (!playerRoom.ultimoConquistador) {
+          playerRoom.ultimoConquistador = {};
+        }
+        playerRoom.ultimoConquistador[para] = playerRoom.turno;
+        
         defensorPais.dono = atacantePais.dono;
         defensorPais.tropas = 1; // Colocar 1 tropa no território conquistado
         atacantePais.tropas -= 1; // Remover 1 tropa do território atacante
@@ -791,15 +851,17 @@ io.on('connection', (socket) => {
         }
         playerRoom.territoriosConquistadosNoTurno[playerRoom.turno].push(para);
         
-        // Calcular tropas disponíveis para transferência (incluindo a tropa automática)
+        // Calcular tropas disponíveis para transferência
+        // Máximo de tropas que podem ser transferidas: atacantePais.tropas - 1 (deixar pelo menos 1)
+        // Mas limitado a 2 tropas adicionais (além da automática)
         const tropasAdicionais = Math.min(atacantePais.tropas - 1, 2); // Máximo 2 tropas adicionais, mínimo 1 no atacante
-        const tropasDisponiveis = tropasAdicionais + 1; // Incluir a tropa automática no total
+        const tropasDisponiveis = tropasAdicionais; // Apenas tropas adicionais (sem incluir a automática)
         
         // Sempre emitir evento de território conquistado para efeitos visuais
         io.to(playerRoom.roomId).emit('territorioConquistado', {
           territorioConquistado: para,
           territorioAtacante: de,
-          tropasDisponiveis: tropasDisponiveis, // Total incluindo tropa automática
+          tropasDisponiveis: tropasDisponiveis, // Apenas tropas adicionais (sem a automática)
           tropasAdicionais: tropasAdicionais, // Apenas tropas adicionais (sem a automática)
           jogadorAtacante: playerRoom.turno
         });
@@ -1511,6 +1573,9 @@ io.on('connection', (socket) => {
     playerRoom.cartasTerritorio = {}; // Resetar cartas território
     playerRoom.inicializarMonteCartas(); // Reinicializar monte de cartas
     playerRoom.territoriosConquistadosNoTurno = {}; // Resetar territórios conquistados
+    
+    // 🎴 Resetar sistema de rastreamento de conquistas
+    playerRoom.ultimoConquistador = {};
 
     playerRoom.paises = [
       { nome: 'Emberlyn', x: 402, y: 396, dono: 'Azul', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Duskwatch'] },
@@ -1716,7 +1781,14 @@ function checarEliminacao(room) {
     const temTerritorio = room.paises.some(p => p.dono === jogador.nome);
     if (!temTerritorio && jogador.ativo) {
       jogador.ativo = false;
-      io.to(room.roomId).emit('mostrarMensagem', `Jogador ${jogador.nome} foi eliminado!`);
+      io.to(room.roomId).emit('mostrarMensagem', `${jogador.nome} foi eliminado!`);
+      
+      // 🎴 TRANSFERIR CARTAS DO JOGADOR ELIMINADO PARA O JOGADOR QUE O ELIMINOU
+      transferirCartasDoEliminado(jogador.nome, room);
+      
+      // 🎯 REATRIBUIR OBJETIVOS DE JOGADORES QUE TINHAM COMO ALVO O JOGADOR ELIMINADO
+      reatribuirObjetivosEliminacao(jogador.nome, room);
+      
       if (room.turno === jogador.nome) {
         // Passa turno imediatamente se o jogador eliminado estava jogando
         let encontrouJogadorAtivo = false;
@@ -1754,8 +1826,175 @@ function checarEliminacao(room) {
   checarVitoria(room);
 }
 
-function gerarObjetivoAleatorio(jogador, room) {
-  const tipo = room.tiposObjetivos[Math.floor(Math.random() * room.tiposObjetivos.length)];
+// 🎴 Função para transferir cartas do jogador eliminado para o jogador que o eliminou
+function transferirCartasDoEliminado(jogadorEliminado, room) {
+  // Encontrar o jogador que eliminou (aquele que conquistou o último território)
+  const jogadorEliminador = encontrarJogadorEliminador(jogadorEliminado, room);
+  
+  if (!jogadorEliminador) {
+    console.log(`⚠️ Não foi possível identificar quem eliminou ${jogadorEliminado}`);
+    return;
+  }
+  
+  // Obter cartas do jogador eliminado
+  const cartasDoEliminado = room.cartasTerritorio[jogadorEliminado] || [];
+  
+  if (cartasDoEliminado.length === 0) {
+    console.log(`🎴 ${jogadorEliminado} não tinha cartas para transferir`);
+    return;
+  }
+  
+  // Obter cartas atuais do jogador eliminador
+  const cartasAtuaisEliminador = room.cartasTerritorio[jogadorEliminador] || [];
+  
+  // Calcular quantas cartas podem ser transferidas (máximo 5)
+  const espacoDisponivel = 5 - cartasAtuaisEliminador.length;
+  const cartasParaTransferir = Math.min(cartasDoEliminado.length, espacoDisponivel);
+  
+  if (cartasParaTransferir <= 0) {
+    console.log(`⚠️ ${jogadorEliminador} não pode receber cartas de ${jogadorEliminado} - já tem 5 cartas`);
+    io.to(room.roomId).emit('mostrarMensagem', `⚠️ ${jogadorEliminador} não pode receber cartas de ${jogadorEliminado} - já tem 5 cartas!`);
+    return;
+  }
+  
+  // Transferir as cartas
+  const cartasTransferidas = cartasDoEliminado.slice(0, cartasParaTransferir);
+  const cartasRestantes = cartasDoEliminado.slice(cartasParaTransferir);
+  
+  // Adicionar cartas ao jogador eliminador
+  room.cartasTerritorio[jogadorEliminador] = [...cartasAtuaisEliminador, ...cartasTransferidas];
+  
+  // Limpar cartas do jogador eliminado
+  room.cartasTerritorio[jogadorEliminado] = [];
+  
+  // Devolver cartas restantes ao monte (se houver)
+  if (cartasRestantes.length > 0) {
+    room.devolverCartasAoMonte(cartasRestantes);
+    console.log(`🎴 ${cartasRestantes.length} cartas de ${jogadorEliminado} foram devolvidas ao monte`);
+  }
+  
+  // Log e mensagem para os jogadores
+  console.log(`🎴 ${jogadorEliminador} recebeu ${cartasTransferidas.length} cartas de ${jogadorEliminado}:`, cartasTransferidas.map(c => `${c.territorio}(${c.simbolo})`));
+  
+  if (cartasTransferidas.length === cartasDoEliminado.length) {
+    io.to(room.roomId).emit('mostrarMensagem', `🎴 ${jogadorEliminador} recebeu TODAS as ${cartasTransferidas.length} cartas de ${jogadorEliminado} por eliminá-lo!`);
+  } else {
+    io.to(room.roomId).emit('mostrarMensagem', `🎴 ${jogadorEliminador} recebeu ${cartasTransferidas.length} cartas de ${jogadorEliminado} por eliminá-lo! (${cartasRestantes.length} cartas devolvidas ao monte)`);
+  }
+  
+  // Log detalhado das cartas transferidas
+  const detalhesCartas = cartasTransferidas.map(c => `${c.territorio}(${c.simbolo})`).join(', ');
+  console.log(`🎴 Cartas transferidas: [${detalhesCartas}]`);
+  console.log(`🎴 ${jogadorEliminador} agora tem ${room.cartasTerritorio[jogadorEliminador].length} cartas`);
+}
+
+// 🎴 Função para identificar quem eliminou o jogador
+function encontrarJogadorEliminador(jogadorEliminado, room) {
+  // Procurar pelo último território que foi conquistado do jogador eliminado
+  // Vamos usar o histórico de conquistas do turno atual
+  
+  // Primeiro, tentar encontrar pelo histórico de conquistas do turno atual
+  for (const [jogador, territorios] of Object.entries(room.territoriosConquistadosNoTurno)) {
+    if (jogador !== jogadorEliminado) {
+      // Verificar se algum dos territórios conquistados pertencia ao jogador eliminado
+      for (const territorioNome of territorios) {
+        // Se o território foi conquistado neste turno, o jogador que o conquistou é o eliminador
+        return jogador;
+      }
+    }
+  }
+  
+  // Se não encontrou pelo histórico, usar o sistema de rastreamento de conquistas
+  if (room.ultimoConquistador) {
+    // Procurar por territórios que eram do jogador eliminado e foram conquistados
+    for (const [territorio, conquistador] of Object.entries(room.ultimoConquistador)) {
+      // Verificar se este território ainda pertence ao conquistador (não foi reconquistado)
+      const territorioAtual = room.paises.find(p => p.nome === territorio);
+      if (territorioAtual && territorioAtual.dono === conquistador) {
+        // Este território foi conquistado pelo conquistador e ainda pertence a ele
+        // Verificar se era do jogador eliminado (isso seria feito de forma mais precisa)
+        // Por enquanto, vamos usar uma abordagem mais simples
+        return conquistador;
+      }
+    }
+  }
+  
+  // Fallback: procurar pelo último território que foi conquistado no turno atual
+  // Isso pode acontecer se a eliminação ocorreu em um turno anterior
+  const territoriosDoEliminado = room.paises.filter(p => p.dono !== jogadorEliminado && p.dono !== 'neutro');
+  
+  // Encontrar o jogador que controla o território que era do eliminado
+  if (territoriosDoEliminado.length > 0) {
+    // Pegar o primeiro território que encontramos (não é a solução mais precisa, mas funciona)
+    return territoriosDoEliminado[0].dono;
+  }
+  
+  return null;
+}
+
+// 🎯 Função para reatribuir objetivos quando o jogador alvo for eliminado
+function reatribuirObjetivosEliminacao(jogadorEliminado, room) {
+  console.log(`🎯 Verificando se há jogadores com objetivo de eliminar ${jogadorEliminado}...`);
+  
+  // Procurar por jogadores que tinham como objetivo eliminar o jogador que foi eliminado
+  const jogadoresComObjetivoEliminado = [];
+  
+  for (const [nomeJogador, objetivo] of Object.entries(room.objetivos)) {
+    if (objetivo.tipo === 'eliminarJogador' && objetivo.jogadorAlvo === jogadorEliminado) {
+      jogadoresComObjetivoEliminado.push(nomeJogador);
+      console.log(`🎯 ${nomeJogador} tinha objetivo de eliminar ${jogadorEliminado} - será reatribuído`);
+    }
+  }
+  
+  if (jogadoresComObjetivoEliminado.length === 0) {
+    console.log(`🎯 Nenhum jogador tinha objetivo de eliminar ${jogadorEliminado}`);
+    return;
+  }
+  
+  // Reatribuir objetivos para cada jogador afetado
+  jogadoresComObjetivoEliminado.forEach(nomeJogador => {
+    // Verificar se o jogador ainda está ativo
+    const jogador = room.jogadores.find(j => j.nome === nomeJogador);
+    if (!jogador || !jogador.ativo) {
+      console.log(`🎯 ${nomeJogador} não está mais ativo, pulando reatribuição`);
+      return;
+    }
+    
+    // Gerar novo objetivo (evitando que seja eliminar o jogador que acabou de ser eliminado)
+    const playerLanguage = room.jogadores.find(j => j.nome === nomeJogador)?.language || defaultLang;
+    const novoObjetivo = gerarObjetivoAleatorioEliminacao(nomeJogador, room, jogadorEliminado, playerLanguage);
+    
+    if (novoObjetivo) {
+      // Atualizar o objetivo
+      room.objetivos[nomeJogador] = novoObjetivo;
+      
+      // Notificar o jogador sobre o novo objetivo
+      const socketJogador = room.jogadores.find(j => j.nome === nomeJogador)?.socketId;
+      if (socketJogador) {
+        io.to(socketJogador).emit('mostrarMensagem', `🎯 Seu objetivo foi alterado: ${novoObjetivo.descricao}`);
+        io.to(socketJogador).emit('objetivoAtualizado', novoObjetivo);
+      }
+      
+      // Notificar todos os jogadores sobre a mudança
+      io.to(room.roomId).emit('mostrarMensagem', `🎯 ${nomeJogador} recebeu um novo objetivo após ${jogadorEliminado} ser eliminado!`);
+      
+      console.log(`🎯 ${nomeJogador} recebeu novo objetivo (${playerLanguage}): ${novoObjetivo.descricao}`);
+    }
+  });
+}
+
+// 🎯 Função para gerar objetivo aleatório evitando o jogador eliminado
+function gerarObjetivoAleatorioEliminacao(jogador, room, jogadorEliminado, lang = defaultLang) {
+  // Filtrar tipos de objetivos disponíveis
+  const tiposDisponiveis = room.tiposObjetivos.filter(tipo => tipo !== 'eliminarJogador');
+  
+  // Se não há outros tipos disponíveis, usar eliminarJogador mas com jogador diferente
+  if (tiposDisponiveis.length === 0) {
+    tiposDisponiveis.push('eliminarJogador');
+  }
+  
+  const tipo = tiposDisponiveis[Math.floor(Math.random() * tiposDisponiveis.length)];
+  const translations = gameTranslations[lang] || gameTranslations[defaultLang];
   
   switch (tipo) {
     case 'conquistar3Continentes':
@@ -1769,7 +2008,67 @@ function gerarObjetivoAleatorio(jogador, room) {
         tipo: 'conquistar3Continentes',
         continente1: continente1,
         continente2: continente2,
-        descricao: `Conquistar 3 continentes: ${continente1}, ${continente2} e qualquer outro`
+        descricao: translations.conquerAnyContinents
+          .replace('{continent1}', continente1)
+          .replace('{continent2}', continente2)
+      };
+      
+    case 'eliminarJogador':
+      // Filtrar jogadores disponíveis (excluindo o jogador atual e o eliminado)
+      const jogadoresDisponiveis = room.jogadores.filter(j => 
+        j.nome !== jogador && 
+        j.nome !== jogadorEliminado && 
+        j.ativo
+      );
+      
+      if (jogadoresDisponiveis.length === 0) {
+        // Se não há outros jogadores para eliminar, usar objetivo de territórios
+        return {
+          tipo: 'dominar24Territorios',
+          descricao: translations.dominate24Territories
+        };
+      }
+      
+      const jogadorAlvo = jogadoresDisponiveis[Math.floor(Math.random() * jogadoresDisponiveis.length)];
+      return {
+        tipo: 'eliminarJogador',
+        jogadorAlvo: jogadorAlvo.nome,
+        descricao: translations.eliminatePlayer.replace('{player}', jogadorAlvo.nome)
+      };
+      
+    case 'dominar24Territorios':
+      return {
+        tipo: 'dominar24Territorios',
+        descricao: translations.dominate24Territories
+      };
+      
+    case 'dominar16TerritoriosCom2Tropas':
+      return {
+        tipo: 'dominar16TerritoriosCom2Tropas',
+        descricao: translations.dominate16TerritoriesWith2Troops
+      };
+  }
+}
+
+function gerarObjetivoAleatorio(jogador, room, lang = defaultLang) {
+  const tipo = room.tiposObjetivos[Math.floor(Math.random() * room.tiposObjetivos.length)];
+  const translations = gameTranslations[lang] || gameTranslations[defaultLang];
+  
+  switch (tipo) {
+    case 'conquistar3Continentes':
+      const nomesContinentes = Object.keys(room.continentes);
+      const continente1 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      let continente2 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      while (continente2 === continente1) {
+        continente2 = nomesContinentes[Math.floor(Math.random() * nomesContinentes.length)];
+      }
+      return {
+        tipo: 'conquistar3Continentes',
+        continente1: continente1,
+        continente2: continente2,
+        descricao: translations.conquerAnyContinents
+          .replace('{continent1}', continente1)
+          .replace('{continent2}', continente2)
       };
       
     case 'eliminarJogador':
@@ -1778,19 +2077,19 @@ function gerarObjetivoAleatorio(jogador, room) {
       return {
         tipo: 'eliminarJogador',
         jogadorAlvo: jogadorAlvo.nome,
-        descricao: `Eliminar o jogador ${jogadorAlvo.nome}`
+        descricao: translations.eliminatePlayer.replace('{player}', jogadorAlvo.nome)
       };
       
     case 'dominar24Territorios':
       return {
         tipo: 'dominar24Territorios',
-        descricao: 'Dominar 24 territórios'
+        descricao: translations.dominate24Territories
       };
       
     case 'dominar16TerritoriosCom2Tropas':
       return {
         tipo: 'dominar16TerritoriosCom2Tropas',
-        descricao: 'Dominar 16 territórios com pelo menos 2 tropas em cada'
+        descricao: translations.dominate16TerritoriesWith2Troops
       };
   }
 }
@@ -1973,8 +2272,9 @@ function inicializarJogo(room) {
   // Gerar objetivos para cada jogador
   console.log(`🔧 DEBUG: Gerando objetivos para jogadores`);
   room.jogadores.forEach(jogador => {
-    room.objetivos[jogador.nome] = gerarObjetivoAleatorio(jogador.nome, room);
-    console.log(`🎯 Objetivo de ${jogador.nome}: ${room.objetivos[jogador.nome].descricao}`);
+    const playerLanguage = jogador.language || defaultLang;
+    room.objetivos[jogador.nome] = gerarObjetivoAleatorio(jogador.nome, room, playerLanguage);
+    console.log(`🎯 Objetivo de ${jogador.nome} (${playerLanguage}): ${room.objetivos[jogador.nome].descricao}`);
   });
 
   room.indiceTurno = 0;
@@ -1990,6 +2290,9 @@ function inicializarJogo(room) {
   room.numeroTrocasRealizadas = 0; // Resetar contador de trocas
   room.tropasMovidas = {}; // Resetar rastreamento de tropas movidas
   room.inicializarMonteCartas(); // Inicializar monte de cartas
+  
+  // 🎴 Resetar sistema de rastreamento de conquistas
+  room.ultimoConquistador = {};
   console.log(`🔧 DEBUG: Cartas e territórios conquistados limpos, monte inicializado`);
   
   console.log(`🎮 Jogo inicializado na sala ${room.roomId} - turno: ${room.turno}`);

@@ -1,8 +1,3128 @@
 // Login System
 let playerLoggedIn = false;
 let playerUsername = '';
+let playerCountry = 'US'; // Default country
+let currentLanguage = 'en'; // Default language (English)
 // Mapeamento de nomes de cores para nomes de usuário reais
 let playerColorToUsernameMap = {};
+
+// Internationalization System (i18n)
+const gameTranslations = {
+  en: { // English (US)
+    // Login Screen
+    loginTitle: 'Enter your name to start',
+    usernameLabel: 'Player Name',
+    usernamePlaceholder: 'Type your name...',
+    countryLabel: 'Select your country:',
+    continueButton: 'CONTINUE',
+    loginFooter: 'Connect and dominate the world!',
+    
+    // Mode Selection
+    modeSelectionTitle: 'Select Mode',
+    modeSelectionSubtitle: 'Choose how you want to play',
+    skirmishMode: 'Skirmish',
+    skirmishDescription: 'Quick game with random players from global lobby',
+    dominiumMode: 'Dominium',
+    dominiumDescription: 'Strategic mode with campaigns and progression',
+    backToLogin: '← Back to Login',
+    
+    // Skirmish Mode
+    skirmishTitle: 'Skirmish Mode',
+    skirmishSubtitle: 'Fast and intense game with players from around the world',
+    startMatch: 'Start Match',
+    startMatchDescription: 'Join global lobby and wait for other players',
+    rankingGeneral: 'General Ranking',
+    rankingDescription: 'See the best players and their statistics',
+    myStats: 'My Statistics',
+    statsDescription: 'View your game history and achievements',
+    tutorial: 'Tutorial',
+    tutorialDescription: 'Learn the rules and strategies of the game',
+    backToModes: '← Back to Modes',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 Game Tutorial',
+    tutorialSubtitle: 'Learn the basic rules and strategies to dominate the world!',
+    
+    // Tutorial Section 1: Game Objective
+    tutorialSection1Title: '🎯 Game Objective',
+    tutorialSection1Content: '<strong>Conquer territories and dominate continents to win!</strong>',
+    tutorialSection1List1: '🎯 <strong>Main Objective:</strong> Complete your objectives to win the game. This can be dominating continents, eliminating players...',
+    tutorialSection1List2: '🗺️ <strong>Map:</strong> World divided into territories and continents',
+    tutorialSection1List3: '⚔️ <strong>Combat:</strong> Use your troops to attack enemy territories',
+    tutorialSection1List4: '🏆 <strong>Victory:</strong> Be the last survivor or complete your secret objective',
+    
+    // Tutorial Section 2: Turn Phases
+    tutorialSection2Title: '🔄 Turn Phases',
+    tutorialSection2Content: '<strong>Each turn has 3 main phases:</strong>',
+    tutorialSection2List1: '<strong>🎯 Troop Placement:</strong> Receive base troops + continent bonuses',
+    tutorialSection2List2: '<strong>⚔️ Attacks:</strong> Conquer enemy territories',
+    tutorialSection2List3: '<strong>🚚 Redeployment:</strong> Move troops between your territories',
+    tutorialSection2Tip: '<em>Tip: Use the redeployment phase to strengthen your borders!</em>',
+    
+    // Tutorial Section 3: Territory Cards
+    tutorialSection3Title: '🃏 Territory Cards',
+    tutorialSection3Content: '<strong>Cards are essential for gaining extra troops:</strong>',
+    tutorialSection3List1: '📊 <strong>Collection:</strong> Gain a card when conquering a territory',
+    tutorialSection3List2: '🎯 <strong>Combination:</strong> Trade 3 cards of the same type or 3 different ones',
+    tutorialSection3List3: '⚡ <strong>Bonus:</strong> Each combination gives you extra troops',
+    tutorialSection3List4: '⚠️ <strong>Limit:</strong> Maximum of 5 cards in hand',
+    tutorialSection3Tip: '<em>Strategy: Save cards for strategic moments!</em>',
+    
+    // Tutorial Section 4: Strategies
+    tutorialSection4Title: '🧠 Basic Strategies',
+    tutorialSection4Content: '<strong>Tips to improve your chances of victory:</strong>',
+    tutorialSection4List1: '🏔️ <strong>Continents:</strong> Dominate continents to receive troop bonuses',
+    tutorialSection4List2: '🛡️ <strong>Defense:</strong> Strengthen your borders with extra troops',
+    tutorialSection4List3: '⚔️ <strong>Attack:</strong> Attack when you have numerical advantage (2:1 or better)',
+    tutorialSection4List4: '🎯 <strong>Focus:</strong> Concentrate on one objective at a time',
+    tutorialSection4List5: '🔄 <strong>Flexibility:</strong> Adapt your strategy as the game evolves',
+    
+    // Tutorial Section 5: Advanced Tips
+    tutorialSection5Title: '🚀 Advanced Tips',
+    tutorialSection5Content: '<strong>Techniques for experienced players:</strong>',
+    tutorialSection5List1: '🎲 <strong>Probability:</strong> Understand attack success chances',
+    tutorialSection5List2: '🕐 <strong>Timing:</strong> Attack at the right time, not just when possible',
+    tutorialSection5List3: '🤝 <strong>Alliances:</strong> In games with more players, temporary alliances can be useful',
+    tutorialSection5List4: '🗺️ <strong>Positioning:</strong> Control strategic territories (chokepoints)',
+    tutorialSection5List5: '💎 <strong>Resources:</strong> Use cards and continent bonuses efficiently',
+    
+    // Tutorial Section 6: Ready to Play
+    tutorialSection6Title: '🎮 Ready to Play!',
+    tutorialSection6Content: '<strong>Congratulations! You are ready to conquer the world!</strong>',
+    tutorialSection6List1: '✅ <strong>Basic Rules:</strong> Understood and ready to use',
+    tutorialSection6List2: '🎯 <strong>Strategies:</strong> Known and ready to implement',
+    tutorialSection6List3: '🃏 <strong>Cards:</strong> System understood and ready to use',
+    tutorialSection6List4: '🧠 <strong>Tips:</strong> Applied to maximize your chances',
+    tutorialSection6Tip: '<em>Remember: practice makes perfect! Start with games against CPUs to test your strategies.</em>',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← Previous',
+    tutorialNext: 'Next →',
+    tutorialFinish: 'Finish',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← Back to Skirmish',
+    tutorialStartGame: '🎮 Start Playing',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 Global Lobby',
+    lobbySubtitle: 'Waiting for players to connect...',
+    lobbyTimerLabel: 'Time Remaining',
+    lobbyPlayersTitle: 'Connected Players',
+    lobbyStatusWaiting: 'Waiting for more players...',
+    lobbyStatusAllConnected: 'All players connected! Starting game...',
+    lobbyStatusCreating: 'Creating room and starting game...',
+    lobbyStatusPlayers: '{connected}/{total} players connected. Waiting for more players...',
+    lobbyFooter: 'Game will start automatically in 30 seconds or when all players connect',
+    lobbyPlayerConnected: 'Connected',
+    lobbyPlayerCPU: 'CPU',
+    
+    // Game HUD
+    playerStatsFormat: 'Troops: {troops} | Reinforcement: {reinforcement}',
+    gameInstructionsWaiting: 'Waiting for game to start...',
+    btnObjective: 'Objective',
+    btnCards: 'Cards',
+    btnTurn: 'End Turn',
+    
+    // Info Popups
+    infoClose: 'Close',
+    infoOk: 'OK',
+    infoWarning: 'Warning',
+    infoMessage: 'Message',
+    
+    // Mode Info Popup
+    modeInfoTitle: 'Notice',
+    
+    // Server Error Popup
+    serverErrorTitle: '❌ Connection Error',
+    serverErrorMessage: 'Error connecting to server. Please try again.',
+    serverErrorRetry: 'Try Again',
+    
+    // Login Error Popup
+    loginErrorTitle: '⚠️ Validation Error',
+    loginErrorMessage: 'Error message',
+    
+    // Dominium Dev Popup
+    dominiumDevTitle: '🏰 Dominium Mode',
+    dominiumDevMessage: 'Dominium mode is under development! This mode will include strategic campaigns, player progression, achievements and rewards, and story mode. Come back soon!',
+    dominiumDevOk: 'I Understand',
+    
+    // Victory Popup
+    victoryTitle: '🏆 Victory',
+    victoryMessage: 'Congratulations! You won!',
+    victorySummaryTitle: '📊 Final Game Summary',
+    victoryPlayersTitle: '👥 Player Results',
+    victoryObjectivesTitle: '🎯 Player Objectives',
+    victoryBackToMenu: '🏠 Back to Menu',
+    
+    // Game Statistics
+    gameDuration: 'Duration:',
+    totalAttacks: 'Total Attacks:',
+    continentsInDispute: 'Continents in Dispute:',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Reinforce Territory',
+    reinforceClose: 'Close',
+    
+    // Transfer Popup
+    transferTitle: 'Transfer Troops',
+    transferClose: 'Close',
+    
+    // Cards Popup
+    cardsTitle: 'Territory Cards',
+    cardsClose: 'Close',
+    
+    // Objective Popup
+    objectiveTitle: 'Game Objective',
+    objectiveClose: 'Close',
+    objectiveYourObjective: '🎯 Your Objective',
+    objectiveLoading: 'Loading...',
+    objectiveHint: '💡 Tip: Keep your objective in mind throughout the game!',
+    objectiveOk: '✅ I Understand',
+    
+    // Cards Popup
+    cardsTitle: 'Territory Cards',
+    cardsClose: 'Close',
+    cardsYourCards: '🎴 Your Territory Cards',
+    cardsInstructions: 'Click on cards to select (maximum 3)',
+    cardsExchange: '🔄 Exchange Cards',
+    
+    // Remanejamento Popup
+    remanejamentoTitle: 'Move Troops',
+    remanejamentoClose: 'Close',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Reinforce Territory',
+    reinforceClose: 'Close',
+    reinforceTerritoryTroops: 'Troops: {troops}',
+    reinforceQuantityLabel: 'Amount to add',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ Confirm',
+    reinforceCancel: '❌ Cancel',
+    
+    // Transfer Popup
+    transferTitle: 'Transfer Troops',
+    transferClose: 'Close',
+    transferOriginTroops: 'Troops: {troops}',
+    transferDestinationTroops: 'Troops: {troops}',
+    transferQuantityLabel: 'Amount to transfer',
+    transferQuantity: '{current}/{max}',
+    transferConfirm: '✅ Confirm',
+    transferCancel: '❌ Cancel',
+    
+    // Remanejamento Popup
+    remanejamentoTitle: 'MOVE TROOPS',
+    remanejamentoClose: 'Close',
+    remanejamentoOriginTroops: 'Troops: {troops}',
+    remanejamentoDestinationTroops: 'Troops: {troops}',
+    remanejamentoQuantityLabel: 'Amount to move',
+    remanejamentoQuantity: '{current}/{max}',
+    remanejamentoConfirm: '✅ Confirm',
+    remanejamentoCancel: '❌ Cancel',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 General Ranking',
+    rankingMessage: 'This feature will be implemented soon!',
+    rankingFeatures: 'You will be able to see:',
+    rankingFeature1: '🏅 Top players by victories',
+    rankingFeature2: '📊 Game statistics',
+    rankingFeature3: '🏆 Achievements and medals',
+    rankingFeature4: '📈 Match history',
+    rankingOk: 'I Understand',
+    
+    // Stats Popup
+    statsTitle: '📊 My Statistics',
+    statsMessage: 'This feature will be implemented soon!',
+    statsFeatures: 'You will be able to see:',
+    statsFeature1: '🎮 Total games played',
+    statsFeature2: '📈 Win rate',
+    statsFeature3: '🗺️ Territories conquered',
+    statsFeature4: '🏅 Achievements unlocked',
+    statsOk: 'I Understand',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ YOUR TURN HAS STARTED!',
+    turnConfirmWarning: 'If you do not confirm, your turn will be passed automatically.<br/>After {remaining} forced passes, you will be disconnected.',
+    turnConfirmTimerLabel: 'Time Remaining',
+    turnConfirmButton: 'CONFIRM TURN',
+    
+    // Turn Start Popup
+    turnStartTitle: 'YOUR TURN!',
+    turnStartMessage: 'It\'s your turn to play! You are {player}!',
+    turnStartButton: 'OK',
+    
+    // Chat and History
+    chatTab: '💬 Chat',
+    historyTab: '📜 History',
+    chatEmpty: 'No messages yet. Be the first to chat!',
+    historyEmpty: 'No actions recorded yet.',
+    chatInputPlaceholder: 'Type your message...',
+    chatSendButton: 'Send',
+    
+    // Turn Buttons
+    endTurnButton: 'End Turn',
+    endAttackButton: 'End Attack',
+    
+    // Player Cards and Game Summary
+    finalResult: 'FINAL RESULT',
+    winner: '🏆 WINNER',
+    eliminated: '💀 ELIMINATED',
+    cpu: '🤖 CPU',
+    inactive: '❌ INACTIVE',
+    active: '⚔️ ACTIVE',
+    victoryType: 'Victory Type',
+    totalElimination: 'Total Elimination',
+    objectiveComplete: 'Objective Complete',
+    duration: 'Duration',
+    totalAttacks: 'Total Attacks',
+    actionsSummary: 'ACTIONS SUMMARY',
+    noImportantActions: 'No important actions recorded',
+    
+    // Bonus Text
+    bonus: 'Bonus',
+    
+    // Player Colors
+    blue: 'Blue',
+    red: 'Red',
+    green: 'Green',
+    yellow: 'Yellow',
+    black: 'Black',
+    purple: 'Purple',
+    
+    // Game Objectives
+    eliminateAllPlayers: 'Eliminate all other players',
+    conquerContinents: 'Conquer {count} complete continents',
+    conquerTerritories: 'Conquer {count} territories',
+    conquerSpecificContinents: 'Conquer {continent1} and {continent2}',
+    conquerAnyContinents: 'Conquer {continent1}, {continent2} and any other',
+    eliminateAllAdversaries: 'Eliminate all adversaries',
+    noObjectives: 'No objectives recorded',
+    
+    // Player Cards Modal
+    territories: 'Territories:',
+    troops: 'Troops:',
+    cards: 'Cards:',
+    status: 'Status:',
+    human: 'Human',
+    won: 'Won',
+    lost: 'Lost',
+    active: 'Active',
+    inactive: 'Inactive',
+    currentTurn: 'CURRENT TURN',
+    
+    // Game Interface
+    troops: 'Troops',
+    reinforcement: 'Reinforcement',
+    objective: 'Objective',
+    cards: 'Cards',
+    endAttack: 'End Attack',
+    chat: 'Chat',
+    selectTerritory: 'Select a territory to reinforce troops',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'Waiting for game to start...',
+    gameInstructionsVictory: '🎉 Congratulations! You won!',
+    gameInstructionsDefeat: '💀 You lost the game!',
+    gameInstructionsRemanejamento: '🔄 Select territories to move troops',
+    gameInstructionsPlaceBonus: '🎯 Place {bonus} bonus troops in continent {continent}',
+    gameInstructionsReinforce: '🎯 Select a territory to reinforce troops',
+    gameInstructionsAttack: '⚔️ Select one of your territories and an enemy to attack',
+    gameInstructionsGameOver: '🎉 Game finished!',
+    gameInstructionsWaitingPlayer: '⏳ Waiting for {player}...',
+    gameInstructionsCPUPlaying: '🤖 {player} is playing...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Game Messages
+    playerEliminated: 'Player {name} was eliminated!',
+    turnPassed: 'Now it\'s {name}\'s turn',
+    gameOver: 'Game over! No more active players.',
+    territoryConquered: '{attacker} conquered {territory}',
+    troopsMoved: '{player} moved {amount} troops from {origin} to {destination}',
+    
+    // Victory/Defeat
+    victory: 'Victory!',
+    defeat: 'Defeat!',
+    victoryByElimination: 'Victory by elimination!',
+    victoryByObjective: 'Victory by objective!',
+    
+    // Buttons
+    ok: 'OK',
+    cancel: 'Cancel',
+    close: 'Close',
+    confirm: 'Confirm',
+    back: 'Back',
+    
+    // Status
+    available: 'Available',
+    unavailable: 'Unavailable',
+    comingSoon: 'Coming Soon',
+    workInProgress: 'Work in Progress'
+  },
+  
+  pt: { // Portuguese (Brazil)
+    // Login Screen
+    loginTitle: 'Entre com seu nome para começar',
+    usernameLabel: 'Nome do Jogador',
+    usernamePlaceholder: 'Digite seu nome...',
+    countryLabel: 'Selecione seu país:',
+    continueButton: 'CONTINUAR',
+    loginFooter: 'Conecte-se e domine o mundo!',
+    
+    // Mode Selection
+    modeSelectionTitle: 'Selecionar Modo',
+    modeSelectionSubtitle: 'Escolha como você quer jogar',
+    skirmishMode: 'Skirmish',
+    skirmishDescription: 'Jogo rápido com jogadores aleatórios do lobby global',
+    dominiumMode: 'Dominium',
+    dominiumDescription: 'Modo estratégico com campanhas e progressão',
+    backToLogin: '← Voltar ao Login',
+    
+    // Skirmish Mode
+    skirmishTitle: 'Modo Skirmish',
+    skirmishSubtitle: 'Jogo rápido e intenso com jogadores do mundo todo',
+    startMatch: 'Iniciar Partida',
+    startMatchDescription: 'Entre no lobby global e aguarde outros jogadores',
+    rankingGeneral: 'Ranking Geral',
+    rankingDescription: 'Veja os melhores jogadores e suas estatísticas',
+    myStats: 'Minhas Estatísticas',
+    statsDescription: 'Visualize seu histórico de jogos e conquistas',
+    tutorial: 'Tutorial',
+    tutorialDescription: 'Aprenda as regras e estratégias do jogo',
+    backToModes: '← Voltar aos Modos',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 Tutorial do Jogo',
+    tutorialSubtitle: 'Aprenda as regras básicas e estratégias para dominar o mundo!',
+    
+    // Tutorial Section 1: Objetivo do Jogo
+    tutorialSection1Title: '🎯 Objetivo do Jogo',
+    tutorialSection1Content: '<strong>Conquiste territórios e domine continentes para vencer!</strong>',
+    tutorialSection1List1: '🎯 <strong>Objetivo Principal:</strong> Completar seus objetivos para vencer o jogo. Podem ser dominar continentes, eliminar jogadores...',
+    tutorialSection1List2: '🗺️ <strong>Mapa:</strong> Mundo dividido em territórios e continentes',
+    tutorialSection1List3: '⚔️ <strong>Combate:</strong> Use suas tropas para atacar territórios inimigos',
+    tutorialSection1List4: '🏆 <strong>Vitória:</strong> Seja o último sobrevivente ou complete seu objetivo secreto',
+    
+    // Tutorial Section 2: Fases do Turno
+    tutorialSection2Title: '🔄 Fases do Turno',
+    tutorialSection2Content: '<strong>Cada turno tem 3 fases principais:</strong>',
+    tutorialSection2List1: '<strong>🎯 Colocação de Tropas:</strong> Receba tropas base + bônus de continentes',
+    tutorialSection2List2: '<strong>⚔️ Ataques:</strong> Conquiste territórios inimigos',
+    tutorialSection2List3: '<strong>🚚 Remanejamento:</strong> Mova tropas entre seus territórios',
+    tutorialSection2Tip: '<em>Dica: Use a fase de remanejamento para fortalecer suas fronteiras!</em>',
+    
+    // Tutorial Section 3: Cartas Território
+    tutorialSection3Title: '🃏 Cartas Território',
+    tutorialSection3Content: '<strong>As cartas são essenciais para ganhar tropas extras:</strong>',
+    tutorialSection3List1: '📊 <strong>Coleta:</strong> Ganhe uma carta ao conquistar um território',
+    tutorialSection3List2: '🎯 <strong>Combinação:</strong> Troque 3 cartas do mesmo tipo ou 3 diferentes',
+    tutorialSection3List3: '⚡ <strong>Bônus:</strong> Cada combinação te dá tropas extras',
+    tutorialSection3List4: '⚠️ <strong>Limite:</strong> Máximo de 5 cartas na mão',
+    tutorialSection3Tip: '<em>Estratégia: Guarde cartas para momentos estratégicos!</em>',
+    
+    // Tutorial Section 4: Estratégias
+    tutorialSection4Title: '🧠 Estratégias Básicas',
+    tutorialSection4Content: '<strong>Dicas para melhorar suas chances de vitória:</strong>',
+    tutorialSection4List1: '🏔️ <strong>Continentes:</strong> Domine continentes para receber bônus de tropas',
+    tutorialSection4List2: '🛡️ <strong>Defesa:</strong> Fortaleça suas fronteiras com tropas extras',
+    tutorialSection4List3: '⚔️ <strong>Ataque:</strong> Ataque quando tiver vantagem numérica (2:1 ou melhor)',
+    tutorialSection4List4: '🎯 <strong>Foco:</strong> Concentre-se em um objetivo por vez',
+    tutorialSection4List5: '🔄 <strong>Flexibilidade:</strong> Adapte sua estratégia conforme o jogo evolui',
+    
+    // Tutorial Section 5: Dicas Avançadas
+    tutorialSection5Title: '🚀 Dicas Avançadas',
+    tutorialSection5Content: '<strong>Técnicas para jogadores experientes:</strong>',
+    tutorialSection5List1: '🎲 <strong>Probabilidade:</strong> Entenda as chances de sucesso nos ataques',
+    tutorialSection5List2: '🕐 <strong>Timing:</strong> Ataque no momento certo, não apenas quando possível',
+    tutorialSection5List3: '🤝 <strong>Alianças:</strong> Em jogos com mais jogadores, alianças temporárias podem ser úteis',
+    tutorialSection5List4: '🗺️ <strong>Posicionamento:</strong> Controle territórios estratégicos (pontos de estrangulamento)',
+    tutorialSection5List5: '💎 <strong>Recursos:</strong> Use cartas e bônus de continente de forma eficiente',
+    
+    // Tutorial Section 6: Pronto para Jogar
+    tutorialSection6Title: '🎮 Pronto para Jogar!',
+    tutorialSection6Content: '<strong>Parabéns! Você está pronto para conquistar o mundo!</strong>',
+    tutorialSection6List1: '✅ <strong>Regras Básicas:</strong> Entendidas e prontas para uso',
+    tutorialSection6List2: '🎯 <strong>Estratégias:</strong> Conhecidas e prontas para implementar',
+    tutorialSection6List3: '🃏 <strong>Cartas:</strong> Sistema compreendido e pronto para uso',
+    tutorialSection6List4: '🧠 <strong>Dicas:</strong> Aplicadas para maximizar suas chances',
+    tutorialSection6Tip: '<em>Lembre-se: a prática leva à perfeição! Comece com partidas contra CPUs para testar suas estratégias.</em>',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← Anterior',
+    tutorialNext: 'Próximo →',
+    tutorialFinish: 'Finalizar',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← Voltar ao Skirmish',
+    tutorialStartGame: '🎮 Começar a Jogar',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 Lobby Global',
+    lobbySubtitle: 'Aguardando jogadores se conectarem...',
+    lobbyTimerLabel: 'Tempo Restante',
+    lobbyPlayersTitle: 'Jogadores Conectados',
+    lobbyStatusWaiting: 'Aguardando mais jogadores...',
+    lobbyStatusAllConnected: 'Todos os jogadores conectados! Iniciando jogo...',
+    lobbyStatusCreating: 'Criando sala e iniciando jogo...',
+    lobbyStatusPlayers: '{connected}/{total} jogadores conectados. Aguardando mais jogadores...',
+    lobbyFooter: 'O jogo iniciará automaticamente em 30 segundos ou quando todos os jogadores se conectarem',
+    lobbyPlayerConnected: 'Conectado',
+    lobbyPlayerCPU: 'CPU',
+    
+    // Game HUD
+    playerStatsFormat: 'Tropas: {troops} | Reforço: {reinforcement}',
+    gameInstructionsWaiting: 'Aguardando início do jogo...',
+    btnObjective: 'Objetivo',
+    btnCards: 'Cartas',
+    btnTurn: 'Encerrar',
+    
+    // Info Popups
+    infoClose: 'Fechar',
+    infoOk: 'OK',
+    infoWarning: 'Aviso',
+    infoMessage: 'Mensagem',
+    
+    // Mode Info Popup
+    modeInfoTitle: 'Aviso',
+    
+    // Server Error Popup
+    serverErrorTitle: '❌ Erro de Conexão',
+    serverErrorMessage: 'Erro ao conectar com o servidor. Tente novamente.',
+    serverErrorRetry: 'Tentar Novamente',
+    
+    // Login Error Popup
+    loginErrorTitle: '⚠️ Erro de Validação',
+    loginErrorMessage: 'Mensagem de erro',
+    
+    // Dominium Dev Popup
+    dominiumDevTitle: '🏰 Modo Dominium',
+    dominiumDevMessage: 'Modo Dominium está em desenvolvimento! Este modo incluirá campanhas estratégicas, progressão de jogador, conquistas e recompensas, e modo história. Volte em breve!',
+    dominiumDevOk: 'Entendi',
+    
+    // Victory Popup
+    victoryTitle: '🏆 Vitória',
+    victoryMessage: 'Parabéns! Você venceu!',
+    victorySummaryTitle: '📊 Resumo Final do Jogo',
+    victoryPlayersTitle: '👥 Resultado dos Jogadores',
+    victoryObjectivesTitle: '🎯 Objetivos dos Jogadores',
+    victoryBackToMenu: '🏠 Voltar ao Menu',
+    
+    // Game Statistics
+    gameDuration: 'Duração:',
+    totalAttacks: 'Total de Ataques:',
+    continentsInDispute: 'Continentes em Disputa:',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Reforçar Território',
+    reinforceClose: 'Fechar',
+    
+    // Transfer Popup
+    transferTitle: 'Transferir Tropas',
+    transferClose: 'Fechar',
+    
+    // Cards Popup
+    cardsTitle: 'Cartas de Território',
+    cardsClose: 'Fechar',
+    
+    // Objective Popup
+    objectiveTitle: 'Objetivo do Jogo',
+    objectiveClose: 'Fechar',
+    objectiveYourObjective: '🎯 Seu Objetivo',
+    objectiveLoading: 'Carregando...',
+    objectiveHint: '💡 Dica: Mantenha seu objetivo em mente durante toda a partida!',
+    objectiveOk: '✅ Entendi',
+    
+    // Cards Popup
+    cardsTitle: 'Cartas de Território',
+    cardsClose: 'Fechar',
+    cardsYourCards: '🎴 Suas Cartas Território',
+    cardsInstructions: 'Clique nas cartas para selecionar (máximo 3)',
+    cardsExchange: '🔄 Trocar Cartas',
+    
+    // Remanejamento Popup
+    remanejamentoTitle: 'Mover Tropas',
+    remanejamentoClose: 'Fechar',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Reforçar Território',
+    reinforceClose: 'Fechar',
+    reinforceTerritoryTroops: 'Tropas: {troops}',
+    reinforceQuantityLabel: 'Quantidade a adicionar',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ Confirmar',
+    reinforceCancel: '❌ Cancelar',
+    
+    // Transfer Popup
+    transferTitle: 'Transferir Tropas',
+    transferClose: 'Fechar',
+    transferOriginTroops: 'Tropas: {troops}',
+    transferDestinationTroops: 'Tropas: {troops}',
+    transferQuantityLabel: 'Quantidade para transferir',
+    transferQuantity: '{current}/{max}',
+    transferConfirm: '✅ Confirmar',
+    transferCancel: '❌ Cancelar',
+    
+    // Remanejamento Popup
+    remanejamentoTitle: 'MOVER TROPAS',
+    remanejamentoClose: 'Fechar',
+    remanejamentoOriginTroops: 'Tropas: {troops}',
+    remanejamentoDestinationTroops: 'Tropas: {troops}',
+    remanejamentoQuantityLabel: 'Quantidade para mover',
+    remanejamentoQuantity: '{current}/{max}',
+    remanejamentoConfirm: '✅ Confirmar',
+    remanejamentoCancel: '❌ Cancelar',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 Ranking Geral',
+    rankingMessage: 'Esta funcionalidade será implementada em breve!',
+    rankingFeatures: 'Você poderá ver:',
+    rankingFeature1: '🏅 Top jogadores por vitórias',
+    rankingFeature2: '📊 Estatísticas de jogos',
+    rankingFeature3: '🏆 Conquistas e medalhas',
+    rankingFeature4: '📈 Histórico de partidas',
+    rankingOk: 'Entendi',
+    
+    // Stats Popup
+    statsTitle: '📊 Minhas Estatísticas',
+    statsMessage: 'Esta funcionalidade será implementada em breve!',
+    statsFeatures: 'Você poderá ver:',
+    statsFeature1: '🎮 Total de partidas jogadas',
+    statsFeature2: '📈 Taxa de vitória',
+    statsFeature3: '🗺️ Territórios conquistados',
+    statsFeature4: '🏅 Conquistas desbloqueadas',
+    statsOk: 'Entendi',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ SEU TURNO COMEÇOU!',
+    turnConfirmWarning: 'Se não confirmar, seu turno será passado automaticamente.<br/>Após {remaining} passagens forçadas, você será desconectado.',
+    turnConfirmTimerLabel: 'Tempo Restante',
+    turnConfirmButton: 'CONFIRMAR TURNO',
+    
+    // Turn Start Popup
+    turnStartTitle: 'SEU TURNO!',
+    turnStartMessage: 'É a sua vez de jogar! Você é o {player}!',
+    turnStartButton: 'OK',
+    
+    // Chat and History
+    chatTab: '💬 Chat',
+    historyTab: '📜 Histórico',
+    chatEmpty: 'Nenhuma mensagem ainda. Seja o primeiro a conversar!',
+    historyEmpty: 'Nenhuma ação registrada ainda.',
+    chatInputPlaceholder: 'Digite sua mensagem...',
+    chatSendButton: 'Enviar',
+    
+    // Turn Buttons
+    endTurnButton: 'Encerrar Turno',
+    endAttackButton: 'Encerrar Ataque',
+    
+    // Player Cards and Game Summary
+    finalResult: 'RESULTADO FINAL',
+    winner: '🏆 VENCEDOR',
+    eliminated: '💀 ELIMINADO',
+    cpu: '🤖 CPU',
+    inactive: '❌ INATIVO',
+    active: '⚔️ ATIVO',
+    victoryType: 'Tipo de Vitória',
+    totalElimination: 'Eliminação Total',
+    objectiveComplete: 'Objetivo Completo',
+    duration: 'Duração',
+    totalAttacks: 'Total de Ataques',
+    actionsSummary: 'RESUMO DAS AÇÕES PRINCIPAIS',
+    noImportantActions: 'Nenhuma ação importante registrada',
+    
+    // Bonus Text
+    bonus: 'Bônus',
+    
+    // Player Colors
+    blue: 'Azul',
+    red: 'Vermelho',
+    green: 'Verde',
+    yellow: 'Amarelo',
+    black: 'Preto',
+    purple: 'Roxo',
+    
+    // Game Objectives
+    eliminateAllPlayers: 'Eliminar todos os outros jogadores',
+    conquerContinents: 'Conquistar {count} continentes completos',
+    conquerTerritories: 'Conquistar {count} territórios',
+    conquerSpecificContinents: 'Conquistar {continent1} e {continent2}',
+    conquerAnyContinents: 'Conquistar {continent1}, {continent2} e qualquer outro',
+    eliminateAllAdversaries: 'Eliminar todos os adversários',
+    noObjectives: 'Nenhum objetivo registrado',
+    
+    // Player Cards Modal
+    territories: 'Territórios:',
+    troops: 'Tropas:',
+    cards: 'Cartas:',
+    status: 'Status:',
+    human: 'Humano',
+    won: 'Venceu',
+    lost: 'Perdeu',
+    active: 'Ativo',
+    inactive: 'Inativo',
+    currentTurn: 'TURNO ATUAL',
+    
+    // Game Interface
+    troops: 'Tropas',
+    reinforcement: 'Reforço',
+    objective: 'Objetivo',
+    cards: 'Cartas',
+    endAttack: 'Encerrar Ataque',
+    chat: 'Chat',
+    selectTerritory: 'Selecione um território para reforçar tropas',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'Aguardando início do jogo...',
+    gameInstructionsVictory: '🎉 Parabéns! Você venceu!',
+    gameInstructionsDefeat: '💀 Você perdeu o jogo!',
+    gameInstructionsRemanejamento: '🔄 Selecione territórios para mover tropas',
+    gameInstructionsPlaceBonus: '🎯 Coloque {bonus} tropas bônus no continente {continent}',
+    gameInstructionsReinforce: '🎯 Selecione um território para reforçar tropas',
+    gameInstructionsAttack: '⚔️ Selecione um território seu e um inimigo para atacar',
+    gameInstructionsGameOver: '🎉 Jogo finalizado!',
+    gameInstructionsWaitingPlayer: '⏳ Aguardando {player}...',
+    gameInstructionsCPUPlaying: '🤖 {player} está jogando...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Game Messages
+    playerEliminated: 'Jogador {name} foi eliminado!',
+    turnPassed: 'Agora é a vez do jogador {name}',
+    gameOver: 'Jogo acabou! Não há mais jogadores ativos.',
+    territoryConquered: '{attacker} conquistou {territory}',
+    troopsMoved: '{player} moveu {amount} tropas de {origin} para {destination}',
+    
+    // Victory/Defeat
+    victory: 'Vitória!',
+    defeat: 'Derrota!',
+    victoryByElimination: 'Vitória por eliminação!',
+    victoryByObjective: 'Vitória por objetivo!',
+    
+    // Buttons
+    ok: 'OK',
+    cancel: 'Cancelar',
+    close: 'Fechar',
+    confirm: 'Confirmar',
+    back: 'Voltar',
+    
+    // Status
+    available: 'Disponível',
+    unavailable: 'Indisponível',
+    comingSoon: 'Em Breve',
+    workInProgress: 'Work in Progress'
+  },
+  
+  ru: { // Russian
+    // Login Screen
+    loginTitle: 'Введите ваше имя, чтобы начать',
+    usernameLabel: 'Имя игрока',
+    usernamePlaceholder: 'Введите ваше имя...',
+    countryLabel: 'Выберите вашу страну:',
+    continueButton: 'ПРОДОЛЖИТЬ',
+    loginFooter: 'Подключитесь и доминируйте в мире!',
+    
+    // Mode Selection
+    modeSelectionTitle: 'Выбрать режим',
+    modeSelectionSubtitle: 'Выберите, как вы хотите играть',
+    skirmishMode: 'Схватка',
+    skirmishDescription: 'Быстрая игра со случайными игроками из глобального лобби',
+    dominiumMode: 'Доминиум',
+    dominiumDescription: 'Стратегический режим с кампаниями и прогрессией',
+    backToLogin: '← Вернуться к входу',
+    
+    // Skirmish Mode
+    skirmishTitle: 'Режим схватки',
+    skirmishSubtitle: 'Быстрая и интенсивная игра с игроками со всего мира',
+    startMatch: 'Начать матч',
+    startMatchDescription: 'Присоединитесь к глобальному лобби и ждите других игроков',
+    rankingGeneral: 'Общий рейтинг',
+    rankingDescription: 'Посмотрите лучших игроков и их статистику',
+    myStats: 'Моя статистика',
+    statsDescription: 'Просмотрите историю игр и достижения',
+    tutorial: 'Учебник',
+    tutorialDescription: 'Изучите правила и стратегии игры',
+    backToModes: '← Вернуться к режимам',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 Учебник игры',
+    tutorialSubtitle: 'Изучите основные правила и стратегии для доминирования в мире!',
+    
+    // Tutorial Section 1: Цель игры
+    tutorialSection1Title: '🎯 Цель игры',
+    tutorialSection1Content: '<strong>Завоевывайте территории и доминируйте континенты, чтобы победить!</strong>',
+    tutorialSection1List1: '🎯 <strong>Главная цель:</strong> Выполните свои цели, чтобы победить в игре. Это может быть доминирование континентов, устранение игроков...',
+    tutorialSection1List2: '🗺️ <strong>Карта:</strong> Мир разделен на территории и континенты',
+    tutorialSection1List3: '⚔️ <strong>Бой:</strong> Используйте свои войска для атаки вражеских территорий',
+    tutorialSection1List4: '🏆 <strong>Победа:</strong> Будьте последним выжившим или выполните свою секретную цель',
+    
+    // Tutorial Section 2: Фазы хода
+    tutorialSection2Title: '🔄 Фазы хода',
+    tutorialSection2Content: '<strong>Каждый ход имеет 3 основные фазы:</strong>',
+    tutorialSection2List1: '<strong>🎯 Размещение войск:</strong> Получите базовые войска + бонусы континентов',
+    tutorialSection2List2: '<strong>⚔️ Атаки:</strong> Завоевывайте вражеские территории',
+    tutorialSection2List3: '<strong>🚚 Передислокация:</strong> Перемещайте войска между вашими территориями',
+    tutorialSection2Tip: '<em>Совет: Используйте фазу передислокации для укрепления границ!</em>',
+    
+    // Tutorial Section 3: Карты территории
+    tutorialSection3Title: '🃏 Карты территории',
+    tutorialSection3Content: '<strong>Карты необходимы для получения дополнительных войск:</strong>',
+    tutorialSection3List1: '📊 <strong>Сбор:</strong> Получите карту при завоевании территории',
+    tutorialSection3List2: '🎯 <strong>Комбинация:</strong> Обменяйте 3 карты одного типа или 3 разные',
+    tutorialSection3List3: '⚡ <strong>Бонус:</strong> Каждая комбинация дает вам дополнительные войска',
+    tutorialSection3List4: '⚠️ <strong>Лимит:</strong> Максимум 5 карт в руке',
+    tutorialSection3Tip: '<em>Стратегия: Сохраняйте карты для стратегических моментов!</em>',
+    
+    // Tutorial Section 4: Стратегии
+    tutorialSection4Title: '🧠 Основные стратегии',
+    tutorialSection4Content: '<strong>Советы для улучшения шансов на победу:</strong>',
+    tutorialSection4List1: '🏔️ <strong>Континенты:</strong> Доминируйте континентами для получения бонусов войск',
+    tutorialSection4List2: '🛡️ <strong>Оборона:</strong> Укрепляйте границы дополнительными войсками',
+    tutorialSection4List3: '⚔️ <strong>Атака:</strong> Атакуйте при численном преимуществе (2:1 или лучше)',
+    tutorialSection4List4: '🎯 <strong>Фокус:</strong> Концентрируйтесь на одной цели за раз',
+    tutorialSection4List5: '🔄 <strong>Гибкость:</strong> Адаптируйте стратегию по мере развития игры',
+    
+    // Tutorial Section 5: Продвинутые советы
+    tutorialSection5Title: '🚀 Продвинутые советы',
+    tutorialSection5Content: '<strong>Техники для опытных игроков:</strong>',
+    tutorialSection5List1: '🎲 <strong>Вероятность:</strong> Понимайте шансы успеха атак',
+    tutorialSection5List2: '🕐 <strong>Время:</strong> Атакуйте в нужное время, а не только когда возможно',
+    tutorialSection5List3: '🤝 <strong>Альянсы:</strong> В играх с большим количеством игроков временные альянсы могут быть полезны',
+    tutorialSection5List4: '🗺️ <strong>Позиционирование:</strong> Контролируйте стратегические территории (узкие места)',
+    tutorialSection5List5: '💎 <strong>Ресурсы:</strong> Эффективно используйте карты и бонусы континентов',
+    
+    // Tutorial Section 6: Готов к игре
+    tutorialSection6Title: '🎮 Готов к игре!',
+    tutorialSection6Content: '<strong>Поздравляем! Вы готовы завоевать мир!</strong>',
+    tutorialSection6List1: '✅ <strong>Основные правила:</strong> Поняты и готовы к использованию',
+    tutorialSection6List2: '🎯 <strong>Стратегии:</strong> Известны и готовы к реализации',
+    tutorialSection6List3: '🃏 <strong>Карты:</strong> Система понята и готова к использованию',
+    tutorialSection6List4: '🧠 <strong>Советы:</strong> Применены для максимизации шансов',
+    tutorialSection6Tip: '<em>Помните: практика ведет к совершенству! Начните с игр против ИИ для тестирования стратегий.</em>',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← Назад',
+    tutorialNext: 'Далее →',
+    tutorialFinish: 'Завершить',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← Вернуться к схватке',
+    tutorialStartGame: '🎮 Начать играть',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 Глобальное лобби',
+    lobbySubtitle: 'Ожидание подключения игроков...',
+    lobbyTimerLabel: 'Оставшееся время',
+    lobbyPlayersTitle: 'Подключенные игроки',
+    lobbyStatusWaiting: 'Ожидание других игроков...',
+    lobbyStatusAllConnected: 'Все игроки подключены! Начинаем игру...',
+    lobbyStatusCreating: 'Создание комнаты и запуск игры...',
+    lobbyStatusPlayers: '{connected}/{total} игроков подключено. Ожидание других игроков...',
+    lobbyFooter: 'Игра начнется автоматически через 30 секунд или когда все игроки подключатся',
+    lobbyPlayerConnected: 'Подключен',
+    lobbyPlayerCPU: 'ИИ',
+    
+    // Game HUD
+    playerStatsFormat: 'Войска: {troops} | Подкрепление: {reinforcement}',
+    gameInstructionsWaiting: 'Ожидание начала игры...',
+    btnObjective: 'Цель',
+    btnCards: 'Карты',
+    btnTurn: 'Завершить ход',
+    
+    // Info Popups
+    infoClose: 'Закрыть',
+    infoOk: 'OK',
+    infoWarning: 'Предупреждение',
+    infoMessage: 'Сообщение',
+    
+    // Server Error Popup
+    serverErrorTitle: '❌ Ошибка подключения',
+    serverErrorMessage: 'Ошибка подключения к серверу. Попробуйте снова.',
+    serverErrorRetry: 'Попробовать снова',
+    
+    // Victory Popup
+    victoryTitle: '🏆 Победа',
+    victoryMessage: 'Поздравляем! Вы победили!',
+    victorySummaryTitle: '📊 Итоги игры',
+    victoryPlayersTitle: '👥 Результаты игроков',
+    victoryObjectivesTitle: '🎯 Цели игроков',
+    victoryBackToMenu: '🏠 Вернуться в меню',
+    
+    // Game Statistics
+    gameDuration: 'Длительность:',
+    totalAttacks: 'Всего атак:',
+    continentsInDispute: 'Континенты в споре:',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 Общий рейтинг',
+    rankingMessage: 'Эта функция будет реализована в ближайшее время!',
+    rankingFeatures: 'Вы сможете увидеть:',
+    rankingFeature1: '🏅 Лучшие игроки по победам',
+    rankingFeature2: '📊 Статистика игр',
+    rankingFeature3: '🏆 Достижения и медали',
+    rankingFeature4: '📈 История матчей',
+    rankingOk: 'Понятно',
+    
+    // Stats Popup
+    statsTitle: '📊 Моя статистика',
+    statsMessage: 'Эта функция будет реализована в ближайшее время!',
+    statsFeatures: 'Вы сможете увидеть:',
+    statsFeature1: '🎮 Всего сыгранных игр',
+    statsFeature2: '📈 Процент побед',
+    statsFeature3: '🗺️ Завоеванные территории',
+    statsFeature4: '🏅 Разблокированные достижения',
+    statsOk: 'Понятно',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ ВАШ ХОД НАЧАЛСЯ!',
+    turnConfirmWarning: 'Если вы не подтвердите, ваш ход будет пропущен автоматически.<br/>После {remaining} принудительных пропусков вы будете отключены.',
+    turnConfirmTimerLabel: 'Оставшееся время',
+    turnConfirmButton: 'ПОДТВЕРДИТЬ ХОД',
+    
+    // Turn Start Popup
+    turnStartTitle: 'ВАШ ХОД!',
+    turnStartMessage: 'Ваша очередь играть! Вы {player}!',
+    turnStartButton: 'OK',
+    
+    // Chat and History
+    chatTab: '💬 Чат',
+    historyTab: '📜 История',
+    chatEmpty: 'Пока нет сообщений. Будьте первым, кто начнет общение!',
+    historyEmpty: 'Пока нет зарегистрированных действий.',
+    chatInputPlaceholder: 'Введите ваше сообщение...',
+    chatSendButton: 'Отправить',
+    
+    // Turn Buttons
+    endTurnButton: 'Завершить ход',
+    endAttackButton: 'Завершить атаку',
+    
+    // Player Cards and Game Summary
+    finalResult: 'ФИНАЛЬНЫЙ РЕЗУЛЬТАТ',
+    winner: '🏆 ПОБЕДИТЕЛЬ',
+    eliminated: '💀 УСТРАНЕН',
+    cpu: '🤖 ИИ',
+    inactive: '❌ НЕАКТИВЕН',
+    active: '⚔️ АКТИВЕН',
+    victoryType: 'Тип победы',
+    totalElimination: 'Полное устранение',
+    objectiveComplete: 'Цель выполнена',
+    duration: 'Длительность',
+    totalAttacks: 'Всего атак',
+    actionsSummary: 'СВОДКА ОСНОВНЫХ ДЕЙСТВИЙ',
+    noImportantActions: 'Важные действия не зарегистрированы',
+    
+    // Player Cards Modal
+    territories: 'Территории:',
+    troops: 'Войска:',
+    cards: 'Карты:',
+    status: 'Статус:',
+    human: 'Человек',
+    won: 'Победил',
+    lost: 'Проиграл',
+    active: 'Активен',
+    inactive: 'Неактивен',
+    currentTurn: 'ТЕКУЩИЙ ХОД',
+    
+    // Objective Popup
+    objectiveTitle: 'Цель игры',
+    objectiveClose: 'Закрыть',
+    objectiveYourObjective: '🎯 Ваша цель',
+    objectiveLoading: 'Загрузка...',
+    objectiveHint: '💡 Совет: Помните о своей цели на протяжении всей игры!',
+    objectiveOk: '✅ Понятно',
+    
+    // Cards Popup
+    cardsTitle: 'Карты территорий',
+    cardsClose: 'Закрыть',
+    cardsYourCards: '🎴 Ваши карты территорий',
+    cardsInstructions: 'Нажмите на карты для выбора (максимум 3)',
+    cardsExchange: '🔄 Обменять карты',
+    
+    // Game Interface
+    troops: 'Войска',
+    reinforcement: 'Подкрепление',
+    
+    // Bonus Text
+    bonus: 'Бонус',
+    
+    // Player Colors
+    blue: 'Синий',
+    red: 'Красный',
+    green: 'Зелёный',
+    yellow: 'Жёлтый',
+    black: 'Чёрный',
+    purple: 'Фиолетовый',
+    
+    // Game Objectives
+    eliminateAllPlayers: 'Устранить всех других игроков',
+    conquerContinents: 'Завоевать {count} полных континентов',
+    conquerTerritories: 'Завоевать {count} территорий',
+    conquerSpecificContinents: 'Завоевать {continent1} и {continent2}',
+    conquerAnyContinents: 'Завоевать {continent1}, {continent2} и любой другой',
+    eliminateAllAdversaries: 'Устранить всех противников',
+    noObjectives: 'Цели не зарегистрированы',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Усилить территорию',
+    reinforceClose: 'Закрыть',
+    reinforceTerritoryTroops: 'Войска: {troops}',
+    reinforceQuantityLabel: 'Количество для добавления',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ Подтвердить',
+    reinforceCancel: '❌ Отмена',
+    objective: 'Цель',
+    cards: 'Карты',
+    endAttack: 'Завершить атаку',
+    chat: 'Чат',
+    selectTerritory: 'Выберите территорию для усиления войск',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'Ожидание начала игры...',
+    gameInstructionsVictory: '🎉 Поздравляем! Вы победили!',
+    gameInstructionsDefeat: '💀 Вы проиграли игру!',
+    gameInstructionsRemanejamento: '🔄 Выберите территории для перемещения войск',
+    gameInstructionsPlaceBonus: '🎯 Разместите {bonus} бонусных войск на континенте {continent}',
+    gameInstructionsReinforce: '🎯 Выберите территорию для усиления войск',
+    gameInstructionsAttack: '⚔️ Выберите одну из ваших территорий и врага для атаки',
+    gameInstructionsGameOver: '🎉 Игра завершена!',
+    gameInstructionsWaitingPlayer: '⏳ Ожидание {player}...',
+    gameInstructionsCPUPlaying: '🤖 {player} играет...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Game Messages
+    playerEliminated: 'Игрок {name} был устранен!',
+    turnPassed: 'Теперь ход игрока {name}',
+    gameOver: 'Игра окончена! Нет больше активных игроков.',
+    territoryConquered: '{attacker} завоевал {territory}',
+    troopsMoved: '{player} переместил {amount} войск с {origin} на {destination}',
+    
+    // Victory/Defeat
+    victory: 'Победа!',
+    defeat: 'Поражение!',
+    victoryByElimination: 'Победа путем устранения!',
+    victoryByObjective: 'Победа по цели!',
+    
+    // Buttons
+    ok: 'ОК',
+    cancel: 'Отмена',
+    close: 'Закрыть',
+    confirm: 'Подтвердить',
+    back: 'Назад',
+    
+    // Status
+    available: 'Доступно',
+    unavailable: 'Недоступно',
+    comingSoon: 'Скоро',
+    workInProgress: 'В разработке'
+  },
+  
+  zh: { // Chinese
+    // Login Screen
+    loginTitle: '输入您的姓名开始游戏',
+    usernameLabel: '玩家姓名',
+    usernamePlaceholder: '输入您的姓名...',
+    countryLabel: '选择您的国家:',
+    continueButton: '继续',
+    loginFooter: '连接并统治世界！',
+    
+    // Mode Selection
+    modeSelectionTitle: '选择模式',
+    modeSelectionSubtitle: '选择您想要游戏的方式',
+    skirmishMode: '遭遇战',
+    skirmishDescription: '与全球大厅的随机玩家进行快速游戏',
+    dominiumMode: '统治模式',
+    dominiumDescription: '具有战役和进度的战略模式',
+    backToLogin: '← 返回登录',
+    
+    // Skirmish Mode
+    skirmishTitle: '遭遇战模式',
+    skirmishSubtitle: '与来自世界各地的玩家进行快速激烈的游戏',
+    startMatch: '开始比赛',
+    startMatchDescription: '加入全球大厅并等待其他玩家',
+    rankingGeneral: '总排名',
+    rankingDescription: '查看最佳玩家及其统计数据',
+    myStats: '我的统计',
+    statsDescription: '查看您的游戏历史和成就',
+    tutorial: '教程',
+    tutorialDescription: '学习游戏规则和策略',
+    backToModes: '← 返回模式',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 游戏教程',
+    tutorialSubtitle: '学习基本规则和策略来统治世界！',
+    
+    // Tutorial Section 1: 游戏目标
+    tutorialSection1Title: '🎯 游戏目标',
+    tutorialSection1Content: '<strong>征服领土并统治大陆来获胜！</strong>',
+    tutorialSection1List1: '🎯 <strong>主要目标:</strong> 完成您的目标来赢得游戏。这可以是统治大陆、淘汰玩家...',
+    tutorialSection1List2: '🗺️ <strong>地图:</strong> 世界分为领土和大陆',
+    tutorialSection1List3: '⚔️ <strong>战斗:</strong> 使用您的部队攻击敌方领土',
+    tutorialSection1List4: '🏆 <strong>胜利:</strong> 成为最后的幸存者或完成您的秘密目标',
+    
+    // Tutorial Section 2: 回合阶段
+    tutorialSection2Title: '🔄 回合阶段',
+    tutorialSection2Content: '<strong>每个回合有3个主要阶段:</strong>',
+    tutorialSection2List1: '<strong>🎯 部队部署:</strong> 获得基础部队 + 大陆奖励',
+    tutorialSection2List2: '<strong>⚔️ 攻击:</strong> 征服敌方领土',
+    tutorialSection2List3: '<strong>🚚 重新部署:</strong> 在您的领土之间移动部队',
+    tutorialSection2Tip: '<em>提示: 使用重新部署阶段来加强您的边界！</em>',
+    
+    // Tutorial Section 3: 领土卡牌
+    tutorialSection3Title: '🃏 领土卡牌',
+    tutorialSection3Content: '<strong>卡牌对于获得额外部队至关重要:</strong>',
+    tutorialSection3List1: '📊 <strong>收集:</strong> 征服领土时获得一张卡牌',
+    tutorialSection3List2: '🎯 <strong>组合:</strong> 交易3张相同类型或3张不同的卡牌',
+    tutorialSection3List3: '⚡ <strong>奖励:</strong> 每个组合给您额外部队',
+    tutorialSection3List4: '⚠️ <strong>限制:</strong> 手牌最多5张',
+    tutorialSection3Tip: '<em>策略: 保存卡牌用于战略时刻！</em>',
+    
+    // Tutorial Section 4: 策略
+    tutorialSection4Title: '🧠 基本策略',
+    tutorialSection4Content: '<strong>提高获胜机会的提示:</strong>',
+    tutorialSection4List1: '🏔️ <strong>大陆:</strong> 统治大陆来获得部队奖励',
+    tutorialSection4List2: '🛡️ <strong>防御:</strong> 用额外部队加强您的边界',
+    tutorialSection4List3: '⚔️ <strong>攻击:</strong> 在数量优势时攻击（2:1或更好）',
+    tutorialSection4List4: '🎯 <strong>专注:</strong> 一次专注于一个目标',
+    tutorialSection4List5: '🔄 <strong>灵活性:</strong> 随着游戏发展调整您的策略',
+    
+    // Tutorial Section 5: 高级提示
+    tutorialSection5Title: '🚀 高级提示',
+    tutorialSection5Content: '<strong>经验玩家的技巧:</strong>',
+    tutorialSection5List1: '🎲 <strong>概率:</strong> 了解攻击成功的机会',
+    tutorialSection5List2: '🕐 <strong>时机:</strong> 在正确时间攻击，而不仅仅是可能时',
+    tutorialSection5List3: '🤝 <strong>联盟:</strong> 在更多玩家的游戏中，临时联盟可能有用',
+    tutorialSection5List4: '🗺️ <strong>定位:</strong> 控制战略领土（瓶颈点）',
+    tutorialSection5List5: '💎 <strong>资源:</strong> 高效使用卡牌和大陆奖励',
+    
+    // Tutorial Section 6: 准备游戏
+    tutorialSection6Title: '🎮 准备游戏！',
+    tutorialSection6Content: '<strong>恭喜！您准备征服世界！</strong>',
+    tutorialSection6List1: '✅ <strong>基本规则:</strong> 已理解并准备使用',
+    tutorialSection6List2: '🎯 <strong>策略:</strong> 已知并准备实施',
+    tutorialSection6List3: '🃏 <strong>卡牌:</strong> 系统已理解并准备使用',
+    tutorialSection6List4: '🧠 <strong>提示:</strong> 已应用以最大化您的机会',
+    tutorialSection6Tip: '<em>记住: 熟能生巧！从与CPU的游戏开始来测试您的策略。</em>',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← 上一个',
+    tutorialNext: '下一个 →',
+    tutorialFinish: '完成',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← 返回遭遇战',
+    tutorialStartGame: '🎮 开始游戏',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 全球大厅',
+    lobbySubtitle: '等待玩家连接...',
+    lobbyTimerLabel: '剩余时间',
+    lobbyPlayersTitle: '已连接玩家',
+    lobbyStatusWaiting: '等待更多玩家...',
+    lobbyStatusAllConnected: '所有玩家已连接！开始游戏...',
+    lobbyStatusCreating: '创建房间并开始游戏...',
+    lobbyStatusPlayers: '{connected}/{total} 玩家已连接。等待更多玩家...',
+    lobbyFooter: '游戏将在30秒后自动开始或当所有玩家连接时开始',
+    lobbyPlayerConnected: '已连接',
+    lobbyPlayerCPU: 'CPU',
+    
+    // Game HUD
+    playerStatsFormat: '部队: {troops} | 增援: {reinforcement}',
+    gameInstructionsWaiting: '等待游戏开始...',
+    btnObjective: '目标',
+    btnCards: '卡牌',
+    btnTurn: '结束回合',
+    
+    // Info Popups
+    infoClose: '关闭',
+    infoOk: '确定',
+    infoWarning: '警告',
+    infoMessage: '消息',
+    
+    // Server Error Popup
+    serverErrorTitle: '❌ 连接错误',
+    serverErrorMessage: '连接服务器时出错。请重试。',
+    serverErrorRetry: '重试',
+    
+    // Victory Popup
+    victoryTitle: '🏆 胜利',
+    victoryMessage: '恭喜！你赢了！',
+    victorySummaryTitle: '📊 游戏最终总结',
+    victoryPlayersTitle: '👥 玩家结果',
+    victoryObjectivesTitle: '🎯 玩家目标',
+    victoryBackToMenu: '🏠 返回菜单',
+    
+    // Game Statistics
+    gameDuration: '持续时间:',
+    totalAttacks: '总攻击次数:',
+    continentsInDispute: '争夺中的大陆:',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 总排行榜',
+    rankingMessage: '此功能即将推出！',
+    rankingFeatures: '您将能够看到:',
+    rankingFeature1: '🏅 按胜利排名的顶级玩家',
+    rankingFeature2: '📊 游戏统计',
+    rankingFeature3: '🏆 成就和奖牌',
+    rankingFeature4: '📈 比赛历史',
+    rankingOk: '我明白了',
+    
+    // Stats Popup
+    statsTitle: '📊 我的统计',
+    statsMessage: '此功能即将推出！',
+    statsFeatures: '您将能够看到:',
+    statsFeature1: '🎮 总游戏场数',
+    statsFeature2: '📈 胜率',
+    statsFeature3: '🗺️ 征服的领土',
+    statsFeature4: '🏅 解锁的成就',
+    statsOk: '我明白了',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ 你的回合开始了！',
+    turnConfirmWarning: '如果你不确认，你的回合将自动跳过。<br/>在{remaining}次强制跳过后，你将被断开连接。',
+    turnConfirmTimerLabel: '剩余时间',
+    turnConfirmButton: '确认回合',
+    
+    // Turn Start Popup
+    turnStartTitle: '你的回合！',
+    turnStartMessage: '轮到你玩了！你是{player}！',
+    turnStartButton: '确定',
+    
+    // Chat and History
+    chatTab: '💬 聊天',
+    historyTab: '📜 历史',
+    chatEmpty: '还没有消息。成为第一个聊天的人！',
+    historyEmpty: '还没有记录的操作。',
+    chatInputPlaceholder: '输入您的消息...',
+    chatSendButton: '发送',
+    
+    // Turn Buttons
+    endTurnButton: '结束回合',
+    endAttackButton: '结束攻击',
+    
+    // Player Cards and Game Summary
+    finalResult: '最终结果',
+    winner: '🏆 胜利者',
+    eliminated: '💀 已淘汰',
+    cpu: '🤖 CPU',
+    inactive: '❌ 非活跃',
+    active: '⚔️ 活跃',
+    victoryType: '胜利类型',
+    totalElimination: '完全淘汰',
+    objectiveComplete: '目标完成',
+    duration: '持续时间',
+    totalAttacks: '总攻击次数',
+    actionsSummary: '主要行动摘要',
+    noImportantActions: '没有记录重要行动',
+    
+    // Player Cards Modal
+    territories: '领土:',
+    troops: '军队:',
+    cards: '卡牌:',
+    status: '状态:',
+    human: '人类',
+    won: '获胜',
+    lost: '失败',
+    active: '活跃',
+    inactive: '非活跃',
+    currentTurn: '当前回合',
+    
+    // Objective Popup
+    objectiveTitle: '游戏目标',
+    objectiveClose: '关闭',
+    objectiveYourObjective: '🎯 你的目标',
+    objectiveLoading: '加载中...',
+    objectiveHint: '💡 提示：在整个游戏过程中记住你的目标！',
+    objectiveOk: '✅ 我明白了',
+    
+    // Cards Popup
+    cardsTitle: '领土卡牌',
+    cardsClose: '关闭',
+    cardsYourCards: '🎴 你的领土卡牌',
+    cardsInstructions: '点击卡牌进行选择（最多3张）',
+    cardsExchange: '🔄 交换卡牌',
+    
+    // Game Interface
+    troops: '部队',
+    reinforcement: '增援',
+    
+    // Bonus Text
+    bonus: '奖励',
+    
+    // Player Colors
+    blue: '蓝色',
+    red: '红色',
+    green: '绿色',
+    yellow: '黄色',
+    black: '黑色',
+    purple: '紫色',
+    
+    // Game Objectives
+    eliminateAllPlayers: '淘汰所有其他玩家',
+    conquerContinents: '征服{count}个完整大陆',
+    conquerTerritories: '征服{count}个领土',
+    conquerSpecificContinents: '征服{continent1}和{continent2}',
+    conquerAnyContinents: '征服{continent1}、{continent2}和任何其他',
+    eliminateAllAdversaries: '淘汰所有对手',
+    noObjectives: '没有记录的目标',
+    
+    // Reinforcement Popup
+    reinforceTitle: '增援领土',
+    reinforceClose: '关闭',
+    reinforceTerritoryTroops: '部队: {troops}',
+    reinforceQuantityLabel: '要添加的数量',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ 确认',
+    reinforceCancel: '❌ 取消',
+    objective: '目标',
+    cards: '卡牌',
+    endAttack: '结束攻击',
+    chat: '聊天',
+    selectTerritory: '选择要增援部队的领土',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: '等待游戏开始...',
+    gameInstructionsVictory: '🎉 恭喜！你赢了！',
+    gameInstructionsDefeat: '💀 你输了游戏！',
+    gameInstructionsRemanejamento: '🔄 选择领土来移动部队',
+    gameInstructionsPlaceBonus: '🎯 在大陆{continent}放置{bonus}个奖励部队',
+    gameInstructionsReinforce: '🎯 选择一个领土来增援部队',
+    gameInstructionsAttack: '⚔️ 选择你的一个领土和一个敌人来攻击',
+    gameInstructionsGameOver: '🎉 游戏结束！',
+    gameInstructionsWaitingPlayer: '⏳ 等待{player}...',
+    gameInstructionsCPUPlaying: '🤖 {player}正在游戏中...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Game Messages
+    playerEliminated: '玩家 {name} 被淘汰！',
+    turnPassed: '现在是玩家 {name} 的回合',
+    gameOver: '游戏结束！没有更多活跃玩家。',
+    territoryConquered: '{attacker} 征服了 {territory}',
+    troopsMoved: '{player} 将 {amount} 支部队从 {origin} 移动到 {destination}',
+    
+    // Victory/Defeat
+    victory: '胜利！',
+    defeat: '失败！',
+    victoryByElimination: '通过淘汰获胜！',
+    victoryByObjective: '通过目标获胜！',
+    
+    // Buttons
+    ok: '确定',
+    cancel: '取消',
+    close: '关闭',
+    confirm: '确认',
+    back: '返回',
+    
+    // Status
+    available: '可用',
+    unavailable: '不可用',
+    comingSoon: '即将推出',
+    workInProgress: '开发中'
+  },
+  
+  hi: { // Hindi (India)
+    // Login Screen
+    loginTitle: 'शुरू करने के लिए अपना नाम दर्ज करें',
+    usernameLabel: 'खिलाड़ी का नाम',
+    usernamePlaceholder: 'अपना नाम टाइप करें...',
+    countryLabel: 'अपना देश चुनें:',
+    continueButton: 'जारी रखें',
+    loginFooter: 'कनेक्ट करें और दुनिया पर राज करें!',
+    
+    // Mode Selection
+    modeSelectionTitle: 'मोड चुनें',
+    modeSelectionSubtitle: 'चुनें कि आप कैसे खेलना चाहते हैं',
+    skirmishMode: 'झड़प',
+    skirmishDescription: 'वैश्विक लॉबी से यादृच्छिक खिलाड़ियों के साथ त्वरित खेल',
+    dominiumMode: 'डोमिनियम',
+    dominiumDescription: 'अभियानों और प्रगति के साथ रणनीतिक मोड',
+    backToLogin: '← लॉगिन पर वापस जाएं',
+    
+    // Skirmish Mode
+    skirmishTitle: 'झड़प मोड',
+    skirmishSubtitle: 'दुनिया भर के खिलाड़ियों के साथ त्वरित और तीव्र खेल',
+    startMatch: 'मैच शुरू करें',
+    startMatchDescription: 'वैश्विक लॉबी में शामिल हों और अन्य खिलाड़ियों की प्रतीक्षा करें',
+    rankingGeneral: 'सामान्य रैंकिंग',
+    rankingDescription: 'सर्वश्रेष्ठ खिलाड़ियों और उनके आंकड़े देखें',
+    myStats: 'मेरे आंकड़े',
+    statsDescription: 'अपने खेल इतिहास और उपलब्धियों को देखें',
+    tutorial: 'ट्यूटोरियल',
+    tutorialDescription: 'खेल के नियम और रणनीतियां सीखें',
+    backToModes: '← मोड पर वापस जाएं',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 गेम ट्यूटोरियल',
+    tutorialSubtitle: 'दुनिया पर राज करने के लिए बुनियादी नियम और रणनीतियां सीखें!',
+    
+    // Tutorial Section 1: Game Objective
+    tutorialSection1Title: '🎯 गेम का उद्देश्य',
+    tutorialSection1Content: '<strong>क्षेत्रों को जीतें और महाद्वीपों पर राज करें!</strong>',
+    tutorialSection1List1: '🎯 <strong>मुख्य उद्देश्य:</strong> गेम जीतने के लिए अपने उद्देश्यों को पूरा करें',
+    tutorialSection1List2: '🗺️ <strong>मानचित्र:</strong> दुनिया क्षेत्रों और महाद्वीपों में विभाजित',
+    tutorialSection1List3: '⚔️ <strong>युद्ध:</strong> दुश्मन क्षेत्रों पर हमला करने के लिए अपनी सेना का उपयोग करें',
+    tutorialSection1List4: '🏆 <strong>विजय:</strong> अंतिम जीवित रहें या अपना गुप्त उद्देश्य पूरा करें',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← पिछला',
+    tutorialNext: 'अगला →',
+    tutorialFinish: 'समाप्त करें',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← स्किरमिश पर वापस जाएं',
+    tutorialStartGame: '🎮 खेलना शुरू करें',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 वैश्विक लॉबी',
+    lobbySubtitle: 'खिलाड़ियों के कनेक्ट होने की प्रतीक्षा...',
+    lobbyTimerLabel: 'शेष समय',
+    lobbyPlayersTitle: 'कनेक्टेड खिलाड़ी',
+    lobbyStatusWaiting: 'अधिक खिलाड़ियों की प्रतीक्षा...',
+    lobbyStatusAllConnected: 'सभी खिलाड़ी कनेक्टेड! गेम शुरू हो रहा है...',
+    lobbyStatusCreating: 'रूम बना रहा है और गेम शुरू हो रहा है...',
+    lobbyStatusPlayers: '{connected}/{total} खिलाड़ी कनेक्टेड। अधिक खिलाड़ियों की प्रतीक्षा...',
+    lobbyFooter: 'गेम 30 सेकंड में या सभी खिलाड़ियों के कनेक्ट होने पर स्वचालित रूप से शुरू होगा',
+    lobbyPlayerConnected: 'कनेक्टेड',
+    lobbyPlayerCPU: 'CPU',
+    
+    // Game HUD
+    playerStatsFormat: 'सैनिक: {troops} | सुदृढीकरण: {reinforcement}',
+    gameInstructionsWaiting: 'गेम शुरू होने की प्रतीक्षा...',
+    btnObjective: 'उद्देश्य',
+    btnCards: 'कार्ड',
+    btnTurn: 'टर्न समाप्त करें',
+    
+    // Info Popups
+    infoClose: 'बंद करें',
+    infoOk: 'ठीक है',
+    infoWarning: 'चेतावनी',
+    infoMessage: 'संदेश',
+    
+    // Victory Popup
+    victoryTitle: '🏆 विजय',
+    victoryMessage: 'बधाई हो! आप जीत गए!',
+    victorySummaryTitle: '📊 गेम का अंतिम सारांश',
+    victoryPlayersTitle: '👥 खिलाड़ियों के परिणाम',
+    victoryObjectivesTitle: '🎯 खिलाड़ियों के उद्देश्य',
+    victoryBackToMenu: '🏠 मेनू पर वापस जाएं',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 सामान्य रैंकिंग',
+    rankingMessage: 'यह सुविधा जल्द ही लागू की जाएगी!',
+    rankingFeatures: 'आप देख सकेंगे:',
+    rankingFeature1: '🏅 जीत के अनुसार शीर्ष खिलाड़ी',
+    rankingFeature2: '📊 गेम आंकड़े',
+    rankingFeature3: '🏆 उपलब्धियां और पदक',
+    rankingFeature4: '📈 मैच इतिहास',
+    rankingOk: 'मैं समझ गया',
+    
+    // Stats Popup
+    statsTitle: '📊 मेरे आंकड़े',
+    statsMessage: 'यह सुविधा जल्द ही लागू की जाएगी!',
+    
+    // Objective Popup
+    objectiveTitle: 'गेम का उद्देश्य',
+    objectiveClose: 'बंद करें',
+    objectiveYourObjective: '🎯 आपका उद्देश्य',
+    objectiveLoading: 'लोड हो रहा है...',
+    objectiveHint: '💡 टिप: पूरे गेम में अपना उद्देश्य याद रखें!',
+    objectiveOk: '✅ मैं समझ गया',
+    
+    // Cards Popup
+    cardsTitle: 'क्षेत्र कार्ड',
+    cardsClose: 'बंद करें',
+    cardsYourCards: '🎴 आपके क्षेत्र कार्ड',
+    cardsInstructions: 'कार्ड चुनने के लिए क्लिक करें (अधिकतम 3)',
+    cardsExchange: '🔄 कार्ड बदलें',
+    statsFeatures: 'आप देख सकेंगे:',
+    statsFeature1: '🎮 कुल खेले गए गेम',
+    statsFeature2: '📈 जीत की दर',
+    statsFeature3: '🗺️ जीते गए क्षेत्र',
+    statsFeature4: '🏅 अनलॉक की गई उपलब्धियां',
+    statsOk: 'मैं समझ गया',
+    
+    // Game Interface
+    troops: 'सैनिक',
+    reinforcement: 'सुदृढीकरण',
+    
+    // Bonus Text
+    bonus: 'बोनस',
+    
+    // Player Colors
+    blue: 'नीला',
+    red: 'लाल',
+    green: 'हरा',
+    yellow: 'पीला',
+    black: 'काला',
+    purple: 'बैंगनी',
+    
+    // Game Objectives
+    eliminateAllPlayers: 'सभी अन्य खिलाड़ियों को हटाएं',
+    conquerContinents: '{count} पूर्ण महाद्वीपों पर विजय प्राप्त करें',
+    conquerTerritories: '{count} क्षेत्रों पर विजय प्राप्त करें',
+    conquerSpecificContinents: '{continent1} और {continent2} पर विजय प्राप्त करें',
+    conquerAnyContinents: '{continent1}, {continent2} और कोई अन्य पर विजय प्राप्त करें',
+    eliminateAllAdversaries: 'सभी प्रतिद्वंद्वियों को हटाएं',
+    noObjectives: 'कोई उद्देश्य दर्ज नहीं किया गया',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'क्षेत्र को मजबूत करें',
+    reinforceClose: 'बंद करें',
+    reinforceTerritoryTroops: 'सैनिक: {troops}',
+    reinforceQuantityLabel: 'जोड़ने की मात्रा',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ पुष्टि करें',
+    reinforceCancel: '❌ रद्द करें',
+    objective: 'उद्देश्य',
+    cards: 'कार्ड',
+    endAttack: 'हमला समाप्त करें',
+    chat: 'चैट',
+    selectTerritory: 'सैनिकों को मजबूत करने के लिए एक क्षेत्र चुनें',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'गेम शुरू होने की प्रतीक्षा...',
+    gameInstructionsVictory: '🎉 बधाई हो! आप जीत गए!',
+    gameInstructionsDefeat: '💀 आप गेम हार गए!',
+    gameInstructionsRemanejamento: '🔄 ट्रूप्स को स्थानांतरित करने के लिए क्षेत्र चुनें',
+    gameInstructionsPlaceBonus: '🎯 महाद्वीप {continent} में {bonus} बोनस ट्रूप्स रखें',
+    gameInstructionsReinforce: '🎯 ट्रूप्स को मजबूत करने के लिए एक क्षेत्र चुनें',
+    gameInstructionsAttack: '⚔️ हमला करने के लिए अपना एक क्षेत्र और एक दुश्मन चुनें',
+    gameInstructionsGameOver: '🎉 गेम समाप्त!',
+    gameInstructionsWaitingPlayer: '⏳ {player} की प्रतीक्षा...',
+    gameInstructionsCPUPlaying: '🤖 {player} खेल रहा है...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Game Messages
+    playerEliminated: 'खिलाड़ी {name} को हटा दिया गया!',
+    turnPassed: 'अब खिलाड़ी {name} की बारी है',
+    gameOver: 'खेल समाप्त! कोई और सक्रिय खिलाड़ी नहीं है।',
+    territoryConquered: '{attacker} ने {territory} को जीत लिया',
+    troopsMoved: '{player} ने {amount} सैनिकों को {origin} से {destination} तक स्थानांतरित किया',
+    
+    // Victory/Defeat
+    victory: 'विजय!',
+    defeat: 'हार!',
+    victoryByElimination: 'हटाने से विजय!',
+    victoryByObjective: 'उद्देश्य से विजय!',
+    
+    // Buttons
+    ok: 'ठीक है',
+    cancel: 'रद्द करें',
+    close: 'बंद करें',
+    confirm: 'पुष्टि करें',
+    back: 'वापस',
+    
+    // Status
+    available: 'उपलब्ध',
+    unavailable: 'अनुपलब्ध',
+    comingSoon: 'जल्द आ रहा है',
+    workInProgress: 'विकास में',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ आपकी बारी शुरू हो गई है!',
+    turnConfirmWarning: 'यदि आप पुष्टि नहीं करते हैं, तो आपकी बारी स्वचालित रूप से पास हो जाएगी।<br/>{remaining} जबरन पास के बाद, आपको डिस्कनेक्ट कर दिया जाएगा।',
+    turnConfirmTimerLabel: 'शेष समय',
+    turnConfirmButton: 'बारी की पुष्टि करें',
+    
+    // Turn Start Popup
+    turnStartTitle: 'आपकी बारी!',
+    turnStartMessage: 'खेलने की आपकी बारी है! आप {player} हैं!',
+    turnStartButton: 'ठीक है',
+    
+    // Chat and History
+    chatTab: '💬 चैट',
+    historyTab: '📜 इतिहास',
+    chatEmpty: 'अभी तक कोई संदेश नहीं। पहले बातचीत शुरू करने वाले बनें!',
+    historyEmpty: 'अभी तक कोई कार्रवाई दर्ज नहीं हुई।',
+    chatInputPlaceholder: 'अपना संदेश टाइप करें...',
+    chatSendButton: 'भेजें',
+    
+    // Turn Buttons
+    endTurnButton: 'टर्न समाप्त करें',
+    endAttackButton: 'हमला समाप्त करें',
+    
+    // Player Cards and Game Summary
+    finalResult: 'अंतिम परिणाम',
+    winner: '🏆 विजेता',
+    eliminated: '💀 हटाया गया',
+    cpu: '🤖 CPU',
+    inactive: '❌ निष्क्रिय',
+    active: '⚔️ सक्रिय',
+    victoryType: 'विजय का प्रकार',
+    totalElimination: 'कुल उन्मूलन',
+    objectiveComplete: 'उद्देश्य पूरा',
+    duration: 'अवधि',
+    totalAttacks: 'कुल हमले',
+    actionsSummary: 'मुख्य कार्यों का सारांश',
+    noImportantActions: 'कोई महत्वपूर्ण कार्य दर्ज नहीं किया गया',
+    
+    // Player Cards Modal
+    territories: 'क्षेत्र:',
+    troops: 'सैनिक:',
+    cards: 'कार्ड:',
+    status: 'स्थिति:',
+    human: 'मानव',
+    won: 'जीता',
+    lost: 'हारा',
+    active: 'सक्रिय',
+    inactive: 'निष्क्रिय',
+    currentTurn: 'वर्तमान टर्न'
+  },
+  
+  de: { // German
+    // Login Screen
+    loginTitle: 'Geben Sie Ihren Namen ein, um zu beginnen',
+    usernameLabel: 'Spielername',
+    usernamePlaceholder: 'Geben Sie Ihren Namen ein...',
+    countryLabel: 'Wählen Sie Ihr Land:',
+    continueButton: 'WEITER',
+    loginFooter: 'Verbinden Sie sich und dominieren Sie die Welt!',
+    
+    // Mode Selection
+    modeSelectionTitle: 'Modus auswählen',
+    modeSelectionSubtitle: 'Wählen Sie, wie Sie spielen möchten',
+    skirmishMode: 'Gefecht',
+    skirmishDescription: 'Schnelles Spiel mit zufälligen Spielern aus der globalen Lobby',
+    dominiumMode: 'Dominium',
+    dominiumDescription: 'Strategischer Modus mit Kampagnen und Fortschritt',
+    backToLogin: '← Zurück zum Login',
+    
+    // Skirmish Mode
+    skirmishTitle: 'Gefechtsmodus',
+    skirmishSubtitle: 'Schnelles und intensives Spiel mit Spielern aus der ganzen Welt',
+    startMatch: 'Spiel starten',
+    startMatchDescription: 'Treten Sie der globalen Lobby bei und warten Sie auf andere Spieler',
+    rankingGeneral: 'Allgemeine Rangliste',
+    rankingDescription: 'Sehen Sie die besten Spieler und ihre Statistiken',
+    myStats: 'Meine Statistiken',
+    statsDescription: 'Sehen Sie Ihren Spielverlauf und Ihre Erfolge',
+    tutorial: 'Tutorial',
+    tutorialDescription: 'Lernen Sie die Regeln und Strategien des Spiels',
+    backToModes: '← Zurück zu den Modi',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 Spiel-Tutorial',
+    tutorialSubtitle: 'Lernen Sie die grundlegenden Regeln und Strategien, um die Welt zu dominieren!',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← Zurück',
+    tutorialNext: 'Weiter →',
+    tutorialFinish: 'Beenden',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← Zurück zum Gefecht',
+    tutorialStartGame: '🎮 Spielen beginnen',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 Globales Lobby',
+    lobbySubtitle: 'Warten auf Spielerverbindungen...',
+    lobbyTimerLabel: 'Verbleibende Zeit',
+    lobbyPlayersTitle: 'Verbundene Spieler',
+    lobbyStatusWaiting: 'Warten auf weitere Spieler...',
+    lobbyStatusAllConnected: 'Alle Spieler verbunden! Spiel startet...',
+    lobbyStatusCreating: 'Raum wird erstellt und Spiel startet...',
+    lobbyStatusPlayers: '{connected}/{total} Spieler verbunden. Warten auf weitere Spieler...',
+    lobbyFooter: 'Das Spiel startet automatisch in 30 Sekunden oder wenn alle Spieler verbunden sind',
+    lobbyPlayerConnected: 'Verbunden',
+    lobbyPlayerCPU: 'KI',
+    
+    // Game HUD
+    playerStatsFormat: 'Truppen: {troops} | Verstärkung: {reinforcement}',
+    gameInstructionsWaiting: 'Warten auf Spielstart...',
+    btnObjective: 'Ziel',
+    btnCards: 'Karten',
+    btnTurn: 'Zug beenden',
+    
+    // Info Popups
+    infoClose: 'Schließen',
+    infoOk: 'OK',
+    infoWarning: 'Warnung',
+    infoMessage: 'Nachricht',
+    
+    // Victory Popup
+    victoryTitle: '🏆 Sieg',
+    victoryMessage: 'Glückwunsch! Du hast gewonnen!',
+    victorySummaryTitle: '📊 Spielzusammenfassung',
+    victoryPlayersTitle: '👥 Spielergebnisse',
+    victoryObjectivesTitle: '🎯 Spielerziele',
+    victoryBackToMenu: '🏠 Zum Menü zurück',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 Allgemeine Rangliste',
+    rankingMessage: 'Diese Funktion wird bald implementiert!',
+    rankingFeatures: 'Sie werden sehen können:',
+    rankingFeature1: '🏅 Top-Spieler nach Siegen',
+    rankingFeature2: '📊 Spielstatistiken',
+    rankingFeature3: '🏆 Erfolge und Medaillen',
+    rankingFeature4: '📈 Spielverlauf',
+    rankingOk: 'Ich verstehe',
+    
+    // Stats Popup
+    statsTitle: '📊 Meine Statistiken',
+    statsMessage: 'Diese Funktion wird bald implementiert!',
+    statsFeatures: 'Sie werden sehen können:',
+    statsFeature1: '🎮 Gespielte Spiele insgesamt',
+    statsFeature2: '📈 Gewinnrate',
+    statsFeature3: '🗺️ Eroberte Gebiete',
+    statsFeature4: '🏅 Freigeschaltete Erfolge',
+    statsOk: 'Ich verstehe',
+    
+    // Objective Popup
+    objectiveTitle: 'Spielziel',
+    objectiveClose: 'Schließen',
+    objectiveYourObjective: '🎯 Ihr Ziel',
+    objectiveLoading: 'Laden...',
+    objectiveHint: '💡 Tipp: Denken Sie während des gesamten Spiels an Ihr Ziel!',
+    objectiveOk: '✅ Ich verstehe',
+    
+    // Cards Popup
+    cardsTitle: 'Territoriumskarten',
+    cardsClose: 'Schließen',
+    cardsYourCards: '🎴 Ihre Territoriumskarten',
+    cardsInstructions: 'Klicken Sie auf Karten zur Auswahl (Maximum 3)',
+    cardsExchange: '🔄 Karten tauschen',
+    
+    // Game Interface
+    troops: 'Truppen',
+    reinforcement: 'Verstärkung',
+    
+    // Bonus Text
+    bonus: 'Bonus',
+    
+    // Player Colors
+    blue: 'Blau',
+    red: 'Rot',
+    green: 'Grün',
+    yellow: 'Gelb',
+    black: 'Schwarz',
+    purple: 'Lila',
+    
+    // Game Objectives
+    eliminateAllPlayers: 'Alle anderen Spieler eliminieren',
+    conquerContinents: '{count} vollständige Kontinente erobern',
+    conquerTerritories: '{count} Gebiete erobern',
+    conquerSpecificContinents: '{continent1} und {continent2} erobern',
+    conquerAnyContinents: '{continent1}, {continent2} und jeden anderen erobern',
+    eliminateAllAdversaries: 'Alle Gegner eliminieren',
+    noObjectives: 'Keine Ziele aufgezeichnet',
+    
+    // Reinforcement Popup
+    reinforceTitle: 'Gebiet verstärken',
+    reinforceClose: 'Schließen',
+    reinforceTerritoryTroops: 'Truppen: {troops}',
+    reinforceQuantityLabel: 'Menge hinzufügen',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ Bestätigen',
+    reinforceCancel: '❌ Abbrechen',
+    objective: 'Ziel',
+    cards: 'Karten',
+    endAttack: 'Angriff beenden',
+    chat: 'Chat',
+    selectTerritory: 'Wählen Sie ein Territorium aus, um Truppen zu verstärken',
+    
+    // Game Messages
+    playerEliminated: 'Spieler {name} wurde eliminiert!',
+    turnPassed: 'Jetzt ist Spieler {name} an der Reihe',
+    gameOver: 'Spiel vorbei! Es gibt keine aktiven Spieler mehr.',
+    territoryConquered: '{attacker} hat {territory} erobert',
+    troopsMoved: '{player} hat {amount} Truppen von {origin} nach {destination} bewegt',
+    
+    // Victory/Defeat
+    victory: 'Sieg!',
+    defeat: 'Niederlage!',
+    victoryByElimination: 'Sieg durch Eliminierung!',
+    victoryByObjective: 'Sieg durch Ziel!',
+    
+    // Buttons
+    ok: 'OK',
+    cancel: 'Abbrechen',
+    close: 'Schließen',
+    confirm: 'Bestätigen',
+    back: 'Zurück',
+    
+    // Status
+    available: 'Verfügbar',
+    unavailable: 'Nicht verfügbar',
+    comingSoon: 'Demnächst',
+    workInProgress: 'In Entwicklung',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'Warten auf Spielstart...',
+    gameInstructionsVictory: '🎉 Glückwunsch! Du hast gewonnen!',
+    gameInstructionsDefeat: '💀 Du hast das Spiel verloren!',
+    gameInstructionsRemanejamento: '🔄 Wählen Sie Gebiete aus, um Truppen zu bewegen',
+    gameInstructionsPlaceBonus: '🎯 Platzieren Sie {bonus} Bonus-Truppen auf dem Kontinent {continent}',
+    gameInstructionsReinforce: '🎯 Wählen Sie ein Gebiet aus, um Truppen zu verstärken',
+    gameInstructionsAttack: '⚔️ Wählen Sie eines Ihrer Gebiete und einen Feind zum Angriff',
+    gameInstructionsGameOver: '🎉 Spiel beendet!',
+    gameInstructionsWaitingPlayer: '⏳ Warten auf {player}...',
+    gameInstructionsCPUPlaying: '🤖 {player} spielt...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ IHR ZUG HAT BEGONNEN!',
+    turnConfirmWarning: 'Wenn Sie nicht bestätigen, wird Ihr Zug automatisch übersprungen.<br/>Nach {remaining} erzwungenen Überspringungen werden Sie getrennt.',
+    turnConfirmTimerLabel: 'Verbleibende Zeit',
+    turnConfirmButton: 'ZUG BESTÄTIGEN',
+    
+    // Turn Start Popup
+    turnStartTitle: 'IHR ZUG!',
+    turnStartMessage: 'Es ist Ihre Runde zu spielen! Sie sind {player}!',
+    turnStartButton: 'OK',
+    
+    // Chat and History
+    chatTab: '💬 Chat',
+    historyTab: '📜 Verlauf',
+    chatEmpty: 'Noch keine Nachrichten. Seien Sie der Erste, der chattet!',
+    historyEmpty: 'Noch keine Aktionen aufgezeichnet.',
+    chatInputPlaceholder: 'Geben Sie Ihre Nachricht ein...',
+    chatSendButton: 'Senden',
+    
+    // Turn Buttons
+    endTurnButton: 'Zug beenden',
+    endAttackButton: 'Angriff beenden',
+    
+    // Player Cards and Game Summary
+    finalResult: 'ENDERGEBNIS',
+    winner: '🏆 GEWINNER',
+    eliminated: '💀 ELIMINIERT',
+    cpu: '🤖 KI',
+    inactive: '❌ INAKTIV',
+    active: '⚔️ AKTIV',
+    victoryType: 'Siegtyp',
+    totalElimination: 'Vollständige Eliminierung',
+    objectiveComplete: 'Ziel erreicht',
+    duration: 'Dauer',
+    totalAttacks: 'Gesamte Angriffe',
+    actionsSummary: 'ZUSAMMENFASSUNG DER HAUPTAKTIONEN',
+    noImportantActions: 'Keine wichtigen Aktionen aufgezeichnet',
+    
+    // Player Cards Modal
+    territories: 'Territorien:',
+    troops: 'Truppen:',
+    cards: 'Karten:',
+    status: 'Status:',
+    human: 'Mensch',
+    won: 'Gewonnen',
+    lost: 'Verloren',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    currentTurn: 'AKTUELLER ZUG'
+  },
+  
+  ja: { // Japanese
+    // Login Screen
+    loginTitle: '開始するには名前を入力してください',
+    usernameLabel: 'プレイヤー名',
+    usernamePlaceholder: '名前を入力してください...',
+    countryLabel: '国を選択してください:',
+    continueButton: '続行',
+    loginFooter: '接続して世界を支配しましょう！',
+    
+    // Mode Selection
+    modeSelectionTitle: 'モード選択',
+    modeSelectionSubtitle: 'プレイ方法を選択してください',
+    skirmishMode: 'スカーミッシュ',
+    skirmishDescription: 'グローバルロビーからランダムプレイヤーとのクイックゲーム',
+    dominiumMode: 'ドミニウム',
+    dominiumDescription: 'キャンペーンと進行を伴う戦略モード',
+    backToLogin: '← ログインに戻る',
+    
+    // Skirmish Mode
+    skirmishTitle: 'スカーミッシュモード',
+    skirmishSubtitle: '世界中のプレイヤーとの高速で激しいゲーム',
+    startMatch: 'マッチ開始',
+    startMatchDescription: 'グローバルロビーに参加して他のプレイヤーを待つ',
+    rankingGeneral: '総合ランキング',
+    rankingDescription: '最高のプレイヤーとその統計を見る',
+    myStats: 'マイ統計',
+    statsDescription: 'ゲーム履歴と実績を表示',
+    tutorial: 'チュートリアル',
+    tutorialDescription: 'ゲームのルールと戦略を学ぶ',
+    backToModes: '← モードに戻る',
+    
+    // Tutorial Screen
+    tutorialTitle: '📚 ゲームチュートリアル',
+    tutorialSubtitle: '世界を支配するための基本的なルールと戦略を学びましょう！',
+    
+    // Tutorial Navigation
+    tutorialPrevious: '← 前へ',
+    tutorialNext: '次へ →',
+    tutorialFinish: '完了',
+    
+    // Tutorial Actions
+    tutorialBackToSkirmish: '← スカーミッシュに戻る',
+    tutorialStartGame: '🎮 プレイ開始',
+    
+    // Lobby Screen
+    lobbyTitle: '🎮 グローバルロビー',
+    lobbySubtitle: 'プレイヤーの接続を待機中...',
+    lobbyTimerLabel: '残り時間',
+    lobbyPlayersTitle: '接続済みプレイヤー',
+    lobbyStatusWaiting: '他のプレイヤーを待機中...',
+    lobbyStatusAllConnected: '全プレイヤー接続済み！ゲーム開始...',
+    lobbyStatusPlayers: '{connected}/{total} プレイヤー接続済み。他のプレイヤーを待機中...',
+    lobbyFooter: 'ゲームは30秒後に自動開始、または全プレイヤー接続時に開始',
+    lobbyPlayerConnected: '接続済み',
+    lobbyPlayerCPU: 'CPU',
+    
+    // Game HUD
+    playerStatsFormat: '部隊: {troops} | 増援: {reinforcement}',
+    gameInstructionsWaiting: 'ゲーム開始を待機中...',
+    btnObjective: '目標',
+    btnCards: 'カード',
+    btnTurn: 'ターン終了',
+    
+    // Info Popups
+    infoClose: '閉じる',
+    infoOk: 'OK',
+    infoWarning: '警告',
+    infoMessage: 'メッセージ',
+    
+    // Victory Popup
+    victoryTitle: '🏆 勝利',
+    victoryMessage: 'おめでとう！あなたの勝ちです！',
+    victorySummaryTitle: '📊 ゲーム最終サマリー',
+    victoryPlayersTitle: '👥 プレイヤー結果',
+    victoryObjectivesTitle: '🎯 プレイヤー目標',
+    victoryBackToMenu: '🏠 メニューに戻る',
+    
+    // Ranking Popup
+    rankingTitle: '🏆 総合ランキング',
+    rankingMessage: 'この機能は近日実装予定です！',
+    rankingFeatures: '以下の内容が表示されます:',
+    rankingFeature1: '🏅 勝利数によるトッププレイヤー',
+    rankingFeature2: '📊 ゲーム統計',
+    rankingFeature3: '🏆 実績とメダル',
+    rankingFeature4: '📈 マッチ履歴',
+    rankingOk: '理解しました',
+    
+    // Stats Popup
+    statsTitle: '📊 マイ統計',
+    statsMessage: 'この機能は近日実装予定です！',
+    statsFeatures: '以下の内容が表示されます:',
+    statsFeature1: '🎮 総プレイゲーム数',
+    statsFeature2: '📈 勝率',
+    statsFeature3: '🗺️ 征服した領土',
+    statsFeature4: '🏅 アンロックした実績',
+    statsOk: '理解しました',
+    
+    // Objective Popup
+    objectiveTitle: 'ゲーム目標',
+    objectiveClose: '閉じる',
+    objectiveYourObjective: '🎯 あなたの目標',
+    objectiveLoading: '読み込み中...',
+    objectiveHint: '💡 ヒント：ゲーム全体を通して目標を覚えておきましょう！',
+    objectiveOk: '✅ 理解しました',
+    
+    // Cards Popup
+    cardsTitle: '領土カード',
+    cardsClose: '閉じる',
+    cardsYourCards: '🎴 あなたの領土カード',
+    cardsInstructions: 'カードをクリックして選択（最大3枚）',
+    cardsExchange: '🔄 カード交換',
+    
+    // Game Interface
+    troops: '部隊',
+    reinforcement: '増援',
+    
+    // Bonus Text
+    bonus: 'ボーナス',
+    
+    // Player Colors
+    blue: '青',
+    red: '赤',
+    green: '緑',
+    yellow: '黄',
+    black: '黒',
+    purple: '紫',
+    
+    // Game Objectives
+    eliminateAllPlayers: '他のすべてのプレイヤーを排除する',
+    conquerContinents: '{count}個の完全な大陸を征服する',
+    conquerTerritories: '{count}個の領土を征服する',
+    conquerSpecificContinents: '{continent1}と{continent2}を征服する',
+    conquerAnyContinents: '{continent1}、{continent2}とその他のいずれかを征服する',
+    eliminateAllAdversaries: 'すべての敵を排除する',
+    noObjectives: '記録された目標はありません',
+    
+    // Reinforcement Popup
+    reinforceTitle: '領土を強化',
+    reinforceClose: '閉じる',
+    reinforceTerritoryTroops: '部隊: {troops}',
+    reinforceQuantityLabel: '追加する数量',
+    reinforceQuantity: '{current}/{max}',
+    reinforceConfirm: '✅ 確認',
+    reinforceCancel: '❌ キャンセル',
+    objective: '目標',
+    cards: 'カード',
+    endAttack: '攻撃終了',
+    chat: 'チャット',
+    selectTerritory: '部隊を強化する領土を選択してください',
+    
+    // Game Messages
+    playerEliminated: 'プレイヤー {name} が排除されました！',
+    turnPassed: '今度はプレイヤー {name} の番です',
+    gameOver: 'ゲーム終了！アクティブなプレイヤーはもういません。',
+    territoryConquered: '{attacker} が {territory} を征服しました',
+    troopsMoved: '{player} が {amount} 部隊を {origin} から {destination} に移動しました',
+    
+    // Victory/Defeat
+    victory: '勝利！',
+    defeat: '敗北！',
+    victoryByElimination: '排除による勝利！',
+    victoryByObjective: '目標による勝利！',
+    
+    // Buttons
+    ok: 'OK',
+    cancel: 'キャンセル',
+    close: '閉じる',
+    confirm: '確認',
+    back: '戻る',
+    
+    // Status
+    available: '利用可能',
+    unavailable: '利用不可',
+    comingSoon: '近日公開',
+    workInProgress: '開発中',
+    
+    // Game Instructions (HUD)
+    gameInstructionsWaiting: 'ゲーム開始を待機中...',
+    gameInstructionsVictory: '🎉 おめでとう！あなたの勝ちです！',
+    gameInstructionsDefeat: '💀 ゲームに負けました！',
+    gameInstructionsRemanejamento: '🔄 部隊を移動するために領土を選択してください',
+    gameInstructionsPlaceBonus: '🎯 大陸{continent}に{bonus}個のボーナス部隊を配置してください',
+    gameInstructionsReinforce: '🎯 部隊を強化するために領土を選択してください',
+    gameInstructionsAttack: '⚔️ 攻撃するためにあなたの領土の1つと敵を選択してください',
+    gameInstructionsGameOver: '🎉 ゲーム終了！',
+    gameInstructionsWaitingPlayer: '⏳ {player}を待機中...',
+    gameInstructionsTurnIndicator: '🔄',
+    gameInstructionsMyTurn: '⚔️',
+    gameInstructionsNotMyTurn: '⏳',
+    
+    // Turn Confirmation Overlay
+    turnConfirmTitle: '⚔️ あなたのターンが始まりました！',
+    turnConfirmWarning: '確認しない場合、あなたのターンは自動的にスキップされます。<br/>{remaining}回の強制スキップ後、切断されます。',
+    turnConfirmTimerLabel: '残り時間',
+    turnConfirmButton: 'ターンを確認',
+    
+    // Turn Start Popup
+    turnStartTitle: 'あなたのターン！',
+    turnStartMessage: 'プレイする番です！あなたは{player}です！',
+    turnStartButton: 'OK',
+    
+    // Chat and History
+    chatTab: '💬 チャット',
+    historyTab: '📜 履歴',
+    chatEmpty: 'まだメッセージがありません。最初にチャットを始めましょう！',
+    historyEmpty: 'まだ記録されたアクションがありません。',
+    chatInputPlaceholder: 'メッセージを入力してください...',
+    chatSendButton: '送信',
+    
+    // Turn Buttons
+    endTurnButton: 'ターン終了',
+    endAttackButton: '攻撃終了',
+    
+    // Player Cards and Game Summary
+    finalResult: '最終結果',
+    winner: '🏆 勝利者',
+    eliminated: '💀 排除済み',
+    cpu: '🤖 CPU',
+    inactive: '❌ 非アクティブ',
+    active: '⚔️ アクティブ',
+    victoryType: '勝利タイプ',
+    totalElimination: '完全排除',
+    objectiveComplete: '目標完了',
+    duration: '期間',
+    totalAttacks: '総攻撃数',
+    actionsSummary: '主要アクション要約',
+    noImportantActions: '重要なアクションは記録されていません',
+    
+    // Player Cards Modal
+    territories: '領土:',
+    troops: '軍隊:',
+    cards: 'カード:',
+    status: 'ステータス:',
+    human: '人間',
+    won: '勝利',
+    lost: '敗北',
+    active: 'アクティブ',
+    inactive: '非アクティブ',
+    currentTurn: '現在のターン'
+  }
+};
+
+// Language mapping based on country selection
+const countryToLanguage = {
+  'US': 'en', // United States -> English
+  'BR': 'pt', // Brazil -> Portuguese
+  'RU': 'ru', // Russia -> Russian
+  'CN': 'zh', // China -> Chinese
+  'IN': 'hi', // India -> Hindi
+  'DE': 'de', // Germany -> German
+  'JP': 'ja'  // Japan -> Japanese
+};
+
+// Translation functions
+function getText(key, params = {}) {
+  const lang = currentLanguage || 'en';
+  const translations = gameTranslations[lang] || gameTranslations['en'];
+  let text = translations[key] || key;
+  
+  // Replace parameters in the text
+  Object.keys(params).forEach(param => {
+    text = text.replace(`{${param}}`, params[param]);
+  });
+  
+  return text;
+}
+
+function updateLanguage(newLanguage) {
+  if (currentLanguage === newLanguage) return;
+  
+  console.log(`🌍 Alterando idioma de ${currentLanguage} para ${newLanguage}`);
+  currentLanguage = newLanguage;
+  
+  // Update all UI elements
+  updateAllUITexts();
+}
+
+function updateAllUITexts() {
+  console.log('🌍 Atualizando todos os textos da interface...');
+  
+  // Login Screen
+  updateLoginScreenTexts();
+  
+  // Mode Selection Screen
+  updateModeSelectionTexts();
+  
+  // Skirmish Mode Screen
+  updateSkirmishModeTexts();
+  
+  // Tutorial Screen (if available)
+  updateTutorialTexts();
+  
+  // Lobby Screen (if available)
+  updateLobbyTexts();
+  
+  // Info Popups (always available)
+  updateInfoPopupsTexts();
+  
+  // Victory Popup (if available)
+  updateVictoryPopupTexts();
+  
+  // Game Popups (if available)
+  updateGamePopupsTexts();
+  
+  // Ranking and Stats Popups (always available)
+  updateRankingAndStatsPopupsTexts();
+  
+  // Turn Overlay (if available)
+  updateTurnOverlayTexts();
+  
+  // Chat and History (if available)
+  updateChatAndHistoryTexts();
+  
+  // Player Cards and Game Summary (if available)
+  updatePlayerCardsAndSummaryTexts();
+  
+  // Player Colors (if available)
+  updatePlayerColorsTexts();
+  
+  // Game Objectives (if available)
+  updateGameObjectivesTexts();
+  
+  // Game Interface (if available)
+  updateGameInterfaceTexts();
+  
+  console.log('✅ Todos os textos da interface foram atualizados');
+}
+
+// Update specific screen texts
+function updateLoginScreenTexts() {
+  // Update login header
+  const loginHeader = document.querySelector('.login-header p');
+  if (loginHeader) {
+    loginHeader.textContent = getText('loginTitle');
+  }
+  
+  // Update username label
+  const usernameLabel = document.querySelector('.input-group label[for="username"]');
+  if (usernameLabel) {
+    usernameLabel.textContent = getText('usernameLabel');
+  }
+  
+  // Update username placeholder
+  const usernameInput = document.getElementById('username');
+  if (usernameInput) {
+    usernameInput.placeholder = getText('usernamePlaceholder');
+  }
+  
+  // Update country label
+  const countryLabel = document.querySelector('.flag-selector-container label');
+  if (countryLabel) {
+    countryLabel.textContent = getText('countryLabel');
+  }
+  
+  // Update continue button
+  const continueButton = document.querySelector('.login-button span:last-child');
+  if (continueButton) {
+    continueButton.textContent = getText('continueButton');
+  }
+  
+  // Update login footer
+  const loginFooter = document.querySelector('.login-footer p');
+  if (loginFooter) {
+    loginFooter.textContent = getText('loginFooter');
+  }
+}
+
+function updateModeSelectionTexts() {
+  // Update mode selection header
+  const modeHeader = document.querySelector('.mode-selection-header h1');
+  if (modeHeader) {
+    modeHeader.textContent = getText('modeSelectionTitle');
+  }
+  
+  const modeSubtitle = document.querySelector('.mode-selection-header p');
+  if (modeSubtitle) {
+    modeSubtitle.textContent = getText('modeSelectionSubtitle');
+  }
+  
+  // Update skirmish mode
+  const skirmishTitle = document.querySelector('#mode-skirmish .mode-content h3');
+  if (skirmishTitle) {
+    skirmishTitle.textContent = getText('skirmishMode');
+  }
+  
+  const skirmishDesc = document.querySelector('#mode-skirmish .mode-content p');
+  if (skirmishDesc) {
+    skirmishDesc.textContent = getText('skirmishDescription');
+  }
+  
+  // Update dominium mode
+  const dominiumTitle = document.querySelector('#mode-dominium .mode-content h3');
+  if (dominiumTitle) {
+    dominiumTitle.textContent = getText('dominiumMode');
+  }
+  
+  const dominiumDesc = document.querySelector('#mode-dominium .mode-content p');
+  if (dominiumDesc) {
+    dominiumDesc.textContent = getText('dominiumDescription');
+  }
+  
+  // Update back button
+  const backButton = document.getElementById('back-to-login');
+  if (backButton) {
+    backButton.textContent = getText('backToLogin');
+  }
+}
+
+function updateSkirmishModeTexts() {
+  // Update skirmish header
+  const skirmishHeader = document.querySelector('.skirmish-mode-header h1');
+  if (skirmishHeader) {
+    skirmishHeader.textContent = getText('skirmishTitle');
+  }
+  
+  const skirmishSubtitle = document.querySelector('.skirmish-mode-header p');
+  if (skirmishSubtitle) {
+    skirmishSubtitle.textContent = getText('skirmishSubtitle');
+  }
+  
+  // Update start match
+  const startMatchTitle = document.querySelector('#skirmish-start-match .skirmish-option-content h3');
+  if (startMatchTitle) {
+    startMatchTitle.textContent = getText('startMatch');
+  }
+  
+  const startMatchDesc = document.querySelector('#skirmish-start-match .skirmish-option-content p');
+  if (startMatchDesc) {
+    startMatchDesc.textContent = getText('startMatchDescription');
+  }
+  
+  // Update ranking
+  const rankingTitle = document.querySelector('#skirmish-ranking .skirmish-option-content h3');
+  if (rankingTitle) {
+    rankingTitle.textContent = getText('rankingGeneral');
+  }
+  
+  const rankingDesc = document.querySelector('#skirmish-ranking .skirmish-option-content p');
+  if (rankingDesc) {
+    rankingDesc.textContent = getText('rankingDescription');
+  }
+  
+  // Update stats
+  const statsTitle = document.querySelector('#skirmish-stats .skirmish-option-content h3');
+  if (statsTitle) {
+    statsTitle.textContent = getText('myStats');
+  }
+  
+  const statsDesc = document.querySelector('#skirmish-stats .skirmish-option-content p');
+  if (statsDesc) {
+    statsDesc.textContent = getText('statsDescription');
+  }
+  
+  // Update tutorial
+  const tutorialTitle = document.querySelector('#skirmish-tutorial .skirmish-option-content h3');
+  if (tutorialTitle) {
+    tutorialTitle.textContent = getText('tutorial');
+  }
+  
+  const tutorialDesc = document.querySelector('#skirmish-tutorial .skirmish-option-content p');
+  if (tutorialDesc) {
+    tutorialDesc.textContent = getText('tutorialDescription');
+  }
+  
+  // Update back button
+  const backToModes = document.getElementById('back-to-mode-selection');
+  if (backToModes) {
+    backToModes.textContent = getText('backToModes');
+  }
+}
+
+function updateTutorialTexts() {
+  // Update tutorial header
+  const tutorialHeader = document.querySelector('.tutorial-header h1');
+  if (tutorialHeader) {
+    tutorialHeader.textContent = getText('tutorialTitle');
+  }
+  
+  const tutorialSubtitle = document.querySelector('.tutorial-header p');
+  if (tutorialSubtitle) {
+    tutorialSubtitle.textContent = getText('tutorialSubtitle');
+  }
+  
+  // Update tutorial section 1
+  const section1Title = document.querySelector('#tutorial-section-1 .tutorial-section-header h2');
+  if (section1Title) {
+    section1Title.textContent = getText('tutorialSection1Title');
+  }
+  
+  const section1Content = document.querySelector('#tutorial-section-1 .tutorial-text p:first-child');
+  if (section1Content) {
+    section1Content.innerHTML = getText('tutorialSection1Content');
+  }
+  
+  const section1List = document.querySelector('#tutorial-section-1 .tutorial-text ul');
+  if (section1List) {
+    section1List.innerHTML = `
+      <li>${getText('tutorialSection1List1')}</li>
+      <li>${getText('tutorialSection1List2')}</li>
+      <li>${getText('tutorialSection1List3')}</li>
+      <li>${getText('tutorialSection1List4')}</li>
+    `;
+  }
+  
+  // Update tutorial section 2
+  const section2Title = document.querySelector('#tutorial-section-2 .tutorial-section-header h2');
+  if (section2Title) {
+    section2Title.textContent = getText('tutorialSection2Title');
+  }
+  
+  const section2Content = document.querySelector('#tutorial-section-2 .tutorial-text p:first-child');
+  if (section2Content) {
+    section2Content.innerHTML = getText('tutorialSection2Content');
+  }
+  
+  const section2List = document.querySelector('#tutorial-section-2 .tutorial-text ol');
+  if (section2List) {
+    section2List.innerHTML = `
+      <li>${getText('tutorialSection2List1')}</li>
+      <li>${getText('tutorialSection2List2')}</li>
+      <li>${getText('tutorialSection2List3')}</li>
+    `;
+  }
+  
+  const section2Tip = document.querySelector('#tutorial-section-2 .tutorial-text p:last-child');
+  if (section2Tip) {
+    section2Tip.innerHTML = getText('tutorialSection2Tip');
+  }
+  
+  // Update tutorial section 3
+  const section3Title = document.querySelector('#tutorial-section-3 .tutorial-section-header h2');
+  if (section3Title) {
+    section3Title.textContent = getText('tutorialSection3Title');
+  }
+  
+  const section3Content = document.querySelector('#tutorial-section-3 .tutorial-text p:first-child');
+  if (section3Content) {
+    section3Content.innerHTML = getText('tutorialSection3Content');
+  }
+  
+  const section3List = document.querySelector('#tutorial-section-3 .tutorial-text ul');
+  if (section3List) {
+    section3List.innerHTML = `
+      <li>${getText('tutorialSection3List1')}</li>
+      <li>${getText('tutorialSection3List2')}</li>
+      <li>${getText('tutorialSection3List3')}</li>
+      <li>${getText('tutorialSection3List4')}</li>
+    `;
+  }
+  
+  const section3Tip = document.querySelector('#tutorial-section-3 .tutorial-text p:last-child');
+  if (section3Tip) {
+    section3Tip.innerHTML = getText('tutorialSection3Tip');
+  }
+  
+  // Update tutorial section 4
+  const section4Title = document.querySelector('#tutorial-section-4 .tutorial-section-header h2');
+  if (section4Title) {
+    section4Title.textContent = getText('tutorialSection4Title');
+  }
+  
+  const section4Content = document.querySelector('#tutorial-section-4 .tutorial-text p:first-child');
+  if (section4Content) {
+    section4Content.innerHTML = getText('tutorialSection4Content');
+  }
+  
+  const section4List = document.querySelector('#tutorial-section-4 .tutorial-text ul');
+  if (section4List) {
+    section4List.innerHTML = `
+      <li>${getText('tutorialSection4List1')}</li>
+      <li>${getText('tutorialSection4List2')}</li>
+      <li>${getText('tutorialSection4List3')}</li>
+      <li>${getText('tutorialSection4List4')}</li>
+      <li>${getText('tutorialSection4List5')}</li>
+    `;
+  }
+  
+  // Update tutorial section 5
+  const section5Title = document.querySelector('#tutorial-section-5 .tutorial-section-header h2');
+  if (section5Title) {
+    section5Title.textContent = getText('tutorialSection5Title');
+  }
+  
+  const section5Content = document.querySelector('#tutorial-section-5 .tutorial-text p:first-child');
+  if (section5Content) {
+    section5Content.innerHTML = getText('tutorialSection5Content');
+  }
+  
+  const section5List = document.querySelector('#tutorial-section-5 .tutorial-text ul');
+  if (section5List) {
+    section5List.innerHTML = `
+      <li>${getText('tutorialSection5List1')}</li>
+      <li>${getText('tutorialSection5List2')}</li>
+      <li>${getText('tutorialSection5List3')}</li>
+      <li>${getText('tutorialSection5List4')}</li>
+      <li>${getText('tutorialSection5List5')}</li>
+    `;
+  }
+  
+  // Update tutorial section 6
+  const section6Title = document.querySelector('#tutorial-section-6 .tutorial-section-header h2');
+  if (section6Title) {
+    section6Title.textContent = getText('tutorialSection6Title');
+  }
+  
+  const section6Content = document.querySelector('#tutorial-section-6 .tutorial-text p:first-child');
+  if (section6Content) {
+    section6Content.innerHTML = getText('tutorialSection6Content');
+  }
+  
+  const section6List = document.querySelector('#tutorial-section-6 .tutorial-text ul');
+  if (section6List) {
+    section6List.innerHTML = `
+      <li>${getText('tutorialSection6List1')}</li>
+      <li>${getText('tutorialSection6List2')}</li>
+      <li>${getText('tutorialSection6List3')}</li>
+      <li>${getText('tutorialSection6List4')}</li>
+    `;
+  }
+  
+  const section6Tip = document.querySelector('#tutorial-section-6 .tutorial-text p:last-child');
+  if (section6Tip) {
+    section6Tip.innerHTML = getText('tutorialSection6Tip');
+  }
+  
+  // Update navigation buttons
+  const prevBtn = document.getElementById('tutorial-prev');
+  if (prevBtn) {
+    prevBtn.textContent = getText('tutorialPrevious');
+  }
+  
+  const nextBtn = document.getElementById('tutorial-next');
+  if (nextBtn) {
+    nextBtn.textContent = getText('tutorialNext');
+  }
+  
+  // Update action buttons
+  const backBtn = document.getElementById('tutorial-back');
+  if (backBtn) {
+    backBtn.textContent = getText('tutorialBackToSkirmish');
+  }
+  
+  const startGameBtn = document.getElementById('tutorial-start-game');
+  if (startGameBtn) {
+    startGameBtn.textContent = getText('tutorialStartGame');
+  }
+}
+
+function updateLobbyTexts() {
+  // Update lobby header
+  const lobbyHeader = document.querySelector('.lobby-header h1');
+  if (lobbyHeader) {
+    lobbyHeader.textContent = getText('lobbyTitle');
+  }
+  
+  const lobbySubtitle = document.querySelector('.lobby-header p');
+  if (lobbySubtitle) {
+    lobbySubtitle.textContent = getText('lobbySubtitle');
+  }
+  
+  // Update lobby timer label
+  const lobbyTimerLabel = document.querySelector('.lobby-timer-label');
+  if (lobbyTimerLabel) {
+    lobbyTimerLabel.textContent = getText('lobbyTimerLabel');
+  }
+  
+  // Update lobby players title
+  const lobbyPlayersTitle = document.querySelector('.lobby-players-title');
+  if (lobbyPlayersTitle) {
+    lobbyPlayersTitle.textContent = getText('lobbyPlayersTitle');
+  }
+  
+  // Update lobby footer
+  const lobbyFooter = document.querySelector('.lobby-footer p');
+  if (lobbyFooter) {
+    lobbyFooter.textContent = getText('lobbyFooter');
+  }
+  
+  // Update game HUD elements
+  updateGameHUDTexts();
+}
+
+function updateGameHUDTexts() {
+  // Update player stats format (this will be used when updating stats)
+  // The actual stats update happens in updateCSSHUD() function
+  
+  // Update game instructions
+  const instructionText = document.getElementById('instruction-text');
+  if (instructionText) {
+    instructionText.textContent = getText('gameInstructionsWaiting');
+  }
+  
+  // Update HUD buttons
+  const btnObjective = document.getElementById('btn-objective');
+  if (btnObjective) {
+    const span = btnObjective.querySelector('span:last-child');
+    if (span) {
+      span.textContent = getText('btnObjective');
+    }
+  }
+  
+  const btnCards = document.getElementById('btn-cards');
+  if (btnCards) {
+    const span = btnCards.querySelector('span:last-child');
+    if (span) {
+      span.textContent = getText('btnCards');
+    }
+  }
+  
+  const btnTurn = document.getElementById('btn-turn');
+  if (btnTurn) {
+    const span = btnTurn.querySelector('span:last-child');
+    if (span) {
+      span.textContent = getText('btnTurn');
+    }
+  }
+}
+
+function updateInfoPopupsTexts() {
+  // Update all info popup elements
+  const infoCloseButtons = document.querySelectorAll('.info-close');
+  const infoOkButtons = document.querySelectorAll('.info-ok');
+  
+  // Update close buttons
+  infoCloseButtons.forEach(btn => {
+    btn.setAttribute('aria-label', getText('infoClose'));
+  });
+  
+  // Update OK buttons
+  infoOkButtons.forEach(btn => {
+    btn.textContent = getText('infoOk');
+  });
+  
+  // Update specific popup titles and messages
+  updateModeInfoPopupTexts();
+  updateServerErrorPopupTexts();
+  updateLoginErrorPopupTexts();
+  updateDominiumDevPopupTexts();
+}
+
+function updateModeInfoPopupTexts() {
+  const title = document.getElementById('mode-info-title');
+  if (title) {
+    title.textContent = getText('modeInfoTitle');
+  }
+}
+
+function updateServerErrorPopupTexts() {
+  const title = document.getElementById('server-error-title');
+  const message = document.getElementById('server-error-message');
+  const retryBtn = document.getElementById('server-error-ok');
+  
+  if (title) {
+    title.textContent = getText('serverErrorTitle');
+  }
+  
+  if (message) {
+    message.textContent = getText('serverErrorMessage');
+  }
+  
+  if (retryBtn) {
+    retryBtn.textContent = getText('serverErrorRetry');
+  }
+}
+
+function updateLoginErrorPopupTexts() {
+  const title = document.getElementById('login-error-title');
+  if (title) {
+    title.textContent = getText('loginErrorTitle');
+  }
+}
+
+function updateDominiumDevPopupTexts() {
+  const title = document.getElementById('dominium-dev-title');
+  const message = document.getElementById('dominium-dev-message');
+  const okBtn = document.getElementById('dominium-dev-ok');
+  
+  if (title) {
+    title.textContent = getText('dominiumDevTitle');
+  }
+  
+  if (message) {
+    message.textContent = getText('dominiumDevMessage');
+  }
+  
+  if (okBtn) {
+    okBtn.textContent = getText('dominiumDevOk');
+  }
+}
+
+function updateVictoryPopupTexts() {
+  const title = document.querySelector('.victory-header h3');
+  const message = document.getElementById('victory-message');
+  const summaryTitle = document.querySelector('.summary-title');
+  const playersTitle = document.querySelector('.players-title');
+  const objectivesTitle = document.querySelector('.objectives-title');
+  const backToMenuBtn = document.getElementById('victory-menu');
+  
+  if (title) {
+    title.textContent = getText('victoryTitle');
+  }
+  
+  if (message) {
+    message.textContent = getText('victoryMessage');
+  }
+  
+  if (summaryTitle) {
+    summaryTitle.textContent = getText('victorySummaryTitle');
+  }
+  
+  if (playersTitle) {
+    playersTitle.textContent = getText('victoryPlayersTitle');
+  }
+  
+  if (objectivesTitle) {
+    objectivesTitle.textContent = getText('victoryObjectivesTitle');
+  }
+  
+  if (backToMenuBtn) {
+    backToMenuBtn.textContent = getText('victoryBackToMenu');
+  }
+  
+  // Update game statistics labels
+  updateGameStatisticsTexts();
+}
+
+function updateGameStatisticsTexts() {
+  const durationLabel = document.querySelector('.stat-item:nth-child(1) .stat-label');
+  const attacksLabel = document.querySelector('.stat-item:nth-child(2) .stat-label');
+  const continentsLabel = document.querySelector('.stat-item:nth-child(3) .stat-label');
+  
+  if (durationLabel) {
+    durationLabel.textContent = getText('gameDuration');
+  }
+  
+  if (attacksLabel) {
+    attacksLabel.textContent = getText('totalAttacks');
+  }
+  
+  if (continentsLabel) {
+    continentsLabel.textContent = getText('continentsInDispute');
+  }
+}
+
+function updateGamePopupsTexts() {
+  // Update reinforcement popup
+  const reinforceTitle = document.getElementById('reinforce-title');
+  const reinforceClose = document.getElementById('reinforce-close');
+  const reinforceTerritoryTroops = document.getElementById('reinforce-territory-troops');
+  const reinforceQuantityLabel = document.querySelector('.reinforce-label');
+  const reinforceQuantity = document.getElementById('reinforce-qty');
+  const reinforceConfirm = document.getElementById('reinforce-confirm');
+  const reinforceCancel = document.getElementById('reinforce-cancel');
+  
+  if (reinforceTitle) {
+    reinforceTitle.textContent = getText('reinforceTitle');
+  }
+  
+  if (reinforceClose) {
+    reinforceClose.textContent = getText('reinforceClose');
+  }
+  
+  if (reinforceQuantityLabel) {
+    reinforceQuantityLabel.textContent = getText('reinforceQuantityLabel');
+  }
+  
+  if (reinforceConfirm) {
+    reinforceConfirm.textContent = getText('reinforceConfirm');
+  }
+  
+  if (reinforceCancel) {
+    reinforceCancel.textContent = getText('reinforceCancel');
+  }
+  
+  // Update reinforcement territory troops if available
+  if (reinforceTerritoryTroops) {
+    const currentTroops = reinforceTerritoryTroops.textContent.match(/\d+/);
+    if (currentTroops) {
+      reinforceTerritoryTroops.textContent = getText('reinforceTerritoryTroops', { troops: currentTroops[0] });
+    }
+  }
+  
+  // Update transfer popup
+  const transferTitle = document.querySelector('.transfer-header .transfer-title');
+  const transferClose = document.getElementById('transfer-close');
+  const transferQuantityLabel = document.querySelector('.transfer-label');
+  const transferConfirm = document.getElementById('transfer-confirm');
+  const transferCancel = document.getElementById('transfer-cancel');
+  
+  if (transferTitle) {
+    transferTitle.textContent = getText('transferTitle');
+  }
+  
+  if (transferClose) {
+    transferClose.textContent = getText('transferClose');
+  }
+  
+  if (transferQuantityLabel) {
+    transferQuantityLabel.textContent = getText('transferQuantityLabel');
+  }
+  
+  if (transferConfirm) {
+    transferConfirm.textContent = getText('transferConfirm');
+  }
+  
+  if (transferCancel) {
+    transferCancel.textContent = getText('transferCancel');
+  }
+  
+  // Update transfer troops if available
+  const transferOriginTroops = document.getElementById('transfer-origem-tropas');
+  const transferDestinationTroops = document.getElementById('transfer-destino-tropas');
+  
+  if (transferOriginTroops) {
+    const currentTroops = transferOriginTroops.textContent.match(/\d+/);
+    if (currentTroops) {
+      transferOriginTroops.textContent = getText('transferOriginTroops', { troops: currentTroops[0] });
+    }
+  }
+  
+  if (transferDestinationTroops) {
+    const currentTroops = transferDestinationTroops.textContent.match(/\d+/);
+    if (currentTroops) {
+      transferDestinationTroops.textContent = getText('transferDestinationTroops', { troops: currentTroops[0] });
+    }
+  }
+  
+  // Update cards popup
+  const cardsTitle = document.querySelector('#cards-popup .cards-header h3');
+  const cardsClose = document.getElementById('cards-close');
+  const cardsInstructions = document.getElementById('cards-instructions');
+  const cardsExchange = document.getElementById('cards-exchange');
+  
+  if (cardsTitle) {
+    cardsTitle.textContent = getText('cardsYourCards');
+  }
+  
+  if (cardsClose) {
+    cardsClose.textContent = getText('cardsClose');
+  }
+  
+  if (cardsInstructions) {
+    cardsInstructions.textContent = getText('cardsInstructions');
+  }
+  
+  if (cardsExchange) {
+    cardsExchange.textContent = getText('cardsExchange');
+  }
+  
+  // Update objective popup
+  const objectiveTitle = document.querySelector('#objective-popup .objective-header h3');
+  const objectiveClose = document.getElementById('objective-close');
+  const objectiveDescription = document.getElementById('objective-description');
+  const objectiveHint = document.querySelector('.objective-hint');
+  const objectiveOk = document.getElementById('objective-ok');
+  
+  if (objectiveTitle) {
+    objectiveTitle.textContent = getText('objectiveYourObjective');
+  }
+  
+  if (objectiveClose) {
+    objectiveClose.textContent = getText('objectiveClose');
+  }
+  
+  if (objectiveHint) {
+    objectiveHint.textContent = getText('objectiveHint');
+  }
+  
+  if (objectiveOk) {
+    objectiveOk.textContent = getText('objectiveOk');
+  }
+  
+  // Update remanejamento popup
+  const remanejamentoTitle = document.querySelector('#remanejamento-popup .remanejamento-header .remanejamento-title');
+  const remanejamentoClose = document.getElementById('remanejamento-close');
+  const remanejamentoQuantityLabel = document.querySelector('.remanejamento-label');
+  const remanejamentoConfirm = document.getElementById('remanejamento-confirm');
+  const remanejamentoCancel = document.getElementById('remanejamento-cancel');
+  
+  if (remanejamentoTitle) {
+    remanejamentoTitle.textContent = getText('remanejamentoTitle');
+  }
+  
+  if (remanejamentoClose) {
+    remanejamentoClose.textContent = getText('remanejamentoClose');
+  }
+  
+  if (remanejamentoQuantityLabel) {
+    remanejamentoQuantityLabel.textContent = getText('remanejamentoQuantityLabel');
+  }
+  
+  if (remanejamentoConfirm) {
+    remanejamentoConfirm.textContent = getText('remanejamentoConfirm');
+  }
+  
+  if (remanejamentoCancel) {
+    remanejamentoCancel.textContent = getText('remanejamentoCancel');
+  }
+  
+  // Update remanejamento troops if available
+  const remanejamentoOriginTroops = document.getElementById('remanejamento-origem-tropas');
+  const remanejamentoDestinationTroops = document.getElementById('remanejamento-destino-tropas');
+  
+  if (remanejamentoOriginTroops) {
+    const currentTroops = remanejamentoOriginTroops.textContent.match(/\d+/);
+    if (currentTroops) {
+      remanejamentoOriginTroops.textContent = getText('remanejamentoOriginTroops', { troops: currentTroops[0] });
+    }
+  }
+  
+  if (remanejamentoDestinationTroops) {
+    const currentTroops = remanejamentoDestinationTroops.textContent.match(/\d+/);
+    if (currentTroops) {
+      remanejamentoDestinationTroops.textContent = getText('remanejamentoDestinationTroops', { troops: currentTroops[0] });
+    }
+  }
+}
+
+function updateRankingAndStatsPopupsTexts() {
+  // Update Ranking Popup
+  const rankingTitle = document.querySelector('#ranking-popup h3');
+  const rankingMessage = document.querySelector('#ranking-popup .ranking-message p:first-child');
+  const rankingFeatures = document.querySelector('#ranking-popup .ranking-message p:nth-child(2)');
+  const rankingFeature1 = document.querySelector('#ranking-popup .ranking-message li:nth-child(1)');
+  const rankingFeature2 = document.querySelector('#ranking-popup .ranking-message li:nth-child(2)');
+  const rankingFeature3 = document.querySelector('#ranking-popup .ranking-message li:nth-child(3)');
+  const rankingFeature4 = document.querySelector('#ranking-popup .ranking-message li:nth-child(4)');
+  const rankingOk = document.getElementById('ranking-ok');
+  
+  if (rankingTitle) {
+    rankingTitle.textContent = getText('rankingTitle');
+  }
+  
+  if (rankingMessage) {
+    rankingMessage.textContent = getText('rankingMessage');
+  }
+  
+  if (rankingFeatures) {
+    rankingFeatures.textContent = getText('rankingFeatures');
+  }
+  
+  if (rankingFeature1) {
+    rankingFeature1.textContent = getText('rankingFeature1');
+  }
+  
+  if (rankingFeature2) {
+    rankingFeature2.textContent = getText('rankingFeature2');
+  }
+  
+  if (rankingFeature3) {
+    rankingFeature3.textContent = getText('rankingFeature3');
+  }
+  
+  if (rankingFeature4) {
+    rankingFeature4.textContent = getText('rankingFeature4');
+  }
+  
+  if (rankingOk) {
+    rankingOk.textContent = getText('rankingOk');
+  }
+  
+  // Update Stats Popup
+  const statsTitle = document.querySelector('#stats-popup h3');
+  const statsMessage = document.querySelector('#stats-popup .stats-message p:first-child');
+  const statsFeatures = document.querySelector('#stats-popup .stats-message p:nth-child(2)');
+  const statsFeature1 = document.querySelector('#stats-popup .stats-message li:nth-child(1)');
+  const statsFeature2 = document.querySelector('#stats-popup .stats-message li:nth-child(2)');
+  const statsFeature3 = document.querySelector('#stats-popup .stats-message li:nth-child(3)');
+  const statsFeature4 = document.querySelector('#stats-popup .stats-message li:nth-child(4)');
+  const statsOk = document.getElementById('stats-ok');
+  
+  if (statsTitle) {
+    statsTitle.textContent = getText('statsTitle');
+  }
+  
+  if (statsMessage) {
+    statsMessage.textContent = getText('statsMessage');
+  }
+  
+  if (statsFeatures) {
+    statsFeatures.textContent = getText('statsFeatures');
+  }
+  
+  if (statsFeature1) {
+    statsFeature1.textContent = getText('statsFeature1');
+  }
+  
+  if (statsFeature2) {
+    statsFeature2.textContent = getText('statsFeature2');
+  }
+  
+  if (statsFeature3) {
+    statsFeature3.textContent = getText('statsFeature3');
+  }
+  
+  if (statsFeature4) {
+    statsFeature4.textContent = getText('statsFeature4');
+  }
+  
+  if (statsOk) {
+    statsOk.textContent = getText('statsOk');
+  }
+}
+
+function updateTurnOverlayTexts() {
+  // This function will be called when the turn confirmation overlay is created
+  // The texts are created dynamically in showTurnConfirmationPopup()
+  // We need to update them when the language changes
+  
+  // Update turn confirmation overlay if it exists
+  const turnConfirmTitle = document.querySelector('.turn-confirm-title');
+  const turnConfirmWarning = document.querySelector('.turn-confirm-warning');
+  const turnConfirmTimerLabel = document.querySelector('.turn-timer-label');
+  const turnConfirmButton = document.getElementById('turn-confirm-btn');
+  
+  if (turnConfirmTitle) {
+    turnConfirmTitle.textContent = getText('turnConfirmTitle');
+  }
+  
+  if (turnConfirmWarning) {
+    const remaining = maxForcedTurns - forcedTurnCount;
+    turnConfirmWarning.innerHTML = getText('turnConfirmWarning', { remaining });
+  }
+  
+  if (turnConfirmTimerLabel) {
+    turnConfirmTimerLabel.textContent = getText('turnConfirmTimerLabel');
+  }
+  
+  if (turnConfirmButton) {
+    turnConfirmButton.textContent = getText('turnConfirmButton');
+  }
+}
+
+function updateChatAndHistoryTexts() {
+  // Update chat and history popup texts if available
+  
+  // Update chat tab
+  const chatTab = document.getElementById('chat-tab');
+  if (chatTab) {
+    chatTab.textContent = getText('chatTab');
+  }
+  
+  // Update history tab
+  const historyTab = document.getElementById('history-tab');
+  if (historyTab) {
+    historyTab.textContent = getText('historyTab');
+  }
+  
+  // Update chat empty message
+  const chatEmpty = document.querySelector('.chat-empty');
+  if (chatEmpty) {
+    chatEmpty.textContent = getText('chatEmpty');
+  }
+  
+  // Update history empty message
+  const historyEmpty = document.querySelector('.history-empty');
+  if (historyEmpty) {
+    historyEmpty.textContent = getText('historyEmpty');
+  }
+  
+  // Update chat input placeholder
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.placeholder = getText('chatInputPlaceholder');
+  }
+  
+  // Update chat send button
+  const chatSendBtn = document.getElementById('chat-send-btn');
+  if (chatSendBtn) {
+    chatSendBtn.textContent = getText('chatSendButton');
+  }
+  
+  // Update HUD button text
+  const historyButton = document.getElementById('btn-history');
+  if (historyButton) {
+    const span = historyButton.querySelector('span:last-child');
+    if (span) {
+      span.textContent = getText('chatTab').replace('💬 ', '');
+    }
+  }
+  
+  console.log('🌍 Chat and history texts updated');
+}
+
+function updatePlayerCardsAndSummaryTexts() {
+  // Update player cards modal texts if available
+  
+  // Update player stats labels in the modal
+  const territoryLabels = document.querySelectorAll('.stat-label');
+  territoryLabels.forEach(label => {
+    if (label.textContent.includes('Territórios:')) {
+      label.textContent = getText('territories');
+    } else if (label.textContent.includes('Tropas:')) {
+      label.textContent = getText('troops');
+    } else if (label.textContent.includes('Cartas:')) {
+      label.textContent = getText('cards');
+    } else if (label.textContent.includes('Status:')) {
+      label.textContent = getText('status');
+    }
+  });
+  
+  // Update player stat labels in the victory screen
+  const playerStatLabels = document.querySelectorAll('.player-stat-label');
+  playerStatLabels.forEach(label => {
+    if (label.textContent.includes('Territórios')) {
+      label.textContent = `🗺️ ${getText('territories')}`;
+    } else if (label.textContent.includes('Tropas')) {
+      label.textContent = `⚔️ ${getText('troops')}`;
+    }
+  });
+  
+  // Update player stat values
+  const playerStatValues = document.querySelectorAll('.player-stat-value');
+  playerStatValues.forEach(value => {
+    if (value.textContent === 'Humano') {
+      value.textContent = getText('human');
+    } else if (value.textContent === 'CPU') {
+      value.textContent = getText('cpu');
+    } else if (value.textContent === 'Venceu') {
+      value.textContent = getText('won');
+    } else if (value.textContent === 'Perdeu') {
+      value.textContent = getText('lost');
+    } else if (value.textContent === 'Ativo') {
+      value.textContent = getText('active');
+    } else if (value.textContent === 'Inativo') {
+      value.textContent = getText('inactive');
+    }
+  });
+  
+  // Update turn badge
+  const turnBadges = document.querySelectorAll('.turn-badge');
+  turnBadges.forEach(badge => {
+    if (badge.textContent === 'TURNO ATUAL') {
+      badge.textContent = getText('currentTurn');
+    }
+  });
+  
+  console.log('🌍 Player cards and summary texts updated');
+}
+
+function updatePlayerColorsTexts() {
+  // This function will update player color names when the language changes
+  // Since player colors are used in various messages and displays,
+  // we need to ensure they are properly translated
+  
+  // Note: The main translation happens in the getTranslatedPlayerColor function
+  // This function serves as a placeholder for future enhancements
+  
+  console.log('🌍 Player colors texts update requested');
+  
+  // The actual translation happens dynamically when getTranslatedPlayerColor is called
+  // This ensures that all player color references use the correct language
+}
+
+// Função para atualizar textos relacionados aos objetivos do jogo
+function updateGameObjectivesTexts() {
+  console.log('🎯 Atualizando textos dos objetivos do jogo...');
+  
+  // Atualizar a lista de objetivos se estiver visível
+  const objectivesList = document.getElementById('objectives-list');
+  if (objectivesList && objectivesList.children.length > 0) {
+    // Recarregar a lista de objetivos com o novo idioma
+    const gameState = getGameState();
+    if (gameState) {
+      updatePlayerInfoPanel();
+    }
+  }
+}
+
+// Função para traduzir nomes de cores em mensagens
+function translatePlayerColorsInMessage(texto) {
+  if (!texto || typeof texto !== 'string') return texto;
+  
+  // Mapear nomes de cores em português para tradução
+  const colorTranslationMap = {
+    'Azul': 'blue',
+    'Vermelho': 'red',
+    'Verde': 'green',
+    'Amarelo': 'yellow',
+    'Preto': 'black',
+    'Roxo': 'purple'
+  };
+  
+  let textoTraduzido = texto;
+  
+  // Substituir nomes de cores por suas traduções
+  for (const [colorName, translationKey] of Object.entries(colorTranslationMap)) {
+    if (textoTraduzido.includes(colorName)) {
+      textoTraduzido = textoTraduzido.replace(new RegExp(colorName, 'g'), getText(translationKey));
+    }
+  }
+  
+  return textoTraduzido;
+}
+
+function updateGameInterfaceTexts() {
+  // This function will be called when the game interface is available
+  // Update HUD texts when game interface is available
+  updateGameHUDTexts();
+  
+  // Update turn button texts
+  atualizarTextoBotaoTurno();
+  
+  console.log('🌍 Game interface texts updated');
+}
 
 // Função auxiliar para obter o nome de usuário real a partir do nome da cor
 function getRealUsername(colorName) {
@@ -16,7 +3136,13 @@ function getRealUsername(colorName) {
   }
   
   // Fallback para o mapeamento antigo
-  return playerColorToUsernameMap[colorName] || colorName;
+  const mappedName = playerColorToUsernameMap[colorName];
+  if (mappedName) {
+    return mappedName;
+  }
+  
+  // Se não há mapeamento, traduzir o nome da cor
+  return getTranslatedPlayerColor(colorName);
 }
 
 // Room Selection System
@@ -49,7 +3175,12 @@ function logForcedTurnCount() {
 
 // Initialize login system
 document.addEventListener('DOMContentLoaded', function() {
-  initializeLoginSystem();
+  console.log('🏁 DOM carregado, inicializando sistema de login...');
+  
+  // Aguardar um pouco para garantir que todos os elementos estejam prontos
+  setTimeout(() => {
+    initializeLoginSystem();
+  }, 100);
 });
 
 function initializeLoginSystem() {
@@ -70,6 +3201,183 @@ function initializeLoginSystem() {
         handleLogin();
       }
     });
+  }
+  
+  // Initialize flag selector
+  initializeFlagSelector();
+}
+
+// Flag Selector System
+function initializeFlagSelector() {
+  console.log('🏁 Inicializando seletor de bandeiras...');
+  
+  // Define available countries with native names
+  window.availableCountries = [
+    { code: 'US', name: 'United States', nativeName: 'United States', flag: '🇺🇸' },
+    { code: 'BR', name: 'Brazil', nativeName: 'Brasil', flag: '🇧🇷' },
+    { code: 'RU', name: 'Russia', nativeName: 'Россия', flag: '🇷🇺' },
+    { code: 'CN', name: 'China', nativeName: '中国', flag: '🇨🇳' },
+    { code: 'IN', name: 'India', nativeName: 'भारत', flag: '🇮🇳' },
+    { code: 'DE', name: 'Germany', nativeName: 'Deutschland', flag: '🇩🇪' },
+    { code: 'JP', name: 'Japan', nativeName: '日本', flag: '🇯🇵' }
+  ];
+  
+  console.log('🏁 Países disponíveis:', window.availableCountries);
+  
+  // Set initial country (US)
+  window.currentCountryIndex = 0;
+  
+  // Set initial language based on default country
+  const defaultCountry = window.availableCountries[0];
+  const defaultLanguage = countryToLanguage[defaultCountry.code];
+  if (defaultLanguage && defaultLanguage !== currentLanguage) {
+    console.log(`🌍 Definindo idioma inicial para ${defaultLanguage} (${defaultCountry.name})`);
+    updateLanguage(defaultLanguage);
+  }
+  
+  // Get DOM elements
+  const prevBtn = document.getElementById('flag-prev');
+  const nextBtn = document.getElementById('flag-next');
+  const flagEmoji = document.getElementById('current-flag');
+  const flagName = document.getElementById('current-flag-name');
+  const hiddenInput = document.getElementById('selected-country');
+  
+  console.log('🏁 Elementos encontrados:', {
+    prevBtn: !!prevBtn,
+    nextBtn: !!nextBtn,
+    flagEmoji: !!flagEmoji,
+    flagName: !!flagName,
+    hiddenInput: !!hiddenInput
+  });
+  
+  if (prevBtn && nextBtn && flagEmoji && flagName && hiddenInput) {
+    // Set initial values
+    console.log('🏁 Chamando updateFlagDisplay...');
+    updateFlagDisplay();
+    
+    // Add event listeners
+    prevBtn.addEventListener('click', () => {
+      console.log('🏁 Botão anterior clicado');
+      navigateFlag(-1);
+    });
+    
+    nextBtn.addEventListener('click', () => {
+      console.log('🏁 Botão próximo clicado');
+      navigateFlag(1);
+    });
+    
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        console.log('🏁 Tecla esquerda pressionada');
+        navigateFlag(-1);
+      } else if (e.key === 'ArrowRight') {
+        console.log('🏁 Tecla direita pressionada');
+        navigateFlag(1);
+      }
+    });
+    
+    console.log('✅ Seletor de bandeiras inicializado com sucesso');
+    
+    // Atualizar todos os textos da interface na inicialização
+    updateAllUITexts();
+  } else {
+    console.log('❌ Elementos do seletor de bandeiras não encontrados');
+  }
+}
+
+function navigateFlag(direction) {
+  console.log(`🏁 navigateFlag chamada com direção: ${direction}`);
+  
+  if (!window.availableCountries || window.currentCountryIndex === undefined) {
+    console.log('❌ Países ou índice não disponíveis em navigateFlag');
+    return;
+  }
+  
+  // Calculate new index
+  let newIndex = window.currentCountryIndex + direction;
+  console.log(`🏁 Índice atual: ${window.currentCountryIndex}, novo índice: ${newIndex}`);
+  
+  // Handle wrap-around
+  if (newIndex < 0) {
+    newIndex = window.availableCountries.length - 1;
+    console.log(`🏁 Wrap-around para o final: ${newIndex}`);
+  } else if (newIndex >= window.availableCountries.length) {
+    newIndex = 0;
+    console.log(`🏁 Wrap-around para o início: ${newIndex}`);
+  }
+  
+  // Update current index
+  window.currentCountryIndex = newIndex;
+  console.log(`🏁 Índice atualizado para: ${window.currentCountryIndex}`);
+  
+  // Update display
+  updateFlagDisplay();
+  
+  // Update language based on new country
+  const country = window.availableCountries[window.currentCountryIndex];
+  const newLanguage = countryToLanguage[country.code];
+  
+  if (newLanguage && newLanguage !== currentLanguage) {
+    console.log(`🌍 País alterado para ${country.name}, alterando idioma para ${newLanguage}`);
+    updateLanguage(newLanguage);
+    
+    // Atualizar o display da bandeira novamente para mostrar o nome no idioma correto
+    setTimeout(() => {
+      updateFlagDisplay();
+    }, 100);
+  }
+  
+  // Log the change
+  console.log(`🏁 País selecionado: ${country.name} (${country.code})`);
+}
+
+function updateFlagDisplay() {
+  console.log('🏁 updateFlagDisplay chamada');
+  
+  if (!window.availableCountries || window.currentCountryIndex === undefined) {
+    console.log('❌ Países ou índice não disponíveis');
+    return;
+  }
+  
+  const country = window.availableCountries[window.currentCountryIndex];
+  console.log('🏁 País atual:', country);
+  
+  const flagEmoji = document.getElementById('current-flag');
+  const flagName = document.getElementById('current-flag-name');
+  const hiddenInput = document.getElementById('selected-country');
+  
+  console.log('🏁 Elementos DOM:', {
+    flagEmoji: !!flagEmoji,
+    flagName: !!flagName,
+    hiddenInput: !!hiddenInput
+  });
+  
+  if (flagEmoji && flagName && hiddenInput) {
+    // Determinar qual nome mostrar baseado no idioma atual
+    let displayName = country.name; // Nome em inglês por padrão
+    
+    // Se o idioma atual corresponde ao país, mostrar o nome nativo
+    const currentCountryLanguage = countryToLanguage[country.code];
+    if (currentCountryLanguage === currentLanguage) {
+      displayName = country.nativeName;
+    }
+    
+    console.log(`🏁 Atualizando bandeira para: ${country.flag} - ${displayName} (idioma: ${currentLanguage})`);
+    
+    flagEmoji.textContent = country.flag;
+    flagName.textContent = displayName;
+    hiddenInput.value = country.code;
+    
+    // Add animation effect
+    flagEmoji.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+      flagEmoji.style.transform = 'scale(1)';
+    }, 150);
+    
+    console.log('✅ Bandeira atualizada com sucesso');
+  } else {
+    console.log('❌ Elementos DOM não encontrados em updateFlagDisplay');
   }
 }
 
@@ -176,8 +3484,23 @@ function showTurnConfirmationPopup(scene) {
   const overlay = document.getElementById('turn-confirm-overlay');
   if (!overlay) return;
   turnConfirmOverlayEl = overlay;
+  
+  const remaining = maxForcedTurns - forcedTurnCount;
   overlay.innerHTML = `
-    <div class=\"turn-confirm-modal show\" id=\"turn-confirm-modal\">\n      <div class=\"turn-confirm-header\">\n        <span>⚔️</span>\n        <span class=\"turn-confirm-title\">SEU TURNO COMEÇOU!</span>\n      </div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">Se não confirmar, seu turno será passado automaticamente.<br/>Após ${maxForcedTurns - forcedTurnCount} passagens forçadas, você será desconectado.</div>\n        <div class=\"turn-timer-label\">Tempo Restante</div>\n        <div class=\"turn-timer-box\" id=\"turn-timer-text\">${turnConfirmationTimeLeft}s</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-confirm-btn\">CONFIRMAR TURNO</button>\n      </div>\n    </div>
+    <div class="turn-confirm-modal show" id="turn-confirm-modal">
+      <div class="turn-confirm-header">
+        <span>⚔️</span>
+        <span class="turn-confirm-title">${getText('turnConfirmTitle')}</span>
+      </div>
+      <div class="turn-confirm-body">
+        <div class="turn-confirm-warning">${getText('turnConfirmWarning', { remaining })}</div>
+        <div class="turn-timer-label">${getText('turnConfirmTimerLabel')}</div>
+        <div class="turn-timer-box" id="turn-timer-text">${turnConfirmationTimeLeft}s</div>
+      </div>
+      <div class="turn-confirm-actions">
+        <button class="turn-confirm-btn" id="turn-confirm-btn">${getText('turnConfirmButton')}</button>
+      </div>
+    </div>
   `;
   overlay.style.display = 'flex';
   overlay.style.position = 'fixed';
@@ -362,7 +3685,9 @@ function endTurnByTimeout() {
 
 function handleLogin() {
   const usernameInput = document.getElementById('username');
+  const countryInput = document.getElementById('selected-country');
   const username = usernameInput.value.trim();
+  const selectedCountry = countryInput ? countryInput.value : 'US';
   
   if (username.length < 2) {
     showLoginErrorModal('Por favor, digite um nome com pelo menos 2 caracteres.');
@@ -374,9 +3699,20 @@ function handleLogin() {
     return;
   }
   
-  // Store username and mark as logged in
+  // Store username, country and mark as logged in
   playerUsername = username;
+  playerCountry = selectedCountry;
   playerLoggedIn = true;
+  
+  // Store selected language
+  const selectedLanguage = countryToLanguage[selectedCountry] || 'en';
+  currentLanguage = selectedLanguage;
+  
+  // Log the selected country and language
+  const country = window.availableCountries ? window.availableCountries.find(c => c.code === selectedCountry) : null;
+  if (country) {
+    console.log(`🏁 Login realizado com país: ${country.name} (${country.flag}) e idioma: ${selectedLanguage}`);
+  }
   
   // Limpar mapeamento anterior
   playerColorToUsernameMap = {};
@@ -491,16 +3827,22 @@ function initializeSkirmishMode() {
   }
   
   if (rankingBtn) {
-    rankingBtn.addEventListener('click', () => {
-      console.log('🏆 Abrindo ranking geral');
-      showSkirmishRanking();
+    // Desabilitar clique no botão de ranking (funcionalidade indisponível)
+    rankingBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🏆 Ranking geral - Funcionalidade indisponível');
+      showRankingPopup();
     });
   }
   
   if (statsBtn) {
-    statsBtn.addEventListener('click', () => {
-      console.log('📊 Abrindo estatísticas pessoais');
-      showSkirmishStats();
+    // Desabilitar clique no botão de estatísticas (funcionalidade indisponível)
+    statsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📊 Estatísticas pessoais - Funcionalidade indisponível');
+      showStatsPopup();
     });
   }
   
@@ -543,13 +3885,85 @@ function startSkirmishMatch() {
 function showSkirmishRanking() {
   // TODO: Implementar tela de ranking geral
   console.log('🏆 Ranking geral - Funcionalidade em desenvolvimento');
-  alert('🏆 Ranking Geral\n\nEsta funcionalidade será implementada em breve!\n\nVocê poderá ver:\n• Top jogadores por vitórias\n• Estatísticas de jogos\n• Conquistas e medalhas\n• Histórico de partidas');
+  showRankingPopup();
 }
 
 function showSkirmishStats() {
   // TODO: Implementar tela de estatísticas pessoais
   console.log('📊 Estatísticas pessoais - Funcionalidade em desenvolvimento');
-  alert('📊 Minhas Estatísticas\n\nEsta funcionalidade será implementada em breve!\n\nVocê poderá ver:\n• Total de partidas jogadas\n• Taxa de vitória\n• Territórios conquistados\n• Conquistas desbloqueadas');
+  showStatsPopup();
+}
+
+function showRankingPopup() {
+  const rankingPopup = document.getElementById('ranking-popup');
+  const rankingBackdrop = document.getElementById('ranking-backdrop');
+  
+  if (rankingPopup && rankingBackdrop) {
+    rankingPopup.style.display = 'flex';
+    rankingBackdrop.style.display = 'block';
+    
+    // Adicionar event listeners
+    const closeBtn = document.getElementById('ranking-close');
+    const okBtn = document.getElementById('ranking-ok');
+    
+    if (closeBtn) {
+      closeBtn.onclick = hideRankingPopup;
+    }
+    
+    if (okBtn) {
+      okBtn.onclick = hideRankingPopup;
+    }
+    
+    if (rankingBackdrop) {
+      rankingBackdrop.onclick = hideRankingPopup;
+    }
+  }
+}
+
+function hideRankingPopup() {
+  const rankingPopup = document.getElementById('ranking-popup');
+  const rankingBackdrop = document.getElementById('ranking-backdrop');
+  
+  if (rankingPopup && rankingBackdrop) {
+    rankingPopup.style.display = 'none';
+    rankingBackdrop.style.display = 'none';
+  }
+}
+
+function showStatsPopup() {
+  const statsPopup = document.getElementById('stats-popup');
+  const statsBackdrop = document.getElementById('stats-backdrop');
+  
+  if (statsPopup && statsBackdrop) {
+    statsPopup.style.display = 'flex';
+    statsBackdrop.style.display = 'block';
+    
+    // Adicionar event listeners
+    const closeBtn = document.getElementById('stats-close');
+    const okBtn = document.getElementById('stats-ok');
+    
+    if (closeBtn) {
+      closeBtn.onclick = hideStatsPopup;
+    }
+    
+    if (okBtn) {
+      okBtn.onclick = hideStatsPopup;
+    }
+    
+    if (statsBackdrop) {
+      statsBackdrop.onclick = hideStatsPopup;
+    }
+  }
+}
+
+function hideStatsPopup() {
+  const statsPopup = document.getElementById('stats-popup');
+  const statsBackdrop = document.getElementById('stats-backdrop');
+  
+  if (statsPopup && statsBackdrop) {
+    statsPopup.style.display = 'none';
+    statsBackdrop.style.display = 'none';
+  }
 }
 
 function showSkirmishTutorial() {
@@ -574,6 +3988,9 @@ function showSkirmishTutorial() {
 function initializeTutorial() {
   let currentSection = 1;
   const totalSections = 6;
+  
+  // Atualizar textos para o idioma atual
+  updateTutorialTexts();
   
   // Função para mostrar seção específica
   function showSection(sectionNumber) {
@@ -608,9 +4025,9 @@ function initializeTutorial() {
     
     if (nextBtn) {
       if (currentSection === totalSections) {
-        nextBtn.textContent = 'Finalizar';
+        nextBtn.textContent = getText('tutorialFinish');
       } else {
-        nextBtn.textContent = 'Próximo →';
+        nextBtn.textContent = getText('tutorialNext');
       }
     }
     
@@ -1992,12 +5409,12 @@ function showDebugVictoryScreen() {
   
   const tiposVitoria = ['eliminacao', 'objetivo'];
   const objetivosExemplo = [
-    'Eliminar todos os adversários',
-    'Conquistar 18 territórios',
-    'Conquistar América do Sul e Europa',
-    'Conquistar América do Norte e África',
-    'Conquistar Ásia e Oceania',
-    'Conquistar 3 continentes completos'
+    getText('eliminateAllAdversaries'),
+    getText('conquerTerritories', { count: 18 }),
+    getText('conquerSpecificContinents', { continent1: 'América do Sul', continent2: 'Europa' }),
+    getText('conquerSpecificContinents', { continent1: 'América do Norte', continent2: 'África' }),
+    getText('conquerSpecificContinents', { continent1: 'Ásia', continent2: 'Oceania' }),
+    getText('conquerContinents', { count: 3 })
   ];
   
   // Escolher vencedor aleatório
@@ -2101,9 +5518,9 @@ function testModalInterfaces() {
         const popup = document.getElementById('reinforce-popup');
         const backdrop = document.getElementById('reinforce-backdrop');
         if (popup && backdrop) {
-          document.getElementById('reinforce-title').textContent = 'Teste de Reforço';
+          document.getElementById('reinforce-title').textContent = getText('reinforceTitle');
           document.getElementById('reinforce-territory-name').textContent = 'Brasil';
-          document.getElementById('reinforce-territory-troops').textContent = 'Tropas: 10';
+          document.getElementById('reinforce-territory-troops').textContent = getText('reinforceTerritoryTroops', { troops: 10 });
           document.getElementById('reinforce-qty').textContent = '1/5';
           popup.style.display = 'flex';
           backdrop.style.display = 'block';
@@ -2329,10 +5746,13 @@ function initializeGame() {
     const gameState = getGameState();
     if (!gameState) return;
     
+    // Traduzir nomes de cores na mensagem antes de adicionar ao histórico
+    const mensagemTraduzida = translatePlayerColorsInMessage(mensagem);
+    
     const timestamp = new Date().toLocaleTimeString();
     const historyEntry = {
       timestamp: timestamp,
-      message: mensagem
+      message: mensagemTraduzida
     };
     
     gameState.actionHistory.push(historyEntry);
@@ -2371,7 +5791,7 @@ function initializeGame() {
       showVictoryModal(nomeJogador, resumoJogo);
     } catch (e) {
       console.error('Erro ao exibir modal de vitória (HTML).', e);
-      mostrarMensagem(`Jogador ${nomeJogador} venceu!`);
+              mostrarMensagem(`${getTranslatedPlayerColor(nomeJogador)} ${getText('victoryByElimination')}`);
     }
   });
 
@@ -2435,6 +5855,35 @@ function initializeGame() {
       }
     } catch (e) {
       console.error('Erro ao exibir modal de objetivo (HTML).', e);
+    }
+  });
+
+  socket.on('objetivoAtualizado', (novoObjetivo) => {
+    console.log('🎯 Objetivo atualizado recebido:', novoObjetivo);
+    
+    // Atualizar o estado do jogo com o novo objetivo
+    const gameState = getGameState();
+    if (gameState && gameState.objetivos) {
+      const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
+      if (jogador) {
+        gameState.objetivos[jogador.nome] = novoObjetivo;
+        console.log(`🎯 Objetivo de ${jogador.nome} atualizado para: ${novoObjetivo.descricao}`);
+        
+        // Mostrar notificação visual
+        mostrarMensagem(`🎯 Seu objetivo foi alterado: ${novoObjetivo.descricao}`);
+        
+        // Se o modal de objetivo estiver aberto, atualizá-lo
+        if (modalObjetivoAberto) {
+          // Fechar o modal atual
+          hideObjectiveModal();
+          // Aguardar um pouco e reabrir com o novo objetivo
+          setTimeout(() => {
+            if (window.showObjectiveModal) {
+              window.showObjectiveModal(novoObjetivo);
+            }
+          }, 500);
+        }
+      }
     }
   });
 
@@ -2628,6 +6077,9 @@ function initializeLobby() {
   const lobbyScreen = document.getElementById('lobby-screen');
   if (lobbyScreen) lobbyScreen.style.display = 'flex';
   
+  // Update texts for current language
+  updateLobbyTexts();
+  
   // Connect to socket if not already connected
   const socket = getSocket() || io();
   window.socket = socket;
@@ -2638,7 +6090,8 @@ function initializeLobby() {
     
     // Emit player joined global lobby event
     socket.emit('playerJoinedGlobalLobby', { 
-      username: playerUsername
+      username: playerUsername,
+      language: currentLanguage
     });
     
     // Start lobby timer
@@ -2650,7 +6103,8 @@ function initializeLobby() {
       
       // Emit player joined global lobby event
       socket.emit('playerJoinedGlobalLobby', { 
-        username: playerUsername
+        username: playerUsername,
+        language: currentLanguage
       });
       
       // Start lobby timer
@@ -2745,7 +6199,7 @@ function updateLobbyDisplay(data) {
     
     const status = document.createElement('div');
     status.className = 'lobby-player-status';
-    status.textContent = 'Conectado';
+    status.textContent = getText('lobbyPlayerConnected');
     status.classList.add('connected');
     
     playerElement.appendChild(avatar);
@@ -2766,11 +6220,11 @@ function updateLobbyDisplay(data) {
     
     const name = document.createElement('div');
     name.className = 'lobby-player-name';
-    name.textContent = `CPU ${i + 1}`;
+    name.textContent = `${getText('lobbyPlayerCPU')} ${i + 1}`;
     
     const status = document.createElement('div');
     status.className = 'lobby-player-status';
-    status.textContent = 'CPU';
+    status.textContent = getText('lobbyPlayerCPU');
     status.classList.add('cpu');
     
     playerElement.appendChild(avatar);
@@ -2784,11 +6238,14 @@ function updateLobbyDisplay(data) {
   const totalPlayers = data.totalPlayers;
   
   if (data.timeLeft <= 0) {
-    statusText.textContent = 'Criando sala e iniciando jogo...';
+    statusText.textContent = getText('lobbyStatusCreating');
   } else if (connectedPlayers === totalPlayers) {
-    statusText.textContent = 'Todos os jogadores conectados! Iniciando jogo...';
+    statusText.textContent = getText('lobbyStatusAllConnected');
   } else {
-    statusText.textContent = `${connectedPlayers}/${totalPlayers} jogadores conectados. Aguardando mais jogadores...`;
+    statusText.textContent = getText('lobbyStatusPlayers', { 
+      connected: connectedPlayers, 
+      total: totalPlayers 
+    });
   }
 }
 
@@ -2814,6 +6271,9 @@ function startGame() {
   
   console.log('🔧 DEBUG: lobbyScreen encontrado:', !!lobbyScreen);
   console.log('🔧 DEBUG: gameContainer encontrado:', !!gameContainer);
+  
+  // Update game HUD texts for current language
+  updateGameHUDTexts();
   
   if (lobbyScreen) {
     lobbyScreen.style.display = 'none';
@@ -3763,7 +7223,7 @@ function atualizarPaises(novosPaises, scene) {
              if (!podeReceberBonus) {
                // Não pode colocar tropas de bônus neste país
                if (gameState.continentePrioritario) {
-                 mostrarMensagem(`❌ Primeiro coloque todas as ${totalBonus} tropas de bônus restantes! (${gameState.continentePrioritario.nome}: ${gameState.continentePrioritario.quantidade})`);
+                 mostrarMensagem(`❌ Primeiro coloque todas as ${totalBonus} tropas de ${getText('bonus').toLowerCase()} restantes! (${gameState.continentePrioritario.nome}: ${gameState.continentePrioritario.quantidade})`);
                } else {
                  mostrarMensagem("❌ Este país não pertence a nenhum continente com tropas de bônus pendentes!");
                }
@@ -4106,13 +7566,13 @@ function atualizarTextoBotaoTurno() {
   console.log('🔧 DEBUG: turno:', gameState.turno);
   
   if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
-    botaoTurno.textContent = 'Encerrar Turno';
+    botaoTurno.textContent = getText('endTurnButton');
     console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (fase remanejamento)');
   } else if (gameState.meuNome === gameState.turno) {
-    botaoTurno.textContent = 'Encerrar Ataque';
+    botaoTurno.textContent = getText('endAttackButton');
     console.log('🔧 DEBUG: Botão definido como "Encerrar Ataque" (fase ataque)');
   } else {
-    botaoTurno.textContent = 'Encerrar Turno';
+    botaoTurno.textContent = getText('endTurnButton');
     console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (não é meu turno)');
   }
 }
@@ -4225,31 +7685,14 @@ function mostrarMensagem(texto) {
   const gameState = getGameState();
   if (!gameState) return;
   
+  // Traduzir nomes de cores nas mensagens
+  texto = translatePlayerColorsInMessage(texto);
+  
   // Handle game restart
   if (texto.includes('Jogo reiniciado')) {
     stopTurnTimer(); // Stop any existing timer
   }
   
-  // Filter messages to only include reinforcements, attacks, and action phases
-  const shouldInclude = 
-    // Reinforcements
-    texto.includes('Reforços') || 
-    texto.includes('tropas de bônus') || 
-    texto.includes('trocou 3 cartas') ||
-    texto.includes('exércitos bônus') ||
-    // Attacks
-    texto.includes('ataca') ||
-    texto.includes('Ataque:') ||
-    texto.includes('Defesa:') ||
-    texto.includes('perdeu 1 tropa') ||
-    texto.includes('foi conquistado') ||
-    // Action phases
-    texto.includes('fase de remanejamento') ||
-    texto.includes('Turno de') ||
-    texto.includes('Jogo iniciado') ||
-    texto.includes('Jogo reiniciado') ||
-    texto.includes('conquistou o continente');
-    
   // Verificar se é uma conquista de continente para disparar efeito de onda
   if (texto.includes('conquistou o continente')) {
     console.log('🎉 Detectada conquista de continente!');
@@ -4272,9 +7715,8 @@ function mostrarMensagem(texto) {
     }
   }
 
-  if (!shouldInclude) {
-    return; // Skip this message
-  }
+  // SEMPRE incluir a mensagem no histórico (removido o filtro)
+  // Todas as mensagens do servidor agora são traduzidas e incluídas
 
   // Add message to history
   const timestamp = new Date().toLocaleTimeString();
@@ -4373,7 +7815,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
   const isPlayerVictory = nomeJogador === gameState.meuNome;
   
   // Mensagem principal
-  const mainMessage = scene.add.text(0, -50, isPlayerVictory ? 'Parabéns! Você venceu!' : `${nomeJogador} venceu o jogo!`, {
+  const mainMessage = scene.add.text(0, -50, isPlayerVictory ? getText('gameInstructionsVictory') : `${getTranslatedPlayerColor(nomeJogador)} ${getText('victoryByElimination')}`, {
     fontSize: '20px',
     fill: isPlayerVictory ? '#33cc33' : '#ffcc00',
     align: 'center',
@@ -4384,7 +7826,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
   contentContainer.add(mainMessage);
   
   // Cards dos jogadores
-  const playersTitle = scene.add.text(0, -30, 'RESULTADO FINAL', {
+  const playersTitle = scene.add.text(0, -30, getText('finalResult'), {
     fontSize: '18px',
     fill: '#0077cc',
     align: 'center',
@@ -4516,19 +7958,19 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     let statusColor = '#ff3333';
     
     if (jogador.vencedor) {
-      statusText = '🏆 VENCEDOR';
+      statusText = getText('winner');
       statusColor = '#33cc33';
     } else if (jogador.eliminado) {
-      statusText = '💀 ELIMINADO';
+      statusText = getText('eliminated');
       statusColor = '#ff3333';
     } else if (jogador.isCPU) {
-      statusText = '🤖 CPU';
+      statusText = getText('cpu');
       statusColor = '#ffaa00';
     } else if (!jogador.ativo) {
-      statusText = '❌ INATIVO';
+      statusText = getText('inactive');
       statusColor = '#ff3333';
     } else {
-      statusText = '⚔️ ATIVO';
+      statusText = getText('active');
       statusColor = '#33cc33';
     }
     
@@ -4616,7 +8058,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     
     // Tipo de vitória
     if (resumoJogo.tipoVitoria) {
-      const victoryType = scene.add.text(0, yOffset, `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`, {
+      const victoryType = scene.add.text(0, yOffset, `${getText('victoryType')}: ${resumoJogo.tipoVitoria === 'eliminacao' ? getText('totalElimination') : getText('objectiveComplete')}`, {
         fontSize: getResponsiveFontSize(14),
         fill: '#cccccc',
         align: 'center',
@@ -4631,7 +8073,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     if (resumoJogo.estatisticas) {
       // Duração do jogo
       if (resumoJogo.estatisticas.duracao) {
-        const duration = scene.add.text(0, yOffset, `Duração: ${resumoJogo.estatisticas.duracao}`, {
+        const duration = scene.add.text(0, yOffset, `${getText('duration')}: ${resumoJogo.estatisticas.duracao}`, {
           fontSize: getResponsiveFontSize(12),
           fill: '#888888',
           align: 'center',
@@ -4644,7 +8086,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
       
       // Total de ataques
       if (resumoJogo.estatisticas.totalAtaques !== undefined) {
-        const attacks = scene.add.text(0, yOffset, `Total de Ataques: ${resumoJogo.estatisticas.totalAtaques}`, {
+        const attacks = scene.add.text(0, yOffset, `${getText('totalAttacks')}: ${resumoJogo.estatisticas.totalAtaques}`, {
           fontSize: getResponsiveFontSize(12),
           fill: '#888888',
           align: 'center',
@@ -4662,7 +8104,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     let yOffset = getResponsiveSize(180);
     
     // Título da seção de resumo
-    const summaryTitle = scene.add.text(0, yOffset, 'RESUMO DAS AÇÕES PRINCIPAIS', {
+    const summaryTitle = scene.add.text(0, yOffset, getText('actionsSummary'), {
       fontSize: getResponsiveFontSize(16),
       fill: '#0077cc',
       align: 'center',
@@ -4701,7 +8143,7 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
     
     // Se não há ações importantes, mostrar mensagem
     if (ultimasAcoes.length === 0) {
-      const noActionsText = scene.add.text(0, yOffset, 'Nenhuma ação importante registrada', {
+      const noActionsText = scene.add.text(0, yOffset, getText('noImportantActions'), {
         fontSize: getResponsiveFontSize(11),
         fill: '#888888',
         align: 'center',
@@ -5182,9 +8624,9 @@ function mostrarInterfaceReforco(territorio, pointer, scene) {
   const backdrop = document.getElementById('reinforce-backdrop');
   if (!popup) return;
   document.getElementById('reinforce-title').textContent = (totalBonus > 0 && gameState.continentePrioritario)
-    ? `Bônus ${gameState.continentePrioritario.nome}` : 'Reforçar Território';
+    ? `${getText('bonus')} ${gameState.continentePrioritario.nome}` : getText('reinforceTitle');
   document.getElementById('reinforce-territory-name').textContent = territorio.nome;
-  document.getElementById('reinforce-territory-troops').textContent = `Tropas: ${territorio.tropas}`;
+  document.getElementById('reinforce-territory-troops').textContent = getText('reinforceTerritoryTroops', { troops: territorio.tropas });
   const qtyEl = document.getElementById('reinforce-qty');
   const minusBtn = document.getElementById('reinforce-minus');
   const plusBtn = document.getElementById('reinforce-plus');
@@ -5418,8 +8860,8 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   // Preencher dados da interface
   if (origemEl) origemEl.textContent = origem.nome;
   if (destinoEl) destinoEl.textContent = destino.nome;
-  if (origemTropasEl) origemTropasEl.textContent = `Tropas: ${origem.tropas}`;
-  if (destinoTropasEl) destinoTropasEl.textContent = `Tropas: ${destino.tropas}`;
+  if (origemTropasEl) origemTropasEl.textContent = getText('remanejamentoOriginTroops', { troops: origem.tropas });
+  if (destinoTropasEl) destinoTropasEl.textContent = getText('remanejamentoDestinationTroops', { troops: destino.tropas });
   if (qtyEl) qtyEl.textContent = `${tropasParaMover}/${dadosRemanejamento.maxTropas}`;
   
   // Mostrar interface
@@ -5733,9 +9175,9 @@ function showCardsModal(cartas, forcarTroca = false) {
   
   // Update title based on whether exchange is forced
   if (forcarTroca) {
-    titleEl.textContent = '⚠️ TROCA OBRIGATÓRIA - Suas Cartas Território';
+    titleEl.textContent = '⚠️ TROCA OBRIGATÓRIA - ' + getText('cardsYourCards');
   } else {
-    titleEl.textContent = '🎴 Suas Cartas Território';
+    titleEl.textContent = getText('cardsYourCards');
   }
 
   // Render grid
@@ -5746,8 +9188,8 @@ function showCardsModal(cartas, forcarTroca = false) {
     instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.';
     exchangeBtn.textContent = '🔄 TROCAR CARTAS (OBRIGATÓRIO)';
   } else {
-    instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
-    exchangeBtn.textContent = '🔄 Trocar Cartas';
+    instructions.textContent = getText('cardsInstructions');
+    exchangeBtn.textContent = getText('cardsExchange');
   }
 
   cardsCurrentList.forEach((carta) => {
@@ -5785,6 +9227,9 @@ function showCardsModal(cartas, forcarTroca = false) {
   popup.style.display = 'flex';
   backdrop.style.display = 'block';
   modalCartasTerritorioAberto = true;
+  
+  // Update texts for current language
+  updateGamePopupsTexts();
 }
 
 // Cria um SVG com o polígono do território, ajustando para caber no tamanho desejado
@@ -6143,6 +9588,12 @@ function updateCSSHUD() {
     const displayName = playerUsername || gameState.meuNome || 'Carregando...';
     playerNameEl.textContent = displayName;
     
+    // Update game instructions for current language
+    const instructionText = document.getElementById('instruction-text');
+    if (instructionText && !gameState.turno) {
+      instructionText.textContent = getText('gameInstructionsWaiting');
+    }
+    
     // Update player avatar color
     const playerAvatarEl = document.querySelector('.player-avatar');
     if (playerAvatarEl && displayName !== 'Carregando...') {
@@ -6156,6 +9607,9 @@ function updateCSSHUD() {
         playerAvatarEl.style.background = '#4444ff'; // Default blue
       }
     }
+    
+    // Update HUD buttons for current language
+    updateGameHUDTexts();
   }
 
   // Update player stats
@@ -6165,7 +9619,10 @@ function updateCSSHUD() {
       .reduce((soma, p) => soma + p.tropas, 0);
     const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
     const totalReforcos = gameState.tropasReforco + totalBonus;
-    playerStatsEl.textContent = `Tropas: ${tropas} | Reforço: ${totalReforcos}`;
+    playerStatsEl.textContent = getText('playerStatsFormat', { 
+      troops: tropas, 
+      reinforcement: totalReforcos 
+    });
   }
 
   // Update turn indicator
@@ -6232,11 +9689,11 @@ function updateCSSHUD() {
 
     // Update turn text
     if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
-      turnTextEl.textContent = '🔄';
-    } else if (gameState.meuNome === gameState.turno) {
-      turnTextEl.textContent = '⚔️';
+      turnTextEl.textContent = getText('gameInstructionsTurnIndicator');
+    } else     if (gameState.meuNome === gameState.turno) {
+      turnTextEl.textContent = getText('gameInstructionsMyTurn');
     } else {
-      turnTextEl.textContent = '⏳';
+      turnTextEl.textContent = getText('gameInstructionsNotMyTurn');
     }
 
       // Update game instructions
@@ -6250,11 +9707,11 @@ function updateCSSHUD() {
       shouldHighlight = true;
       
       if (gameState.vitoria) {
-        instruction = '🎉 Parabéns! Você venceu!';
+        instruction = getText('gameInstructionsVictory');
       } else if (gameState.derrota) {
-        instruction = '💀 Você perdeu o jogo!';
+        instruction = getText('gameInstructionsDefeat');
       } else if (gameState.faseRemanejamento) {
-        instruction = '🔄 Selecione territórios para mover tropas';
+        instruction = getText('gameInstructionsRemanejamento');
       } else {
         // Fase de ataque
         const totalBonus = Object.values(gameState.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0);
@@ -6263,28 +9720,31 @@ function updateCSSHUD() {
         if (totalReforco > 0) {
           // Verificar se há tropas bônus de continente prioritário
           if (totalBonus > 0 && gameState.continentePrioritario) {
-            instruction = `🎯 Coloque ${totalBonus} tropas bônus no continente ${gameState.continentePrioritario.nome}`;
+            instruction = getText('gameInstructionsPlaceBonus', { 
+              bonus: totalBonus, 
+              continent: gameState.continentePrioritario.nome 
+            });
           } else {
-            instruction = '🎯 Selecione um território para reforçar tropas';
+            instruction = getText('gameInstructionsReinforce');
           }
         } else {
-          instruction = '⚔️ Selecione um território seu e um inimigo para atacar';
+          instruction = getText('gameInstructionsAttack');
         }
       }
     } else {
       // Não é o turno do jogador
       if (gameState.vitoria) {
-        instruction = '🎉 Jogo finalizado!';
+        instruction = getText('gameInstructionsGameOver');
       } else if (gameState.derrota) {
-        instruction = '💀 Jogo finalizado!';
+        instruction = getText('gameInstructionsGameOver');
       } else {
         const currentPlayer = gameState.jogadores.find(j => j.nome === gameState.turno);
         const isHumanPlayer = currentPlayer && !currentPlayer.isCPU;
         
         if (isHumanPlayer) {
-          instruction = `⏳ Aguardando ${gameState.turno}...`;
+          instruction = getText('gameInstructionsWaitingPlayer', { player: getTranslatedPlayerColor(gameState.turno) });
         } else {
-          instruction = `🤖 ${gameState.turno} está jogando...`;
+          instruction = getText('gameInstructionsCPUPlaying', { player: getTranslatedPlayerColor(gameState.turno) });
         }
       }
     }
@@ -6581,17 +10041,24 @@ function showObjectiveModal(objetivo) {
     return;
   }
   let icone = '🎯';
-  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : 'Objetivo indisponível';
+  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : getText('objectiveLoading');
   const lower = desc.toLowerCase();
   if (lower.includes('eliminar')) icone = '⚔️';
   else if (lower.includes('conquistar')) icone = '🏆';
   else if (lower.includes('territ')) icone = '🗺️';
   else if (lower.includes('continente')) icone = '🌍';
   iconEl.textContent = icone;
-  descEl.textContent = desc;
+  
+  // Traduzir nomes de cores na descrição do objetivo
+  const descTraduzida = translatePlayerColorsInMessage(desc);
+  descEl.textContent = descTraduzida;
+  
   popup.style.display = 'flex';
   if (backdrop) backdrop.style.display = 'block';
   modalObjetivoAberto = true;
+  
+  // Update texts for current language
+  updateGamePopupsTexts();
 }
 
 function hideObjectiveModal() {
@@ -6639,14 +10106,18 @@ function showObjectiveModal(objetivo) {
   const descEl = document.getElementById('objective-description');
   if (!popup || !iconEl || !descEl) return;
   let icone = '🎯';
-  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : 'Objetivo indisponível';
+  const desc = objetivo && objetivo.descricao ? String(objetivo.descricao) : getText('objectiveLoading');
   const lower = desc.toLowerCase();
   if (lower.includes('eliminar')) icone = '⚔️';
   else if (lower.includes('conquistar')) icone = '🏆';
   else if (lower.includes('territ')) icone = '🗺️';
   else if (lower.includes('continente')) icone = '🌍';
   iconEl.textContent = icone;
-  descEl.textContent = desc;
+  
+  // Traduzir nomes de cores na descrição do objetivo
+  const descTraduzida = translatePlayerColorsInMessage(desc);
+  descEl.textContent = descTraduzida;
+  
   popup.style.display = 'flex';
   if (backdrop) backdrop.style.display = 'block';
   modalObjetivoAberto = true;
@@ -6667,7 +10138,7 @@ function showVictoryModal(nomeJogador, resumoJogo) {
   const isPlayerVictory = gameState && nomeJogador === gameState.meuNome;
   
   // Mensagem principal
-  msg.textContent = isPlayerVictory ? 'Parabéns! Você venceu!' : `${nomeJogador} venceu o jogo!`;
+        msg.textContent = isPlayerVictory ? getText('gameInstructionsVictory') : `${getTranslatedPlayerColor(nomeJogador)} ${getText('victoryByElimination')}`;
   subtitle.textContent = resumoJogo && resumoJogo.tipoVitoria
     ? `Tipo de Vitória: ${resumoJogo.tipoVitoria === 'eliminacao' ? 'Eliminação Total' : 'Objetivo Completo'}`
     : '';
@@ -6771,20 +10242,20 @@ function fillPlayersGrid(nomeVencedor, gameState) {
       </div>
       <div class="player-stats">
         <div class="player-stat">
-          <span class="player-stat-label">🗺️ Territórios</span>
+          <span class="player-stat-label">🗺️ ${getText('territories')}</span>
           <span class="player-stat-value">${territorios}</span>
         </div>
         <div class="player-stat">
-          <span class="player-stat-label">⚔️ Tropas</span>
+          <span class="player-stat-label">⚔️ ${getText('troops')}</span>
           <span class="player-stat-value">${tropas}</span>
         </div>
         <div class="player-stat">
           <span class="player-stat-label">🎯 Tipo</span>
-          <span class="player-stat-value">${isHuman ? 'Humano' : 'CPU'}</span>
+          <span class="player-stat-value">${isHuman ? getText('human') : getText('cpu')}</span>
         </div>
         <div class="player-stat">
           <span class="player-stat-label">🏆 Status</span>
-          <span class="player-stat-value">${isWinner ? 'Venceu' : isEliminated ? 'Perdeu' : 'Ativo'}</span>
+          <span class="player-stat-value">${isWinner ? getText('won') : isEliminated ? getText('lost') : getText('active')}</span>
         </div>
       </div>
     `;
@@ -6805,9 +10276,9 @@ function fillObjectivesList(gameState, resumoJogo = null) {
   
   // Definir objetivos padrão se não existirem
   const objetivosPadrao = {
-    'eliminacao': 'Eliminar todos os outros jogadores',
-    'continentes': 'Conquistar 2 continentes completos',
-    'territorios': 'Conquistar 24 territórios'
+    'eliminacao': getText('eliminateAllPlayers'),
+    'continentes': getText('conquerContinents', { count: 2 }),
+    'territorios': getText('conquerTerritories', { count: 24 })
   };
   
   jogadores.forEach(jogador => {
@@ -6815,7 +10286,7 @@ function fillObjectivesList(gameState, resumoJogo = null) {
     const objValor = objetivos[jogador.nome];
     const objetivoJogador = objValor
       ? (typeof objValor === 'string' ? objValor : (objValor.descricao || objetivosPadrao.eliminacao))
-      : (objetivosPadrao.eliminacao || 'Eliminar todos os adversários');
+      : (objetivosPadrao.eliminacao || getText('eliminateAllAdversaries'));
     
     // Verificar se o objetivo foi completado (simplificado)
     const isCompleted = gameState.vencedor === jogador.nome;
@@ -6834,7 +10305,7 @@ function fillObjectivesList(gameState, resumoJogo = null) {
   
   // Se não há jogadores, mostrar mensagem
   if (jogadores.length === 0) {
-    objectivesList.innerHTML = '<div style="color: #ccc; text-align: center; padding: 20px;">Nenhum objetivo registrado</div>';
+    objectivesList.innerHTML = `<div style="color: #ccc; text-align: center; padding: 20px;">${getText('noObjectives')}</div>`;
   }
 }
 
@@ -6903,10 +10374,10 @@ function testVictoryScreen() {
         // CPU Difícil - Eliminado
       ],
       objetivos: {
-        'Jogador1': 'Eliminar todos os adversários',
-        'CPU Fácil': 'Conquistar 18 territórios',
-        'CPU Médio': 'Conquistar América do Sul e Europa',
-        'CPU Difícil': 'Conquistar América do Norte e África'
+        'Jogador1': getText('eliminateAllAdversaries'),
+        'CPU Fácil': getText('conquerTerritories', { count: 18 }),
+        'CPU Médio': getText('conquerSpecificContinents', { continent1: 'América do Sul', continent2: 'Europa' }),
+        'CPU Difícil': getText('conquerSpecificContinents', { continent1: 'América do Norte', continent2: 'África' })
       }
     }
   };
@@ -6952,17 +10423,22 @@ function showTransferModal(dados) {
   const cancelBtn = document.getElementById('transfer-cancel');
   const closeBtn = document.getElementById('transfer-close');
   
-  const maxDisponivel = (typeof dados.tropasAdicionais === 'number' ? dados.tropasAdicionais : (dados.tropasDisponiveis || 0));
+  // Calcular o máximo de tropas disponíveis para transferência
+  // O servidor agora envia tropasAdicionais como apenas as tropas opcionais
+  const maxDisponivel = dados.tropasAdicionais || 0;
+  
+  console.log('DEBUG: maxDisponivel calculado:', maxDisponivel, 'dados:', dados);
   
   if (origemEl) origemEl.textContent = dados.territorioAtacante;
   if (destinoEl) destinoEl.textContent = dados.territorioConquistado;
-  if (origemTroopsEl) origemTroopsEl.textContent = `Tropas: ${dados.tropasOrigem ?? '-'}`;
-  if (destinoTroopsEl) destinoTroopsEl.textContent = `Tropas: ${dados.tropasDestino ?? '-'}`;
+  if (origemTroopsEl) origemTroopsEl.textContent = getText('transferOriginTroops', { troops: dados.tropasOrigem ?? '-' });
+  if (destinoTroopsEl) destinoTroopsEl.textContent = getText('transferDestinationTroops', { troops: dados.tropasDestino ?? '-' });
   
   function updateQty() { 
     if (qtyEl) {
       const totalTropas = 1 + tropasParaTransferir; // 1 obrigatória + opcionais
-      qtyEl.textContent = `${totalTropas}/3`;
+      const maxTotal = 1 + maxDisponivel; // 1 obrigatória + máximo de opcionais
+      qtyEl.textContent = `${totalTropas}/${maxTotal}`;
     }
   }
   updateQty();
@@ -7024,7 +10500,7 @@ function initializeActionHistory() {
   const historyButton = document.createElement('button');
   historyButton.className = 'hud-button btn-history';
   historyButton.id = 'btn-history';
-  historyButton.innerHTML = '<span>💬</span><span>Chat</span>';
+  historyButton.innerHTML = `<span>💬</span><span>${getText('chatTab').replace('💬 ', '')}</span>`;
   
   // Add to action buttons container
   const actionButtons = document.querySelector('.action-buttons');
@@ -7055,8 +10531,8 @@ function createHistoryPopup() {
   popup.innerHTML = `
     <div class="history-header">
       <div class="history-tabs">
-        <button class="history-tab active" id="chat-tab">💬 Chat</button>
-        <button class="history-tab" id="history-tab">📜 Histórico</button>
+        <button class="history-tab active" id="chat-tab">${getText('chatTab')}</button>
+        <button class="history-tab" id="history-tab">${getText('historyTab')}</button>
       </div>
       <button class="history-close" id="history-close">✕</button>
     </div>
@@ -7064,19 +10540,19 @@ function createHistoryPopup() {
     <!-- Chat Content -->
     <div class="chat-content" id="chat-content">
       <div class="chat-messages" id="chat-messages">
-        <div class="chat-empty">Nenhuma mensagem ainda. Seja o primeiro a conversar!</div>
+        <div class="chat-empty">${getText('chatEmpty')}</div>
       </div>
       <div class="chat-input-container" id="chat-input-container">
         <form class="chat-input-form" id="chat-form">
-          <input type="text" class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." maxlength="200">
-          <button type="submit" class="chat-send-btn" id="chat-send-btn">Enviar</button>
+          <input type="text" class="chat-input" id="chat-input" placeholder="${getText('chatInputPlaceholder')}" maxlength="200">
+          <button type="submit" class="chat-send-btn" id="chat-send-btn">${getText('chatSendButton')}</button>
         </form>
       </div>
     </div>
     
     <!-- History Content -->
     <div class="history-content" id="history-content">
-      <div class="history-empty">Nenhuma ação registrada ainda.</div>
+      <div class="history-empty">${getText('historyEmpty')}</div>
     </div>
   `;
   
@@ -7263,9 +10739,13 @@ function addChatMessage(player, message, timestamp = new Date()) {
   const gameState = getGameState();
   if (!gameState) return;
   
+  // Traduzir nomes de cores no jogador e na mensagem
+  const playerTraduzido = getTranslatedPlayerColor(player);
+  const messageTraduzida = translatePlayerColorsInMessage(message);
+  
   const chatMessage = {
-    player: player,
-    message: message,
+    player: playerTraduzido,
+    message: messageTraduzida,
     timestamp: timestamp
   };
   
@@ -7296,7 +10776,7 @@ function updateChatDisplay() {
   if (!messagesContainer) return;
   
   if (gameState.chatMessages.length === 0) {
-    messagesContainer.innerHTML = '<div class="chat-empty">Nenhuma mensagem ainda. Seja o primeiro a conversar!</div>';
+    messagesContainer.innerHTML = `<div class="chat-empty">${getText('chatEmpty')}</div>`;
     return;
   }
   
@@ -7356,7 +10836,7 @@ function updateHistoryDisplay() {
   if (!content) return;
   
   if (gameState.actionHistory.length === 0) {
-    content.innerHTML = '<div class="history-empty">Nenhuma ação registrada ainda.</div>';
+    content.innerHTML = `<div class="history-empty">${getText('historyEmpty')}</div>`;
     return;
   }
   
@@ -7427,24 +10907,24 @@ function updatePlayerInfoPanel() {
             ${avatar}
           </div>
           <div class="player-name-modal">${getRealUsername(jogador.nome)}</div>
-          ${isCurrentTurn ? '<div class="turn-badge">TURNO ATUAL</div>' : ''}
+          ${isCurrentTurn ? `<div class="turn-badge">${getText('currentTurn')}</div>` : ''}
         </div>
         <div class="player-stats-modal">
           <div class="stat-item">
-            <span class="stat-label">Territórios:</span>
+            <span class="stat-label">${getText('territories')}</span>
             <span class="stat-value">${territorios}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Tropas:</span>
+            <span class="stat-label">${getText('troops')}</span>
             <span class="stat-value">${tropas}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Cartas:</span>
+            <span class="stat-label">${getText('cards')}</span>
             <span class="stat-value">${cartas}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Status:</span>
-            <span class="stat-value">${isActive ? 'Ativo' : 'Inativo'}</span>
+            <span class="stat-label">${getText('status')}</span>
+            <span class="stat-value">${isActive ? getText('active') : getText('inactive')}</span>
           </div>
         </div>
       </div>
@@ -7486,6 +10966,28 @@ function getPlayerColor(playerName) {
   const colors = Object.values(colorMap);
   const index = playerName.length % colors.length;
   return colors[index];
+}
+
+function getTranslatedPlayerColor(playerName) {
+  // Mapear nomes de cores para chaves de tradução
+  const colorTranslationMap = {
+    'Azul': 'blue',
+    'Vermelho': 'red',
+    'Verde': 'green',
+    'Amarelo': 'yellow',
+    'Preto': 'black',
+    'Roxo': 'purple'
+  };
+  
+  // Se o nome do jogador contém uma cor, retornar a tradução
+  for (const [colorName, translationKey] of Object.entries(colorTranslationMap)) {
+    if (playerName.includes(colorName)) {
+      return getText(translationKey);
+    }
+  }
+  
+  // Caso contrário, retornar o nome original
+  return playerName;
 }
 
 // Funções para mostrar modais de erro e informação
@@ -8491,7 +11993,7 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   overlay.style.inset = '0';
   overlay.style.zIndex = '999999';
   overlay.innerHTML = `
-    <div class=\"turn-confirm-modal show\" style=\"max-width:480px;\">\n      <div class=\"turn-confirm-header\"><span>🎯</span><span class=\"turn-confirm-title\">SEU TURNO!</span></div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">É a sua vez de jogar! Você é o ${nomeJogador}!</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-start-close\">OK</button>\n      </div>\n    </div>`;
+    <div class=\"turn-confirm-modal show\" style=\"max-width:480px;\">\n      <div class=\"turn-confirm-header\"><span>🎯</span><span class=\"turn-confirm-title\">${getText('turnStartTitle')}</span></div>\n      <div class=\"turn-confirm-body\">\n        <div class=\"turn-confirm-warning\">${getText('turnStartMessage', { player: getTranslatedPlayerColor(nomeJogador) })}</div>\n      </div>\n      <div class=\"turn-confirm-actions\">\n        <button class=\"turn-confirm-btn\" id=\"turn-start-close\">${getText('turnStartButton')}</button>\n      </div>\n    </div>`;
 
   const btn = document.getElementById('turn-start-close');
   if (btn) btn.onclick = () => { tocarSomClick(); fecharIndicacaoInicioTurno(); };
