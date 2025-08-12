@@ -2,13 +2,26 @@
 
 Um jogo de estratégia multiplayer inspirado no clássico War, desenvolvido com Node.js, Socket.IO e Phaser.js.
 
-## 🚀 Deploy no Railway
+## 🚀 Deploy
 
-### Pré-requisitos
+### 🎮 itch.io (Frontend)
+O jogo pode ser hospedado no itch.io para o frontend, conectando-se ao servidor no Railway.
+
+**📖 Guia Completo**: Veja [DEPLOY_README.md](DEPLOY_README.md) para instruções detalhadas.
+
+**Resumo Rápido**:
+1. Configure a URL do Railway no arquivo `public/config.js`
+2. Faça upload da pasta `public/` no itch.io
+3. O jogo detectará automaticamente o ambiente e se conectará ao servidor correto
+
+### 🖥️ Railway (Backend)
+O servidor deve ser hospedado no Railway para funcionalidade multiplayer.
+
+#### Pré-requisitos
 - Conta no [Railway](https://railway.app/)
 - Git configurado
 
-### Passos para Deploy
+#### Passos para Deploy
 
 1. **Fazer push para o GitHub**
    ```bash
@@ -37,6 +50,11 @@ Um jogo de estratégia multiplayer inspirado no clássico War, desenvolvido com 
    - O Railway fará o deploy automaticamente
    - Você receberá uma URL pública para acessar o jogo
 
+6. **Configurar Frontend**
+   - Copie a URL do Railway
+   - Edite `public/config.js` e atualize a URL
+   - Faça upload no itch.io
+
 ## 🎮 Como Jogar
 
 1. **Login**: Digite seu nome de usuário
@@ -50,7 +68,7 @@ Um jogo de estratégia multiplayer inspirado no clássico War, desenvolvido com 
 
 - **Backend**: Node.js + Express + Socket.IO
 - **Frontend**: Phaser.js (Game Engine)
-- **Deploy**: Railway
+- **Deploy**: Railway (Backend) + itch.io (Frontend)
 - **Comunicação**: WebSockets em tempo real
 
 ## 📁 Estrutura do Projeto
@@ -60,10 +78,12 @@ wargame/
 ├── server.js          # Servidor principal
 ├── package.json       # Dependências e scripts
 ├── Procfile          # Configuração Railway
-├── public/           # Arquivos estáticos
+├── public/           # Arquivos estáticos (upload no itch.io)
+│   ├── config.js     # Configuração do servidor
 │   ├── game.js       # Lógica do jogo (cliente)
 │   ├── index.html    # Interface principal
 │   └── assets/       # Imagens e sons
+├── DEPLOY_README.md  # Guia completo de deploy
 └── README.md         # Este arquivo
 ```
 
@@ -74,8 +94,11 @@ wargame/
 
 ## 🌐 Acesso
 
-Após o deploy, o jogo estará disponível em:
+### Backend (Railway)
 `https://seu-projeto.railway.app`
+
+### Frontend (itch.io)
+`https://seu-usuario.itch.io/nome-do-jogo`
 
 ---
 

@@ -6,6 +6,8 @@ let currentLanguage = 'en'; // Default language (English)
 // Mapeamento de nomes de cores para nomes de usuário reais
 let playerColorToUsernameMap = {};
 
+// Server Configuration is now handled in config.js
+
 // Internationalization System (i18n)
 const gameTranslations = {
   en: { // English (US)
@@ -5267,7 +5269,7 @@ function setupDebugMode() {
   console.log('🛠️ Comandos disponíveis:');
   console.log('  • V - Mostrar tela de vitória (debug)');
   console.log('  • T - Testar interfaces modais');
-  console.log('  • C - Simular combate (3 dados de defesa)');
+  console.log('  • C - Simular combate (3 dados defesa)');
   console.log('  • M - Testar proteção mobile touch');
   console.log('  • H - Alternar tropas HTML/Phaser');
   console.log('  • N - Alternar continentes HTML/Phaser');
@@ -6080,26 +6082,15 @@ function initializeLobby() {
   // Update texts for current language
   updateLobbyTexts();
   
-  // Connect to socket if not already connected
-  const socket = getSocket() || io();
-  window.socket = socket;
-  
-  // Check if socket is already connected
-  if (socket.connected) {
-    console.log('Socket já conectado, iniciando lobby global...');
+  // Wait for socket.io to be ready before connecting
+  function initializeSocket() {
+    // Connect to socket if not already connected
+    const socket = getSocket() || io(SERVER_URL);
+    window.socket = socket;
     
-    // Emit player joined global lobby event
-    socket.emit('playerJoinedGlobalLobby', { 
-      username: playerUsername,
-      language: currentLanguage
-    });
-    
-    // Start lobby timer
-    startLobbyTimer();
-  } else {
-    // Wait for socket connection before starting lobby
-    socket.on('connect', () => {
-      console.log('Socket conectado, iniciando lobby global...');
+    // Check if socket is already connected
+    if (socket.connected) {
+      console.log('Socket já conectado, iniciando lobby global...');
       
       // Emit player joined global lobby event
       socket.emit('playerJoinedGlobalLobby', { 
@@ -6109,34 +6100,58 @@ function initializeLobby() {
       
       // Start lobby timer
       startLobbyTimer();
+    } else {
+      // Wait for socket connection before starting lobby
+      socket.on('connect', () => {
+        console.log('Socket conectado, iniciando lobby global...');
+        
+        // Emit player joined global lobby event
+        socket.emit('playerJoinedGlobalLobby', { 
+          username: playerUsername,
+          language: currentLanguage
+        });
+        
+        // Start lobby timer
+        startLobbyTimer();
+      });
+    }
+    
+    // Handle connection errors
+    socket.on('connect_error', (error) => {
+      console.error('Erro ao conectar com o servidor:', error);
+      showServerErrorModal();
+    });
+    
+    // Lobby events
+    socket.on('globalLobbyUpdate', (data) => {
+      updateLobbyDisplay(data);
+    });
+    
+    socket.on('gameStarting', (data) => {
+      console.log('🎮 Recebido evento gameStarting do servidor!');
+      if (data && data.roomId) {
+        currentRoomId = data.roomId; // Set the room ID assigned by server
+        startGame();
+      } else {
+        console.log('⚠️ Evento gameStarting recebido sem roomId, ignorando...');
+      }
+    });
+    
+    // Chat message listener (for lobby chat if needed)
+    socket.on('chatMessage', (dados) => {
+      // Could implement lobby chat here if needed
     });
   }
   
-  // Handle connection errors
-  socket.on('connect_error', (error) => {
-    console.error('Erro ao conectar com o servidor:', error);
-    showServerErrorModal();
-  });
+  // Initialize socket when socket.io is ready
+  if (typeof io !== 'undefined') {
+    initializeSocket();
+  } else {
+    // Wait for socket.io to be loaded
+    window.addEventListener('socketioReady', initializeSocket);
+  }
   
-  // Lobby events
-  socket.on('globalLobbyUpdate', (data) => {
-    updateLobbyDisplay(data);
-  });
-  
-  socket.on('gameStarting', (data) => {
-    console.log('🎮 Recebido evento gameStarting do servidor!');
-    if (data && data.roomId) {
-      currentRoomId = data.roomId; // Set the room ID assigned by server
-      startGame();
-    } else {
-      console.log('⚠️ Evento gameStarting recebido sem roomId, ignorando...');
-    }
-  });
-  
-  // Chat message listener (for lobby chat if needed)
-  socket.on('chatMessage', (dados) => {
-    // Could implement lobby chat here if needed
-  });
+
 }
 
 function startLobbyTimer() {
