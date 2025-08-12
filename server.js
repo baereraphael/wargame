@@ -243,8 +243,8 @@ class GameRoom {
     
     // Criar uma carta para cada território
     this.paises.forEach(pais => {
-      // Escolher um símbolo aleatório para cada território
-      const simbolo = this.simbolosCartas[Math.floor(Math.random() * this.simbolosCartas.length)];
+      // Escolher um símbolo com probabilidades específicas
+      const simbolo = this.escolherSimboloCarta();
       
       const carta = {
         territorio: pais.nome,
@@ -258,6 +258,26 @@ class GameRoom {
     this.embaralharMonte();
     
     console.log(`🎴 Monte de cartas inicializado com ${this.monteCartas.length} cartas`);
+  }
+
+  // Função para escolher símbolo de carta com probabilidades específicas
+  escolherSimboloCarta() {
+    const random = Math.random();
+    
+    // 10% de chance para estrela (★) - símbolo curinga
+    if (random < 0.1) {
+      return '★';
+    }
+    // 30% de chance para cada um dos outros símbolos (▲, ■, ●)
+    else if (random < 0.4) {
+      return '▲';
+    }
+    else if (random < 0.7) {
+      return '■';
+    }
+    else {
+      return '●';
+    }
   }
 
   // Função para embaralhar o monte de cartas
