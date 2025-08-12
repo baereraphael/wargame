@@ -10,7 +10,9 @@ const server = http.createServer(app);
 app.use(cors({
   origin: [
     "https://*.itch.io",
-    "https://*.itchgames.com", 
+    "https://*.itchgames.com",
+    "https://*.itch.zone",
+    "https://html-classic.itch.zone",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://web-production-f6a26.up.railway.app"
@@ -23,7 +25,9 @@ const io = socketIo(server, {
   cors: {
     origin: [
       "https://*.itch.io",
-      "https://*.itchgames.com", 
+      "https://*.itchgames.com",
+      "https://*.itch.zone",
+      "https://html-classic.itch.zone",
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "https://web-production-f6a26.up.railway.app"

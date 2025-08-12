@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Conexão - War Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #333;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #555;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #2d5a2d; color: #90ee90; }
+        .error { background: #5a2d2d; color: #ffb6c1; }
+        .warning { background: #5a5a2d; color: #ffffe0; }
+        .info { background: #2d2d5a; color: #add8e6; }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .log {
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Conexão - War Game</h1>
+    
+    <div class="test-section">
+        <h2>📡 Configuração do Servidor</h2>
+        <div id="server-config"></div>
+        <button onclick="testServerConnection()">🔄 Testar Conexão</button>
+        <button onclick="clearLog()">🗑️ Limpar Log</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Status da Conexão</h2>
+        <div id="connection-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Log de Testes</h2>
+        <div id="test-log" class="log"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let testLog = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testLog.push(logEntry);
+            
+            const logElement = document.getElementById('test-log');
+            logElement.textContent = testLog.join('\n');
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function clearLog() {
+            testLog = [];
+            document.getElementById('test-log').textContent = '';
+        }
+        
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('connection-status');
+            statusElement.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function updateServerConfig() {
+            const configElement = document.getElementById('server-config');
+            configElement.innerHTML = `
+                <div class="status info">
+                    <strong>URL do Servidor:</strong> ${SERVER_URL}<br>
+                    <strong>Ambiente Detectado:</strong> ${window.location.hostname}<br>
+                    <strong>Configuração:</strong> ${SERVER_CONFIG[getEnvironment()]?.name || 'Desconhecido'}
+                </div>
+            `;
+        }
+        
+        function getEnvironment() {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'local';
+            if (hostname.includes('itch.io') || hostname.includes('itchgames.com')) return 'itch';
+            return 'railway';
+        }
+        
+        async function testServerConnection() {
+            log('🚀 Iniciando teste de conexão...', 'info');
+            updateStatus('🔄 Testando conexão...', 'warning');
+            
+            try {
+                // Test 1: Basic HTTP connection
+                log('📡 Teste 1: Conexão HTTP básica...', 'info');
+                const response = await fetch(`${SERVER_URL}/`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    log('✅ Teste 1: Conexão HTTP OK', 'success');
+                } else {
+                    log(`⚠️ Teste 1: HTTP Status ${response.status}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Teste 1: Erro HTTP - ${error.message}`, 'error');
+            }
+            
+            try {
+                // Test 2: Socket.io connection
+                log('🔌 Teste 2: Conexão Socket.io...', 'info');
+                
+                if (typeof io === 'undefined') {
+                    log('❌ Socket.io não está disponível', 'error');
+                    updateStatus('❌ Socket.io não disponível', 'error');
+                    return;
+                }
+                
+                const socket = io(SERVER_URL, {
+                    timeout: 5000,
+                    forceNew: true
+                });
+                
+                socket.on('connect', () => {
+                    log('✅ Teste 2: Socket.io conectado com sucesso!', 'success');
+                    updateStatus('✅ Conectado ao servidor!', 'success');
+                    
+                    // Test 3: Send a test message
+                    log('📤 Teste 3: Enviando mensagem de teste...', 'info');
+                    socket.emit('testConnection', { message: 'Teste de conexão do itch.io' });
+                    
+                    setTimeout(() => {
+                        socket.disconnect();
+                        log('🔌 Socket desconectado após teste', 'info');
+                    }, 2000);
+                });
+                
+                socket.on('connect_error', (error) => {
+                    log(`❌ Teste 2: Erro de conexão Socket.io - ${error.message}`, 'error');
+                    updateStatus('❌ Erro de conexão Socket.io', 'error');
+                });
+                
+                socket.on('error', (error) => {
+                    log(`❌ Teste 2: Erro Socket.io - ${error}`, 'error');
+                });
+                
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (!socket.connected) {
+                        log('⏰ Timeout: Socket não conseguiu conectar em 10 segundos', 'error');
+                        updateStatus('⏰ Timeout de conexão', 'error');
+                        socket.disconnect();
+                    }
+                }, 10000);
+                
+            } catch (error) {
+                log(`❌ Teste 2: Erro Socket.io - ${error.message}`, 'error');
+                updateStatus('❌ Erro no teste Socket.io', 'error');
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🌐 Página de teste carregada', 'info');
+            log(`📍 Hostname: ${window.location.hostname}`, 'info');
+            log(`🔗 URL do servidor: ${SERVER_URL}`, 'info');
+            
+            updateServerConfig();
+            updateStatus('⏳ Aguardando teste...', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -90,7 +90,12 @@ Abra o console do navegador (F12) e verifique se aparece:
 ### CORS Error
 
 **Sintoma**: Erro de CORS no console
-**Solução**: Verificar se o servidor Railway está configurado para aceitar requisições do itch.io
+**Solução**: 
+1. **Instalar dependência CORS**: `npm install cors`
+2. **Reiniciar o servidor Railway** após a instalação
+3. **Verificar se o servidor está rodando** com as novas configurações
+
+**Configuração Automática**: O servidor já está configurado para aceitar conexões do itch.io
 
 ### Socket.io não carrega
 
