@@ -3417,6 +3417,30 @@ function stopTurnTimer() {
   updateGlobalTimerDisplay();
 }
 
+// Function to update client timer based on server data
+function updateClientTimer(data) {
+  const timerDisplay = document.getElementById('timer-display');
+  const globalTimer = document.getElementById('global-turn-timer');
+  
+  if (!data.active || data.timeLeft <= 0) {
+    // Hide timer when inactive or expired
+    if (globalTimer) {
+      globalTimer.style.display = 'none';
+    }
+    stopTurnTimer();
+    return;
+  }
+  
+  // Update local timer state
+  turnTimeLeft = data.timeLeft;
+  isPlayerTurn = false; // Server controls the timer now
+  
+  // Update display
+  updateGlobalTimerDisplay();
+  
+  console.log(`⏰ Timer atualizado: ${data.timeLeft}s para ${data.currentPlayer}`);
+}
+
 function updateGlobalTimerDisplay() {
   const timerDisplay = document.getElementById('timer-display');
   const globalTimer = document.getElementById('global-turn-timer');
@@ -3444,14 +3468,22 @@ function updateGlobalTimerDisplay() {
     timerDisplay.classList.add('warning');
   }
   
-  // Handle clock ticking sound for last 10 seconds
-  if (turnTimeLeft <= 10 && turnTimeLeft > 0) {
+  // Handle clock ticking sound for last 10 seconds (only for current player)
+  const gameState = getGameState();
+  const isMyTurn = gameState && gameState.meuNome === gameState.turno;
+  
+  if (turnTimeLeft <= 10 && turnTimeLeft > 0 && isMyTurn) {
     if (!isClockTickingPlaying) {
       tocarSomClockTicking();
       isClockTickingPlaying = true;
     }
   } else {
     isClockTickingPlaying = false;
+  }
+  
+  // Show timer for all players
+  if (globalTimer) {
+    globalTimer.style.display = 'flex';
   }
 }
 
@@ -3581,15 +3613,8 @@ function confirmTurn() {
   // Limpar todas as animações de salto ao confirmar o turno
   limparTodasAnimacoesSalto();
   
-  // Start the normal turn timer
-  const gameState = getGameState();
-  console.log('✅ Game state in confirmTurn:', gameState);
-  if (gameState && gameState.meuNome === gameState.turno) {
-    console.log('✅ Starting normal turn timer');
-    startTurnTimer();
-  } else {
-    console.log('❌ Cannot start timer - not my turn or no game state');
-  }
+  // Timer is now controlled by server
+  console.log('✅ Turn confirmed - timer controlled by server');
 }
 function forceTurnPass() {
   const gameState = getGameState();
@@ -5613,6 +5638,12 @@ function initializeGame() {
     if (gameState && dados.player !== (playerUsername || gameState.meuNome) && !gameState.historyPopupVisible) {
       tocarSomHuh();
     }
+  });
+  
+  // Turn timer update listener
+  socket.on('turnTimerUpdate', (data) => {
+    console.log('⏰ Recebida atualização do timer do servidor:', data);
+    updateClientTimer(data);
   });
   
   // Game state update listener
@@ -9829,11 +9860,8 @@ function updateCSSHUD() {
       // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
-        // Start turn timer when it's the player's turn and not already running
-        if (gameState.meuNome === gameState.turno && !isPlayerTurn) {
-          console.log('🎮 Starting turn timer for player:', gameState.meuNome);
-          startTurnTimer();
-        }
+        // Timer is now controlled by server
+        // Local timer start removed - server sends turnTimerUpdate events
       } else {
         // Hide timer if it's CPU turn or game is over
         globalTimerEl.style.display = 'none';

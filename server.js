@@ -99,6 +99,11 @@ class GameRoom {
     this.lobbyTimeLeft = 5; // 5 seconds
     this.gameStarted = false;
     
+    // Turn timer variables
+    this.turnTimer = null;
+    this.turnTimeLeft = 90; // 1:30 in seconds
+    this.turnTimerActive = false;
+    
     // Players
     this.jogadores = [
   { nome: 'Azul', ativo: true, socketId: null, isCPU: false },
@@ -1051,6 +1056,17 @@ io.on('connection', (socket) => {
     io.to(playerRoom.roomId).emit('mostrarMensagem', `🎮 Turno de ${playerRoom.turno}. Reforços: ${playerRoom.tropasReforco} base + ${Object.values(playerRoom.tropasBonusContinente).reduce((sum, qty) => sum + qty, 0)} bônus`);
     enviarEstadoParaTodos(playerRoom);
     
+    // Stop timer for player who passed turn
+    stopTurnTimer(playerRoom.roomId);
+    
+    // Start timer for next player if they're human
+    const nextPlayer = playerRoom.jogadores[playerRoom.indiceTurno];
+    if (!nextPlayer.isCPU) {
+      setTimeout(() => {
+        startTurnTimer(playerRoom.roomId);
+      }, 1000); // Small delay to allow UI updates
+    }
+    
     // Verificar se é turno de CPU
     verificarTurnoCPU(playerRoom);
 
@@ -1187,6 +1203,139 @@ io.on('connection', (socket) => {
     // Check if it's CPU turn
     verificarTurnoCPU(playerRoom);
   });
+
+  // Turn Timer System Functions
+  function startTurnTimer(roomId) {
+    const room = gameRooms.get(roomId);
+    if (!room) return;
+    
+    // Clear existing timer
+    if (room.turnTimer) {
+      clearInterval(room.turnTimer);
+    }
+    
+    room.turnTimeLeft = 90; // Reset to 1:30
+    room.turnTimerActive = true;
+    
+    console.log(`⏰ Iniciando timer de turno na sala ${roomId} para jogador ${room.turno}`);
+    
+    // Send initial timer state to all players
+    io.to(roomId).emit('turnTimerUpdate', {
+      timeLeft: room.turnTimeLeft,
+      active: true,
+      currentPlayer: room.turno
+    });
+    
+    room.turnTimer = setInterval(() => {
+      room.turnTimeLeft--;
+      
+      // Send timer update to all players in the room
+      io.to(roomId).emit('turnTimerUpdate', {
+        timeLeft: room.turnTimeLeft,
+        active: true,
+        currentPlayer: room.turno
+      });
+      
+      console.log(`⏰ Timer sala ${roomId}: ${room.turnTimeLeft}s restantes para ${room.turno}`);
+      
+      if (room.turnTimeLeft <= 0) {
+        console.log(`⏰ Timer expirou na sala ${roomId} para jogador ${room.turno}`);
+        forceTurnPassByTimer(roomId);
+      }
+    }, 1000);
+  }
+
+  function stopTurnTimer(roomId) {
+    const room = gameRooms.get(roomId);
+    if (!room) return;
+    
+    if (room.turnTimer) {
+      clearInterval(room.turnTimer);
+      room.turnTimer = null;
+    }
+    
+    room.turnTimerActive = false;
+    room.turnTimeLeft = 0;
+    
+    console.log(`⏰ Timer de turno parado na sala ${roomId}`);
+    
+    // Send timer stop to all players
+    io.to(roomId).emit('turnTimerUpdate', {
+      timeLeft: 0,
+      active: false,
+      currentPlayer: room.turno
+    });
+  }
+
+  function forceTurnPassByTimer(roomId) {
+    const room = gameRooms.get(roomId);
+    if (!room) return;
+    
+    console.log(`⏰ Forçando passagem de turno na sala ${roomId} para ${room.turno}`);
+    
+    // Stop current timer
+    stopTurnTimer(roomId);
+    
+    // Find current player and move to next
+    const currentPlayerIndex = room.jogadores.findIndex(j => j.nome === room.turno && j.ativo);
+    if (currentPlayerIndex !== -1) {
+      // Clear any remaining actions for current player
+      room.faseRemanejamento = false;
+      room.tropasBonusContinente = {};
+      
+      // Process cards for current player
+      processarCartasJogador(room.turno, room);
+      
+      // Clear movement control for current player
+      if (room.movimentosRemanejamento[room.turno]) {
+        delete room.movimentosRemanejamento[room.turno];
+      }
+      
+      // Clear troop movement tracking for current player
+      if (room.tropasMovidas[room.turno]) {
+        delete room.tropasMovidas[room.turno];
+      }
+      
+      // Find next active player
+      let nextPlayerIndex = (currentPlayerIndex + 1) % room.jogadores.length;
+      let attempts = 0;
+      
+      while (!room.jogadores[nextPlayerIndex].ativo && attempts < room.jogadores.length) {
+        nextPlayerIndex = (nextPlayerIndex + 1) % room.jogadores.length;
+        attempts++;
+      }
+      
+      if (attempts < room.jogadores.length) {
+        room.turno = room.jogadores[nextPlayerIndex].nome;
+        room.indiceTurno = nextPlayerIndex;
+        
+        const resultadoReforco = calcularReforco(room.turno, room);
+        room.tropasReforco = resultadoReforco.base;
+        room.tropasBonusContinente = resultadoReforco.bonus;
+        
+        console.log(`⏰ Turno passou automaticamente para ${room.turno} na sala ${roomId}`);
+        
+        // Send message about timeout
+        io.to(roomId).emit('mostrarMensagem', `⏰ Turno de ${room.jogadores[currentPlayerIndex].nome} expirou. Agora é a vez de ${room.turno}.`);
+        
+        // Send updated state to all players
+        enviarEstadoParaTodos(room);
+        
+        // Start timer for next player if they're human
+        const nextPlayer = room.jogadores[nextPlayerIndex];
+        if (!nextPlayer.isCPU) {
+          setTimeout(() => {
+            startTurnTimer(roomId);
+          }, 1000); // Small delay to allow UI updates
+        } else {
+          // If next player is CPU, activate them
+          setTimeout(() => {
+            verificarTurnoCPU(room);
+          }, 1000);
+        }
+      }
+    }
+  }
 
   socket.on('consultarObjetivo', () => {
     // Find which room this socket belongs to
@@ -3779,6 +3928,17 @@ io.sockets.sockets.forEach((s) => {
 });
 
 // Verificar se é turno de CPU
+const currentPlayer = room.jogadores.find(j => j.nome === room.turno);
+if (!currentPlayer.isCPU) {
+  // Start timer for human player
+  setTimeout(() => {
+    startTurnTimer(room.roomId);
+  }, 1000); // Small delay to allow UI updates
+} else {
+  // Stop any existing timer for CPU turns
+  stopTurnTimer(room.roomId);
+}
+
 verificarTurnoCPU(room);
 }
 
@@ -3881,6 +4041,14 @@ function startGame(roomId) {
     }
   });
   console.log(`🔧 DEBUG: ${clientesEncontrados} clientes receberam estadoAtualizado`);
+  
+  // Start timer for first player if they're human
+  const firstPlayer = room.jogadores.find(j => j.nome === room.turno);
+  if (firstPlayer && !firstPlayer.isCPU) {
+    setTimeout(() => {
+      startTurnTimer(roomId);
+    }, 2000); // Longer delay to allow game initialization
+  }
   
   // Verificar se é turno de CPU no início do jogo
   console.log(`🎮 Verificando turno inicial na sala ${roomId}...`);
