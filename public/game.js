@@ -5568,10 +5568,29 @@ function testModalInterfaces() {
   // Iniciar teste
   showNext();
 }
+// Variable to track if game is already initialized
+let gameInitialized = false;
+
+// Function to reset game initialization state
+function resetGameInitialization() {
+  gameInitialized = false;
+  gameStarted = false;
+  currentScene = null;
+  console.log('🔄 Estado de inicialização do jogo resetado');
+}
+
 function initializeGame() {
   console.log('🔧 DEBUG: initializeGame() iniciada');
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
   console.log('🔧 DEBUG: playerUsername:', playerUsername);
+  
+  // Prevent multiple initializations
+  if (gameInitialized) {
+    console.log('⚠️ Jogo já foi inicializado, ignorando chamada duplicada');
+    return;
+  }
+  
+  gameInitialized = true;
   
   // Use existing socket from lobby
   const socket = getSocket();
@@ -5967,6 +5986,16 @@ function initializeGame() {
   
   // Initialize Phaser game
   console.log('🎮 Criando instância do Phaser...');
+  
+  // Destroy existing game instance if it exists
+  if (window.game) {
+    console.log('🔄 Destruindo instância anterior do Phaser...');
+    window.game.destroy(true);
+    window.game = null;
+    // Reset scene reference
+    currentScene = null;
+  }
+  
   const game = new Phaser.Game(config);
   window.game = game; // Make game globally available
   console.log('✅ Phaser criado com sucesso!');
@@ -6249,6 +6278,18 @@ function startGame() {
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
   console.log('🔧 DEBUG: gameStarted antes:', gameStarted);
   
+  // Prevent multiple game initializations
+  if (gameStarted && window.game && currentScene) {
+    console.log('⚠️ Jogo já foi iniciado e está funcionando, ignorando chamada duplicada');
+    return;
+  }
+  
+  // If game was started but Phaser is not working, allow restart
+  if (gameStarted && (!window.game || !currentScene)) {
+    console.log('🔄 Jogo foi iniciado mas Phaser não está funcionando, permitindo reinicialização...');
+    resetGameInitialization();
+  }
+  
   gameStarted = true;
   console.log('🔧 DEBUG: gameStarted após:', gameStarted);
   
@@ -6524,6 +6565,12 @@ function preload() {
 }
 function create() {
   console.log('🎨 Create iniciado...');
+  
+  // Check if scene is already initialized
+  if (currentScene) {
+    console.log('⚠️ Scene já existe, verificando se precisa reinicializar...');
+  }
+  
   currentScene = this; // Set global reference to current scene
   console.log('🎯 CurrentScene definido:', currentScene);
   
