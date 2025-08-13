@@ -211,6 +211,115 @@ class GameRoom {
     this.tropasBonusContinente = {}; // Track bonus troops by continent
     this.faseRemanejamento = false; // Controla se está na fase de remanejamento
 
+// Sistema de objetivos
+    this.objetivos = {}; // { jogador: objetivo }
+
+// Sistema de controle de movimentação de tropas durante remanejamento
+    this.movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
+    
+    // Sistema de rastreamento de tropas individuais movidas
+    this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y, tropasIndividuais: [] } } }
+
+    // Sistema de cartas território
+    this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
+    this.cartasTerritorio = {}; // { jogador: [cartas] }
+    this.monteCartas = []; // Monte de cartas território disponíveis
+    this.simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
+    this.numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
+    
+    // 🎴 Sistema de rastreamento de conquistas para eliminações
+    this.ultimoConquistador = {}; // { territorio: jogador }
+
+// Tipos de objetivos
+    this.tiposObjetivos = [
+  'conquistar3Continentes',
+  'eliminarJogador', 
+  'dominar24Territorios',
+  'dominar16TerritoriosCom2Tropas'
+];
+
+    // Inicializar o monte de cartas território
+    this.inicializarMonteCartas();
+  }
+
+  // Função para inicializar o monte de cartas território
+  inicializarMonteCartas() {
+    this.monteCartas = [];
+    
+    // Criar uma carta para cada território
+    this.paises.forEach(pais => {
+      // Escolher um símbolo com probabilidades específicas
+      const simbolo = this.escolherSimboloCarta();
+      
+      const carta = {
+        territorio: pais.nome,
+        simbolo: simbolo
+      };
+      
+      this.monteCartas.push(carta);
+    });
+    
+    // Embaralhar o monte
+    this.embaralharMonte();
+    
+    console.log(`🎴 Monte de cartas inicializado com ${this.monteCartas.length} cartas`);
+  }
+
+  // Função para escolher símbolo de carta com probabilidades específicas
+  escolherSimboloCarta() {
+    const random = Math.random();
+    
+    // 10% de chance para estrela (★) - símbolo curinga
+    if (random < 0.1) {
+      return '★';
+    }
+    // 30% de chance para cada um dos outros símbolos (▲, ■, ●)
+    else if (random < 0.4) {
+      return '▲';
+    }
+    else if (random < 0.7) {
+      return '■';
+    }
+    else {
+      return '●';
+    }
+  }
+
+  // Função para embaralhar o monte de cartas
+  embaralharMonte() {
+    for (let i = this.monteCartas.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.monteCartas[i], this.monteCartas[j]] = [this.monteCartas[j], this.monteCartas[i]];
+    }
+  }
+
+  // Função para pegar uma carta do monte
+  pegarCartaDoMonte() {
+    if (this.monteCartas.length === 0) {
+      console.log('⚠️ Monte de cartas vazio!');
+      return null;
+    }
+    
+    return this.monteCartas.pop();
+  }
+
+    // Função para devolver cartas ao monte
+  devolverCartasAoMonte(cartas) {
+    cartas.forEach(carta => {
+      this.monteCartas.push(carta);
+    });
+    
+    // Embaralhar o monte após devolver as cartas
+    this.embaralharMonte();
+    
+    console.log(`🎴 ${cartas.length} cartas devolvidas ao monte. Monte agora tem ${this.monteCartas.length} cartas`);
+  }
+}
+
+// Global rooms management
+const gameRooms = new Map();
+let nextRoomId = 1;
+
 // Turn Timer System Functions (Global scope)
 function startTurnTimer(roomId) {
   const room = gameRooms.get(roomId);
@@ -343,115 +452,6 @@ function forceTurnPassByTimer(roomId) {
     }
   }
 }
-
-// Sistema de objetivos
-    this.objetivos = {}; // { jogador: objetivo }
-
-// Sistema de controle de movimentação de tropas durante remanejamento
-    this.movimentosRemanejamento = {}; // { jogador: { origem: { destino: quantidade } } }
-    
-    // Sistema de rastreamento de tropas individuais movidas
-    this.tropasMovidas = {}; // { jogador: { territorio: { tropasOriginais: X, tropasMovidas: Y, tropasIndividuais: [] } } }
-
-    // Sistema de cartas território
-    this.territoriosConquistadosNoTurno = {}; // { jogador: [territorios] }
-    this.cartasTerritorio = {}; // { jogador: [cartas] }
-    this.monteCartas = []; // Monte de cartas território disponíveis
-    this.simbolosCartas = ['▲', '■', '●', '★']; // Triângulo, quadrado, círculo, coringa
-    this.numeroTrocasRealizadas = 0; // Contador de trocas para bônus progressivo
-    
-    // 🎴 Sistema de rastreamento de conquistas para eliminações
-    this.ultimoConquistador = {}; // { territorio: jogador }
-
-// Tipos de objetivos
-    this.tiposObjetivos = [
-  'conquistar3Continentes',
-  'eliminarJogador', 
-  'dominar24Territorios',
-  'dominar16TerritoriosCom2Tropas'
-];
-
-    // Inicializar o monte de cartas território
-    this.inicializarMonteCartas();
-  }
-
-  // Função para inicializar o monte de cartas território
-  inicializarMonteCartas() {
-    this.monteCartas = [];
-    
-    // Criar uma carta para cada território
-    this.paises.forEach(pais => {
-      // Escolher um símbolo com probabilidades específicas
-      const simbolo = this.escolherSimboloCarta();
-      
-      const carta = {
-        territorio: pais.nome,
-        simbolo: simbolo
-      };
-      
-      this.monteCartas.push(carta);
-    });
-    
-    // Embaralhar o monte
-    this.embaralharMonte();
-    
-    console.log(`🎴 Monte de cartas inicializado com ${this.monteCartas.length} cartas`);
-  }
-
-  // Função para escolher símbolo de carta com probabilidades específicas
-  escolherSimboloCarta() {
-    const random = Math.random();
-    
-    // 10% de chance para estrela (★) - símbolo curinga
-    if (random < 0.1) {
-      return '★';
-    }
-    // 30% de chance para cada um dos outros símbolos (▲, ■, ●)
-    else if (random < 0.4) {
-      return '▲';
-    }
-    else if (random < 0.7) {
-      return '■';
-    }
-    else {
-      return '●';
-    }
-  }
-
-  // Função para embaralhar o monte de cartas
-  embaralharMonte() {
-    for (let i = this.monteCartas.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.monteCartas[i], this.monteCartas[j]] = [this.monteCartas[j], this.monteCartas[i]];
-    }
-  }
-
-  // Função para pegar uma carta do monte
-  pegarCartaDoMonte() {
-    if (this.monteCartas.length === 0) {
-      console.log('⚠️ Monte de cartas vazio!');
-      return null;
-    }
-    
-    return this.monteCartas.pop();
-  }
-
-    // Função para devolver cartas ao monte
-  devolverCartasAoMonte(cartas) {
-    cartas.forEach(carta => {
-      this.monteCartas.push(carta);
-    });
-    
-    // Embaralhar o monte após devolver as cartas
-    this.embaralharMonte();
-    
-    console.log(`🎴 ${cartas.length} cartas devolvidas ao monte. Monte agora tem ${this.monteCartas.length} cartas`);
-  }
-}
-
-// Global rooms management
-const gameRooms = new Map();
-let nextRoomId = 1;
 
 // Global Lobby Management
 const globalLobby = {
