@@ -362,7 +362,6 @@ const gameTranslations = {
     comingSoon: 'Coming Soon',
     workInProgress: 'Work in Progress'
   },
-  
   pt: { // Portuguese (Brazil)
     // Login Screen
     loginTitle: 'Entre com seu nome para começar',
@@ -715,7 +714,6 @@ const gameTranslations = {
     comingSoon: 'Em Breve',
     workInProgress: 'Work in Progress'
   },
-  
   ru: { // Russian
     // Login Screen
     loginTitle: 'Введите ваше имя, чтобы начать',
@@ -1020,7 +1018,6 @@ const gameTranslations = {
     comingSoon: 'Скоро',
     workInProgress: 'В разработке'
   },
-  
   zh: { // Chinese
     // Login Screen
     loginTitle: '输入您的姓名开始游戏',
@@ -1325,7 +1322,6 @@ const gameTranslations = {
     comingSoon: '即将推出',
     workInProgress: '开发中'
   },
-  
   hi: { // Hindi (India)
     // Login Screen
     loginTitle: 'शुरू करने के लिए अपना नाम दर्ज करें',
@@ -1819,7 +1815,6 @@ const gameTranslations = {
     inactive: 'Inaktiv',
     currentTurn: 'AKTUELLER ZUG'
   },
-  
   ja: { // Japanese
     // Login Screen
     loginTitle: '開始するには名前を入力してください',
@@ -2290,7 +2285,6 @@ function updateSkirmishModeTexts() {
     backToModes.textContent = getText('backToModes');
   }
 }
-
 function updateTutorialTexts() {
   // Update tutorial header
   const tutorialHeader = document.querySelector('.tutorial-header h1');
@@ -2663,7 +2657,6 @@ function updateGameStatisticsTexts() {
     continentsLabel.textContent = getText('continentsInDispute');
   }
 }
-
 function updateGamePopupsTexts() {
   // Update reinforcement popup
   const reinforceTitle = document.getElementById('reinforce-title');
@@ -3150,7 +3143,6 @@ function getRealUsername(colorName) {
 // Room Selection System
 let currentRoomId = null;
 let roomSelectionScreen = null;
-
 // Turn Timer System
 let turnTimer = null;
 let turnTimeLeft = 90; // 1:30 in seconds
@@ -3158,7 +3150,6 @@ let turnTimerInterval = null;
 let isPlayerTurn = false;
 let isClockTickingPlaying = false;
 let timerJustExpired = false; // Prevent timer from restarting immediately after expiration
-
 // Turn Confirmation Popup System
 let turnConfirmationPopup = null; // legacy (Phaser) - kept for compatibility
 let turnConfirmationTimeout = null;
@@ -3426,6 +3417,30 @@ function stopTurnTimer() {
   updateGlobalTimerDisplay();
 }
 
+// Function to update client timer based on server data
+function updateClientTimer(data) {
+  const timerDisplay = document.getElementById('timer-display');
+  const globalTimer = document.getElementById('global-turn-timer');
+  
+  if (!data.active || data.timeLeft <= 0) {
+    // Hide timer when inactive or expired
+    if (globalTimer) {
+      globalTimer.style.display = 'none';
+    }
+    stopTurnTimer();
+    return;
+  }
+  
+  // Update local timer state
+  turnTimeLeft = data.timeLeft;
+  isPlayerTurn = false; // Server controls the timer now
+  
+  // Update display
+  updateGlobalTimerDisplay();
+  
+  console.log(`⏰ Timer atualizado: ${data.timeLeft}s para ${data.currentPlayer}`);
+}
+
 function updateGlobalTimerDisplay() {
   const timerDisplay = document.getElementById('timer-display');
   const globalTimer = document.getElementById('global-turn-timer');
@@ -3453,14 +3468,22 @@ function updateGlobalTimerDisplay() {
     timerDisplay.classList.add('warning');
   }
   
-  // Handle clock ticking sound for last 10 seconds
-  if (turnTimeLeft <= 10 && turnTimeLeft > 0) {
+  // Handle clock ticking sound for last 10 seconds (only for current player)
+  const gameState = getGameState();
+  const isMyTurn = gameState && gameState.meuNome === gameState.turno;
+  
+  if (turnTimeLeft <= 10 && turnTimeLeft > 0 && isMyTurn) {
     if (!isClockTickingPlaying) {
       tocarSomClockTicking();
       isClockTickingPlaying = true;
     }
   } else {
     isClockTickingPlaying = false;
+  }
+  
+  // Show timer for all players
+  if (globalTimer) {
+    globalTimer.style.display = 'flex';
   }
 }
 
@@ -3590,17 +3613,9 @@ function confirmTurn() {
   // Limpar todas as animações de salto ao confirmar o turno
   limparTodasAnimacoesSalto();
   
-  // Start the normal turn timer
-  const gameState = getGameState();
-  console.log('✅ Game state in confirmTurn:', gameState);
-  if (gameState && gameState.meuNome === gameState.turno) {
-    console.log('✅ Starting normal turn timer');
-    startTurnTimer();
-  } else {
-    console.log('❌ Cannot start timer - not my turn or no game state');
-  }
+  // Timer is now controlled by server
+  console.log('✅ Turn confirmed - timer controlled by server');
 }
-
 function forceTurnPass() {
   const gameState = getGameState();
   if (!gameState) {
@@ -3660,7 +3675,6 @@ function forceTurnPass() {
   lastTurnForPlayer = null; // Reset turn tracker when turn is forced to pass
   lastProcessedTurn = null; // Reset processed turn tracker when turn is forced to pass
 }
-
 function endTurnByTimeout() {
   const gameState = getGameState();
   if (!gameState) return;
@@ -3986,7 +4000,6 @@ function showSkirmishTutorial() {
     initializeTutorial();
   }
 }
-
 function initializeTutorial() {
   let currentSection = 1;
   const totalSections = 6;
@@ -4162,7 +4175,6 @@ function backToModeSelectionFromSkirmish() {
     console.log('✅ Tela de seleção de modos exibida');
   }
 }
-
 function backToLogin() {
   // Reset login state
   playerUsername = '';
@@ -4474,7 +4486,6 @@ function confirmarRemanejamento() {
     console.error('❌ Quantidade inválida para movimento:', quantidade);
   }
 }
-
 // Função para verificar se alguma interface HTML está aberta
 function isAnyHTMLInterfaceOpen() {
   // Verificar interfaces por elemento e estilo de display
@@ -4636,7 +4647,6 @@ function createHTMLTroopIndicator(territorio) {
   updateHTMLTroopPosition(indicator, territorio);
   return indicator;
 }
-
 function updateHTMLTroopPosition(indicator, territorio) {
   if (!indicator || !territorio.troopCircle) return;
   
@@ -4972,7 +4982,6 @@ function getControllingPlayer(continentName, gameState) {
   }
   return owner;
 }
-
 function updateAllContinentLabels() {
   if (!htmlContinentsEnabled || !continentsOverlay) return;
   
@@ -5101,7 +5110,6 @@ function toggleHTMLContinents() {
   
   return htmlContinentsEnabled;
 }
-
 // Função para configurar proteção touch em mobile
 function setupMobileTouchProtection() {
   // Função para bloquear eventos touch quando interfaces estão abertas
@@ -5463,7 +5471,6 @@ function showDebugVictoryScreen() {
   showDebugMessage(`🏆 Vitória de ${vencedor} (${tipoVitoria})`);
   console.log('🛠️ Dados gerados:', dadosSimulados);
 }
-
 function generateRandomTerritories(jogadores, vencedor) {
   const territorios = [
     'Brasil', 'Argentina', 'Peru', 'Uruguai', 'Venezuela', 'Colombia',
@@ -5586,11 +5593,29 @@ function testModalInterfaces() {
   // Iniciar teste
   showNext();
 }
+// Variable to track if game is already initialized
+let gameInitialized = false;
+
+// Function to reset game initialization state
+function resetGameInitialization() {
+  gameInitialized = false;
+  gameStarted = false;
+  currentScene = null;
+  console.log('🔄 Estado de inicialização do jogo resetado');
+}
 
 function initializeGame() {
   console.log('🔧 DEBUG: initializeGame() iniciada');
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
   console.log('🔧 DEBUG: playerUsername:', playerUsername);
+  
+  // Prevent multiple initializations
+  if (gameInitialized) {
+    console.log('⚠️ Jogo já foi inicializado, ignorando chamada duplicada');
+    return;
+  }
+  
+  gameInitialized = true;
   
   // Use existing socket from lobby
   const socket = getSocket();
@@ -5613,6 +5638,12 @@ function initializeGame() {
     if (gameState && dados.player !== (playerUsername || gameState.meuNome) && !gameState.historyPopupVisible) {
       tocarSomHuh();
     }
+  });
+  
+  // Turn timer update listener
+  socket.on('turnTimerUpdate', (data) => {
+    console.log('⏰ Recebida atualização do timer do servidor:', data);
+    updateClientTimer(data);
   });
   
   // Game state update listener
@@ -5963,7 +5994,6 @@ function initializeGame() {
       limparSelecao();
     }
   });
-  
   console.log('🔧 DEBUG: Event listeners configurados');
   
   // Create Phaser game only after login
@@ -5987,6 +6017,16 @@ function initializeGame() {
   
   // Initialize Phaser game
   console.log('🎮 Criando instância do Phaser...');
+  
+  // Destroy existing game instance if it exists
+  if (window.game) {
+    console.log('🔄 Destruindo instância anterior do Phaser...');
+    window.game.destroy(true);
+    window.game = null;
+    // Reset scene reference
+    currentScene = null;
+  }
+  
   const game = new Phaser.Game(config);
   window.game = game; // Make game globally available
   console.log('✅ Phaser criado com sucesso!');
@@ -6071,7 +6111,6 @@ function initializeGame() {
     }
   }
 }
-
 function initializeLobby() {
   console.log('🎮 Inicializando lobby global...');
   
@@ -6270,6 +6309,18 @@ function startGame() {
   console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
   console.log('🔧 DEBUG: gameStarted antes:', gameStarted);
   
+  // Prevent multiple game initializations
+  if (gameStarted && window.game && currentScene) {
+    console.log('⚠️ Jogo já foi iniciado e está funcionando, ignorando chamada duplicada');
+    return;
+  }
+  
+  // If game was started but Phaser is not working, allow restart
+  if (gameStarted && (!window.game || !currentScene)) {
+    console.log('🔄 Jogo foi iniciado mas Phaser não está funcionando, permitindo reinicialização...');
+    resetGameInitialization();
+  }
+  
   gameStarted = true;
   console.log('🔧 DEBUG: gameStarted após:', gameStarted);
   
@@ -6451,7 +6502,6 @@ function processarEstadoPendente() {
 function getSocket() {
   return window.socket;
 }
-
 // Helper function to emit events with room ID
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
@@ -6544,9 +6594,14 @@ function preload() {
   this.load.audio('clockticking', 'assets/clockticking.mp3');
   console.log('✅ Preload concluído!');
 }
-
 function create() {
   console.log('🎨 Create iniciado...');
+  
+  // Check if scene is already initialized
+  if (currentScene) {
+    console.log('⚠️ Scene já existe, verificando se precisa reinicializar...');
+  }
+  
   currentScene = this; // Set global reference to current scene
   console.log('🎯 CurrentScene definido:', currentScene);
   
@@ -6844,9 +6899,6 @@ function create() {
     }
   }, 100);
 }
-
-
-
 function atualizarPaises(novosPaises, scene) {
   console.log('🔧 DEBUG: atualizarPaises() iniciada');
   console.log('🗺️ atualizarPaises chamada com:', novosPaises.length, 'países');
@@ -7092,6 +7144,13 @@ function atualizarPaises(novosPaises, scene) {
   
   if (gameState.paises.length === 0) {
     console.log('✅ Criando territórios pela primeira vez...');
+    
+    // Ensure scene is ready before creating territories
+    if (!scene || !scene.add) {
+      console.error('❌ Scene não está pronta para criar territórios');
+      return;
+    }
+    
     gameState.paises = novosPaises.map(pais => {
       const obj = { ...pais };
 
@@ -7128,6 +7187,13 @@ function atualizarPaises(novosPaises, scene) {
     
          // Criar o polígono na posição (minX, minY + 40) com pontos relativos para alinhar com o mapa
      obj.polygon = scene.add.polygon(minX, minY, pontosRelativos, coresDosDonos[pais.dono] || 0xffffff, 0.7);
+     
+     // Ensure polygon was created successfully
+     if (!obj.polygon) {
+       console.error('❌ Falha ao criar polígono para território:', pais.nome);
+       return obj;
+     }
+     
      obj.polygon.setOrigin(0, 0);
      obj.polygon.setStrokeStyle(4, 0x000000, 1); // Add black border for visibility
      obj.polygon.setInteractive({ 
@@ -7182,7 +7248,6 @@ function atualizarPaises(novosPaises, scene) {
       obj.troopCircle.setVisible(false);
       obj.troopText.setVisible(false);
     }
-
              // Eventos de hover para mostrar/esconder o texto
              obj.polygon.on('pointerover', (pointer) => {
                obj.text.setVisible(true);
@@ -7364,11 +7429,20 @@ function atualizarPaises(novosPaises, scene) {
 
 
   for (let i = 0; i < gameState.paises.length; i++) {
+    // Ensure we have both old and new country data
+    if (!gameState.paises[i] || !novosPaises[i]) {
+      console.warn('⚠️ Dados de país faltando no índice:', i);
+      continue;
+    }
 
     gameState.paises[i].dono = novosPaises[i].dono;
     gameState.paises[i].tropas = novosPaises[i].tropas;
     gameState.paises[i].vizinhos = novosPaises[i].vizinhos;
-    gameState.paises[i].text.setText(getTextoPais(gameState.paises[i]));
+    
+    // Ensure text object exists before updating
+    if (gameState.paises[i].text && gameState.paises[i].text.setText) {
+      gameState.paises[i].text.setText(getTextoPais(gameState.paises[i]));
+    }
     
     // Atualizar círculo e texto das tropas
     if (gameState.paises[i].troopCircle && gameState.paises[i].troopText) {
@@ -7406,11 +7480,15 @@ function atualizarPaises(novosPaises, scene) {
     // Aplicar cor e borda baseada na prioridade e indicação de turno
     if (indicacaoAtiva && pertenceAoJogadorAtual) {
       // Manter borda branca da indicação de início de turno
-      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
-      gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca da indicação de turno
+      if (gameState.paises[i].polygon && gameState.paises[i].polygon.setFillStyle) {
+        gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+        gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca da indicação de turno
+      }
     } else if (pertenceAoContinentePrioritario) {
-      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
-      gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
+      if (gameState.paises[i].polygon && gameState.paises[i].polygon.setFillStyle) {
+        gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+        gameState.paises[i].polygon.setStrokeStyle(6, 0xffffff, 1); // Borda branca grossa para continente prioritário
+      }
       
       // Aplicar animação de salto se não estiver já animando
       if (!gameState.paises[i].polygon.timelineSalto) {
@@ -7424,8 +7502,10 @@ function atualizarPaises(novosPaises, scene) {
         criarElevacaoTerritorio(gameState.paises[i].nome, scene);
       }
     } else {
-      gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
-      gameState.paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
+      if (gameState.paises[i].polygon && gameState.paises[i].polygon.setFillStyle) {
+        gameState.paises[i].polygon.setFillStyle(coresDosDonos[gameState.paises[i].dono], 0.7);
+        gameState.paises[i].polygon.setStrokeStyle(4, 0x000000, 1); // Borda preta normal
+      }
       
       // Parar animação de salto se estiver animando
       if (gameState.paises[i].polygon.timelineSalto) {
@@ -7591,7 +7671,6 @@ function atualizarTextoBotaoTurno() {
     console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (não é meu turno)');
   }
 }
-
 function limparSelecao() {
   console.log('🔧 DEBUG: limparSelecao chamada');
   const gameState = getGameState();
@@ -8066,7 +8145,6 @@ function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
       });
     }
   });
-  
   // Informações adicionais do resumo do jogo
   if (resumoJogo) {
     let yOffset = getResponsiveSize(100);
@@ -8536,7 +8614,6 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
     }
   });
 }
-
 // Função para mostrar efeito visual de reforço
 function mostrarEfeitoReforco(territorio, jogador, scene, quantidade = 1) {
   const gameState = getGameState();
@@ -8887,7 +8964,6 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   console.log('🔧 DEBUG: Interface de remanejamento HTML mostrada');
 }
-
 function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   // Verificar se a scene é válida
   if (!scene || !scene.add) {
@@ -9385,7 +9461,6 @@ function updateCardsInstructionsAndButton() {
   
   exchangeBtn.disabled = count !== 3;
 }
-
 // Variável global para controlar se os indicadores já foram criados
 let indicadoresContinentesCriados = false;
 let linhasContinentes = []; // Array para armazenar as linhas dos continentes
@@ -9785,11 +9860,8 @@ function updateCSSHUD() {
       // Show timer for all players to see
         globalTimerEl.style.display = 'flex';
         
-        // Start turn timer when it's the player's turn and not already running
-        if (gameState.meuNome === gameState.turno && !isPlayerTurn) {
-          console.log('🎮 Starting turn timer for player:', gameState.meuNome);
-          startTurnTimer();
-        }
+        // Timer is now controlled by server
+        // Local timer start removed - server sends turnTimerUpdate events
       } else {
         // Hide timer if it's CPU turn or game is over
         globalTimerEl.style.display = 'none';
@@ -9838,9 +9910,6 @@ function updateCSSHUD() {
     updatePlayerInfoPanel();
   }
 }
-
-
-
 function adicionarIndicadoresContinentes(scene) {
   // Evitar criar indicadores duplicados
   if (indicadoresContinentesCriados) return;
@@ -10330,7 +10399,6 @@ function hideVictoryModal() {
   if (popup) popup.style.display = 'none';
   if (backdrop) backdrop.style.display = 'none';
 }
-
 // Função de teste para demonstrar a nova tela de vitória
 function testVictoryScreen() {
   console.log('🧪 Testando nova tela de vitória...');
@@ -10511,6 +10579,13 @@ function hideObjectiveModal() {
 
 // Action History Functions
 function initializeActionHistory() {
+  // Check if button already exists to prevent duplication
+  const existingButton = document.getElementById('btn-history');
+  if (existingButton) {
+    console.log('🔄 Chat button already exists, skipping creation');
+    return;
+  }
+  
   // Create chat button in the HUD
   const historyButton = document.createElement('button');
   historyButton.className = 'hud-button btn-history';
@@ -10536,6 +10611,13 @@ function initializeActionHistory() {
 }
 
 function createHistoryPopup() {
+  // Check if popup already exists to prevent duplication
+  const existingPopup = document.getElementById('history-popup');
+  if (existingPopup) {
+    console.log('🔄 History popup already exists, skipping creation');
+    return;
+  }
+  
   // Create popup container
   const popup = document.createElement('div');
   popup.id = 'history-popup';
@@ -10820,7 +10902,6 @@ function updateChatDisplay() {
   // Scroll to bottom
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
-
 function updateHistoryButtonBadge() {
   const gameState = getGameState();
   if (!gameState) return;
@@ -11302,7 +11383,6 @@ function limparTodasAnimacoesSalto() {
     console.log('🎯 Não restaurando animações - não há mais tropas para colocar');
   }
 }
-
 // Função para restaurar animações de salto nos territórios bônus
 function restaurarAnimacoesTerritoriosBonus() {
   const gameState = getGameState();
@@ -11663,7 +11743,6 @@ function mostrarEfeitoExplosaoTropas(territorio, scene) {
   
   console.log('✅ Efeito de explosão criado com sucesso');
 }
-
 // Função para mostrar efeito de explosão quando um território é conquistado
 function mostrarEfeitoExplosaoConquista(territorio, jogador, scene) {
   console.log('👑 Criando efeito de explosão de conquista para:', territorio, 'por', jogador);
@@ -11805,9 +11884,6 @@ function mostrarEfeitoExplosaoConquista(territorio, jogador, scene) {
   
   console.log('✅ Efeito de explosão de conquista criado com sucesso');
 }
-
-
-
 // Função para elevar território selecionado (similar ao salto mas permanente)
 function criarElevacaoTerritorio(territorio, scene) {
   console.log('⬆️ Criando elevação para território selecionado:', territorio);
@@ -12157,4 +12233,3 @@ function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
   
   console.log('✅ Linha tracejada desenhada com sucesso!');
 }
-
