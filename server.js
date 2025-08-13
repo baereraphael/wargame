@@ -3944,8 +3944,6 @@ if (!currentPlayer.isCPU) {
 verificarTurnoCPU(room);
 }
 
-
-
 // Lobby functions
 function startLobby(roomId) {
   const room = gameRooms.get(roomId);
