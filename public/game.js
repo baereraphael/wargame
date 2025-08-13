@@ -2085,7 +2085,7 @@ function getText(key, params = {}) {
 function updateLanguage(newLanguage) {
   if (currentLanguage === newLanguage) return;
   
-  console.log(`🌍 Alterando idioma de ${currentLanguage} para ${newLanguage}`);
+  
   currentLanguage = newLanguage;
   
   // Update all UI elements
@@ -2093,7 +2093,7 @@ function updateLanguage(newLanguage) {
 }
 
 function updateAllUITexts() {
-  console.log('🌍 Atualizando todos os textos da interface...');
+  
   
   // Login Screen
   updateLoginScreenTexts();
@@ -2140,7 +2140,7 @@ function updateAllUITexts() {
   // Game Interface (if available)
   updateGameInterfaceTexts();
   
-  console.log('✅ Todos os textos da interface foram atualizados');
+  
 }
 
 // Update specific screen texts
@@ -2994,7 +2994,7 @@ function updateChatAndHistoryTexts() {
     }
   }
   
-  console.log('🌍 Chat and history texts updated');
+  
 }
 
 function updatePlayerCardsAndSummaryTexts() {
@@ -3050,7 +3050,7 @@ function updatePlayerCardsAndSummaryTexts() {
     }
   });
   
-  console.log('🌍 Player cards and summary texts updated');
+  
 }
 
 function updatePlayerColorsTexts() {
@@ -3061,7 +3061,7 @@ function updatePlayerColorsTexts() {
   // Note: The main translation happens in the getTranslatedPlayerColor function
   // This function serves as a placeholder for future enhancements
   
-  console.log('🌍 Player colors texts update requested');
+  
   
   // The actual translation happens dynamically when getTranslatedPlayerColor is called
   // This ensures that all player color references use the correct language
@@ -3069,7 +3069,7 @@ function updatePlayerColorsTexts() {
 
 // Função para atualizar textos relacionados aos objetivos do jogo
 function updateGameObjectivesTexts() {
-  console.log('🎯 Atualizando textos dos objetivos do jogo...');
+  
   
   // Atualizar a lista de objetivos se estiver visível
   const objectivesList = document.getElementById('objectives-list');
@@ -3116,7 +3116,7 @@ function updateGameInterfaceTexts() {
   // Update turn button texts
   atualizarTextoBotaoTurno();
   
-  console.log('🌍 Game interface texts updated');
+  
 }
 
 // Função auxiliar para obter o nome de usuário real a partir do nome da cor
@@ -3163,12 +3163,12 @@ let lastProcessedTurn = null; // Track the last turn that was processed for popu
 
 // Debug function to log forced turn count
 function logForcedTurnCount() {
-  console.log('🔍 DEBUG: forcedTurnCount =', forcedTurnCount, 'maxForcedTurns =', maxForcedTurns);
+  
 }
 
 // Initialize login system
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🏁 DOM carregado, inicializando sistema de login...');
+  
   
   // Aguardar um pouco para garantir que todos os elementos estejam prontos
   setTimeout(() => {
@@ -3202,7 +3202,7 @@ function initializeLoginSystem() {
 
 // Flag Selector System
 function initializeFlagSelector() {
-  console.log('🏁 Inicializando seletor de bandeiras...');
+  
   
   // Define available countries with native names
   window.availableCountries = [
@@ -3215,7 +3215,7 @@ function initializeFlagSelector() {
     { code: 'JP', name: 'Japan', nativeName: '日本', flag: '🇯🇵' }
   ];
   
-  console.log('🏁 Países disponíveis:', window.availableCountries);
+  
   
   // Set initial country (US)
   window.currentCountryIndex = 0;
@@ -3224,7 +3224,7 @@ function initializeFlagSelector() {
   const defaultCountry = window.availableCountries[0];
   const defaultLanguage = countryToLanguage[defaultCountry.code];
   if (defaultLanguage && defaultLanguage !== currentLanguage) {
-    console.log(`🌍 Definindo idioma inicial para ${defaultLanguage} (${defaultCountry.name})`);
+    
     updateLanguage(defaultLanguage);
   }
   
@@ -3234,75 +3234,68 @@ function initializeFlagSelector() {
   const flagEmoji = document.getElementById('current-flag');
   const flagName = document.getElementById('current-flag-name');
   const hiddenInput = document.getElementById('selected-country');
-  
-  console.log('🏁 Elementos encontrados:', {
-    prevBtn: !!prevBtn,
-    nextBtn: !!nextBtn,
-    flagEmoji: !!flagEmoji,
-    flagName: !!flagName,
-    hiddenInput: !!hiddenInput
-  });
+
   
   if (prevBtn && nextBtn && flagEmoji && flagName && hiddenInput) {
     // Set initial values
-    console.log('🏁 Chamando updateFlagDisplay...');
+    
     updateFlagDisplay();
     
     // Add event listeners
     prevBtn.addEventListener('click', () => {
-      console.log('🏁 Botão anterior clicado');
+      
       navigateFlag(-1);
     });
     
     nextBtn.addEventListener('click', () => {
-      console.log('🏁 Botão próximo clicado');
+      
       navigateFlag(1);
     });
     
     // Add keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') {
-        console.log('🏁 Tecla esquerda pressionada');
+        
         navigateFlag(-1);
       } else if (e.key === 'ArrowRight') {
-        console.log('🏁 Tecla direita pressionada');
+        
         navigateFlag(1);
       }
     });
     
-    console.log('✅ Seletor de bandeiras inicializado com sucesso');
+    
     
     // Atualizar todos os textos da interface na inicialização
     updateAllUITexts();
   } else {
-    console.log('❌ Elementos do seletor de bandeiras não encontrados');
+    
   }
 }
 
 function navigateFlag(direction) {
-  console.log(`🏁 navigateFlag chamada com direção: ${direction}`);
+  
   
   if (!window.availableCountries || window.currentCountryIndex === undefined) {
-    console.log('❌ Países ou índice não disponíveis em navigateFlag');
+    
     return;
   }
   
   // Calculate new index
   let newIndex = window.currentCountryIndex + direction;
-  console.log(`🏁 Índice atual: ${window.currentCountryIndex}, novo índice: ${newIndex}`);
+  
   
   // Handle wrap-around
   if (newIndex < 0) {
     newIndex = window.availableCountries.length - 1;
-    console.log(`🏁 Wrap-around para o final: ${newIndex}`);
+    
   } else if (newIndex >= window.availableCountries.length) {
     newIndex = 0;
-    console.log(`🏁 Wrap-around para o início: ${newIndex}`);
+    
   }
   
   // Update current index
   window.currentCountryIndex = newIndex;
-  console.log(`🏁 Índice atualizado para: ${window.currentCountryIndex}`);
+  
   
   // Update display
   updateFlagDisplay();
@@ -3312,7 +3305,7 @@ function navigateFlag(direction) {
   const newLanguage = countryToLanguage[country.code];
   
   if (newLanguage && newLanguage !== currentLanguage) {
-    console.log(`🌍 País alterado para ${country.name}, alterando idioma para ${newLanguage}`);
+    
     updateLanguage(newLanguage);
     
     // Atualizar o display da bandeira novamente para mostrar o nome no idioma correto
@@ -3322,29 +3315,24 @@ function navigateFlag(direction) {
   }
   
   // Log the change
-  console.log(`🏁 País selecionado: ${country.name} (${country.code})`);
+  
 }
 
 function updateFlagDisplay() {
-  console.log('🏁 updateFlagDisplay chamada');
+  
   
   if (!window.availableCountries || window.currentCountryIndex === undefined) {
-    console.log('❌ Países ou índice não disponíveis');
+    
     return;
   }
   
   const country = window.availableCountries[window.currentCountryIndex];
-  console.log('🏁 País atual:', country);
+  
   
   const flagEmoji = document.getElementById('current-flag');
   const flagName = document.getElementById('current-flag-name');
   const hiddenInput = document.getElementById('selected-country');
-  
-  console.log('🏁 Elementos DOM:', {
-    flagEmoji: !!flagEmoji,
-    flagName: !!flagName,
-    hiddenInput: !!hiddenInput
-  });
+
   
   if (flagEmoji && flagName && hiddenInput) {
     // Determinar qual nome mostrar baseado no idioma atual
@@ -3356,7 +3344,7 @@ function updateFlagDisplay() {
       displayName = country.nativeName;
     }
     
-    console.log(`🏁 Atualizando bandeira para: ${country.flag} - ${displayName} (idioma: ${currentLanguage})`);
+    
     
     flagEmoji.textContent = country.flag;
     flagName.textContent = displayName;
@@ -3368,9 +3356,9 @@ function updateFlagDisplay() {
       flagEmoji.style.transform = 'scale(1)';
     }, 150);
     
-    console.log('✅ Bandeira atualizada com sucesso');
+    
   } else {
-    console.log('❌ Elementos DOM não encontrados em updateFlagDisplay');
+    
   }
 }
 
@@ -3438,7 +3426,7 @@ function updateClientTimer(data) {
   // Update display
   updateGlobalTimerDisplay();
   
-  console.log(`⏰ Timer atualizado: ${data.timeLeft}s para ${data.currentPlayer}`);
+  
 }
 
 function updateGlobalTimerDisplay() {
@@ -3494,11 +3482,11 @@ function updateTimerDisplay() {
 
 // Turn Confirmation Popup Functions
 function showTurnConfirmationPopup(scene) {
-  console.log('🚀 showTurnConfirmationPopup called');
-  console.log('🚀 Scene:', scene);
-  console.log('🚀 Current forcedTurnCount:', forcedTurnCount);
-  console.log('🚀 Current isPlayerTurn:', isPlayerTurn);
-  console.log('🚀 Current turnConfirmationPopup:', turnConfirmationPopup);
+  
+  
+  
+  
+  
   // Hide any existing popup
   hideTurnConfirmationPopup();
 
@@ -3551,34 +3539,34 @@ function showTurnConfirmationPopup(scene) {
 }
 
 function startTurnConfirmationCountdown(scene, timerText) {
-  console.log('⏰ startTurnConfirmationCountdown called');
-  console.log('⏰ Initial turnConfirmationTimeLeft:', turnConfirmationTimeLeft);
-  console.log('⏰ Timer text element:', timerText);
-  console.log('⏰ Current forcedTurnCount:', forcedTurnCount);
+  
+  
+  
+  
   
   turnConfirmationInterval = setInterval(() => {
     turnConfirmationTimeLeft--;
-    console.log('⏰ Countdown tick - time left:', turnConfirmationTimeLeft);
+    
     
     // Update HTML timer if present
     const htmlTimer = document.getElementById('turn-timer-text');
     if (htmlTimer) htmlTimer.textContent = `${turnConfirmationTimeLeft}s`;
     
     if (turnConfirmationTimeLeft <= 0) {
-      console.log('⏰ Turn confirmation timeout - forcing turn pass');
-      console.log('⏰ Current forcedTurnCount before forceTurnPass:', forcedTurnCount);
+      
+      
       forceTurnPass();
     }
   }, 1000);
 }
 
 function hideTurnConfirmationPopup() {
-  console.log('🚫 hideTurnConfirmationPopup called');
-  console.log('🚫 turnConfirmationInterval:', turnConfirmationInterval);
-  console.log('🚫 turnConfirmationPopup:', turnConfirmationPopup);
+  
+  
+  
   
   if (turnConfirmationInterval) {
-    console.log('🚫 Clearing turnConfirmationInterval');
+    
     clearInterval(turnConfirmationInterval);
     turnConfirmationInterval = null;
   }
@@ -3598,15 +3586,15 @@ function hideTurnConfirmationPopup() {
 }
 
 function confirmTurn() {
-  console.log('✅ confirmTurn called');
-  console.log('✅ Current forcedTurnCount before reset:', forcedTurnCount);
+  
+  
   
   forcedTurnCount = 0; // Reset forced turn count on successful confirmation
   lastTurnForPlayer = null; // Reset turn tracker on successful confirmation
   lastProcessedTurn = null; // Reset processed turn tracker on successful confirmation
-  console.log('✅ forcedTurnCount reset to 0');
-  console.log('✅ lastTurnForPlayer reset to null');
-  console.log('✅ lastProcessedTurn reset to null');
+  
+  
+  
   
   hideTurnConfirmationPopup();
   
@@ -3614,22 +3602,22 @@ function confirmTurn() {
   limparTodasAnimacoesSalto();
   
   // Timer is now controlled by server
-  console.log('✅ Turn confirmed - timer controlled by server');
+  
 }
 function forceTurnPass() {
   const gameState = getGameState();
   if (!gameState) {
-    console.log('❌ No game state found in forceTurnPass');
+    
     return;
   }
   
-  console.log('🚀 forceTurnPass called for player:', gameState.meuNome);
-  console.log('🚀 Current turn:', gameState.turno);
-  console.log('🚀 Is my turn:', gameState.meuNome === gameState.turno);
-  console.log('🚀 Current forcedTurnCount before increment:', forcedTurnCount);
+  
+  
+  
+  
   
   forcedTurnCount++;
-  console.log(`⚠️ Turn forced to pass (${forcedTurnCount}/${maxForcedTurns})`);
+  
   logForcedTurnCount();
   
   hideTurnConfirmationPopup();
@@ -3640,17 +3628,17 @@ function forceTurnPass() {
   // Check if we should disconnect the player
   if (forcedTurnCount >= maxForcedTurns) {
     // Disconnect player after max forced turns
-    console.log('🚫 Player exceeded max forced turns - disconnecting');
-    console.log('🚫 forcedTurnCount:', forcedTurnCount, 'maxForcedTurns:', maxForcedTurns);
+    
+    
     mostrarMensagem('❌ Você foi desconectado por inatividade!');
     
     // Emit disconnect event immediately
-    console.log('📤 Emitting playerInactive event');
+    
     emitWithRoom('playerInactive', { playerName: gameState.meuNome });
     
     // Force disconnect after a short delay
     setTimeout(() => {
-      console.log('🔄 Reloading page due to inactivity');
+      
       window.location.reload();
     }, 2000);
     
@@ -3658,12 +3646,12 @@ function forceTurnPass() {
   }
   
   // If not disconnecting, force turn to pass
-  console.log('📤 Forcing turn to pass due to inactivity');
+  
   emitWithRoom('passarTurno');
   
   // Also emit forceTurnChange as backup
   setTimeout(() => {
-    console.log('🔄 Backup: Emitting forceTurnChange');
+    
     emitWithRoom('forceTurnChange');
   }, 500);
   
@@ -3679,7 +3667,7 @@ function endTurnByTimeout() {
   const gameState = getGameState();
   if (!gameState) return;
   
-  console.log('⏰ Turno encerrado por timeout! Timer just expired flag set to true');
+  
   timerJustExpired = true; // Set flag to prevent immediate restart
   stopTurnTimer();
   
@@ -3688,12 +3676,12 @@ function endTurnByTimeout() {
   
   // Automatically end turn - force it regardless of game state
   if (getSocket() && gameState.meuNome === gameState.turno) {
-    console.log('📤 Emitting passarTurno due to timeout - forcing turn change');
+    
     emitWithRoom('passarTurno');
     
     // Also emit a force turn change event as backup
     setTimeout(() => {
-      console.log('🔄 Backup: Emitting forceTurnChange due to timeout');
+      
       emitWithRoom('forceTurnChange');
     }, 1000);
   }
@@ -3727,7 +3715,7 @@ function handleLogin() {
   // Log the selected country and language
   const country = window.availableCountries ? window.availableCountries.find(c => c.code === selectedCountry) : null;
   if (country) {
-    console.log(`🏁 Login realizado com país: ${country.name} (${country.flag}) e idioma: ${selectedLanguage}`);
+    
   }
   
   // Limpar mapeamento anterior
@@ -3739,13 +3727,13 @@ function handleLogin() {
   
   if (loginScreen) {
     loginScreen.style.display = 'none';
-    console.log('✅ Tela de login ocultada');
+    
   }
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'flex';
-    console.log('✅ Tela de seleção de modos exibida');
+    
   } else {
-    console.log('❌ Tela de seleção de modos não encontrada!');
+    
   }
   
   // Initialize mode selection system
@@ -3756,7 +3744,7 @@ function handleLogin() {
 }
 
 function initializeModeSelection() {
-  console.log('🔧 Inicializando sistema de seleção de modos...');
+  
   
   // Add event listeners for mode selection
   const skirmishMode = document.getElementById('mode-skirmish');
@@ -3765,21 +3753,21 @@ function initializeModeSelection() {
   
   if (skirmishMode) {
     skirmishMode.addEventListener('click', () => {
-      console.log('🎮 Modo Skirmish selecionado');
+      
       selectSkirmishMode();
     });
   }
   
   if (dominiumMode) {
     dominiumMode.addEventListener('click', () => {
-      console.log('🏰 Modo Dominium selecionado (desabilitado)');
+      
       showDominiumUnavailable();
     });
   }
   
   if (backButton) {
     backButton.addEventListener('click', () => {
-      console.log('← Voltando ao login');
+      
       backToLogin();
     });
   }
@@ -3807,13 +3795,13 @@ function selectSkirmishMode() {
   
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'none';
-    console.log('✅ Tela de seleção de modos ocultada');
+    
   }
   if (skirmishModeScreen) {
     skirmishModeScreen.style.display = 'flex';
-    console.log('✅ Tela do modo Skirmish exibida');
+    
   } else {
-    console.log('❌ Tela do modo Skirmish não encontrada!');
+    
   }
   
   // Initialize skirmish mode system
@@ -3826,7 +3814,7 @@ function showDominiumUnavailable() {
 
 // Initialize skirmish mode system
 function initializeSkirmishMode() {
-  console.log('🔧 Inicializando sistema do modo Skirmish...');
+  
   
   // Add event listeners for skirmish options
   const startMatchBtn = document.getElementById('skirmish-start-match');
@@ -3837,7 +3825,7 @@ function initializeSkirmishMode() {
   
   if (startMatchBtn) {
     startMatchBtn.addEventListener('click', () => {
-      console.log('🚀 Iniciando partida Skirmish');
+      
       startSkirmishMatch();
     });
   }
@@ -3847,7 +3835,7 @@ function initializeSkirmishMode() {
     rankingBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('🏆 Ranking geral - Funcionalidade indisponível');
+      
       showRankingPopup();
     });
   }
@@ -3857,21 +3845,21 @@ function initializeSkirmishMode() {
     statsBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('📊 Estatísticas pessoais - Funcionalidade indisponível');
+      
       showStatsPopup();
     });
   }
   
   if (tutorialBtn) {
     tutorialBtn.addEventListener('click', () => {
-      console.log('📚 Abrindo tutorial');
+      
       showSkirmishTutorial();
     });
   }
   
   if (backButton) {
     backButton.addEventListener('click', () => {
-      console.log('← Voltando à seleção de modos');
+      
       backToModeSelectionFromSkirmish();
     });
   }
@@ -3885,13 +3873,13 @@ function startSkirmishMatch() {
   
   if (skirmishModeScreen) {
     skirmishModeScreen.style.display = 'none';
-    console.log('✅ Tela do modo Skirmish ocultada');
+    
   }
   if (lobbyScreen) {
     lobbyScreen.style.display = 'flex';
-    console.log('✅ Lobby global exibido');
+    
   } else {
-    console.log('❌ Tela de lobby não encontrada!');
+    
   }
   
   // Initialize lobby system
@@ -3900,13 +3888,13 @@ function startSkirmishMatch() {
 
 function showSkirmishRanking() {
   // TODO: Implementar tela de ranking geral
-  console.log('🏆 Ranking geral - Funcionalidade em desenvolvimento');
+  
   showRankingPopup();
 }
 
 function showSkirmishStats() {
   // TODO: Implementar tela de estatísticas pessoais
-  console.log('📊 Estatísticas pessoais - Funcionalidade em desenvolvimento');
+  
   showStatsPopup();
 }
 
@@ -3983,7 +3971,7 @@ function hideStatsPopup() {
 }
 
 function showSkirmishTutorial() {
-  console.log('📚 Abrindo tutorial do jogo');
+  
   
   // Esconder tela de skirmish
   const skirmishModeScreen = document.getElementById('skirmish-mode-screen');
@@ -4083,7 +4071,7 @@ function initializeTutorial() {
   
   // Função para finalizar tutorial
   function finishTutorial() {
-    console.log('📚 Tutorial finalizado');
+    
     
     // Esconder tela de tutorial
     const tutorialScreen = document.getElementById('tutorial-screen');
@@ -4100,7 +4088,7 @@ function initializeTutorial() {
   
   // Função para voltar ao skirmish
   function backToSkirmish() {
-    console.log('📚 Voltando ao skirmish');
+    
     
     // Esconder tela de tutorial
     const tutorialScreen = document.getElementById('tutorial-screen');
@@ -4117,7 +4105,7 @@ function initializeTutorial() {
   
   // Função para começar a jogar
   function startGame() {
-    console.log('🎮 Iniciando jogo após tutorial');
+    
     
     // Esconder tela de tutorial
     const tutorialScreen = document.getElementById('tutorial-screen');
@@ -4168,11 +4156,11 @@ function backToModeSelectionFromSkirmish() {
   
   if (skirmishModeScreen) {
     skirmishModeScreen.style.display = 'none';
-    console.log('✅ Tela do modo Skirmish ocultada');
+    
   }
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'flex';
-    console.log('✅ Tela de seleção de modos exibida');
+    
   }
 }
 function backToLogin() {
@@ -4187,11 +4175,11 @@ function backToLogin() {
   
   if (loginScreen) {
     loginScreen.style.display = 'flex';
-    console.log('✅ Tela de login exibida');
+    
   }
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'none';
-    console.log('✅ Tela de seleção de modos ocultada');
+    
   }
   if (usernameInput) {
     usernameInput.value = '';
@@ -4206,11 +4194,11 @@ function backToLogin() {
   
   // Limpar mapeamento de nomes de cores para nomes de usuário
   playerColorToUsernameMap = {};
-  console.log('🧹 Mapeamento de nomes de cores limpo (backToLogin)');
+  
 }
 
 function backToModeSelection() {
-  console.log('🎯 Voltando para tela de seleção de modos');
+  
   
   // Limpar estado do jogo
   const gameState = getGameState();
@@ -4230,12 +4218,12 @@ function backToModeSelection() {
   
   if (gameContainer) {
     gameContainer.style.display = 'none';
-    console.log('✅ Container do jogo ocultado');
+    
   }
   
   if (modeSelectionScreen) {
     modeSelectionScreen.style.display = 'flex';
-    console.log('✅ Tela de seleção de modos exibida');
+    
   }
   
   // Resetar estado de login (mantém o usuário logado)
@@ -4254,7 +4242,7 @@ function resizeGameElements(scene) {
   const scaleX = canvas.width / originalWidth;
   const scaleY = canvas.height / originalHeight;
 
-  console.log(`🔧 Resizing elements: canvas ${canvas.width}x${canvas.height}, scale ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+  
 
   // Update map image
   const mapaImage = scene.children.list.find(child => child.texture && child.texture.key === 'mapa');
@@ -4457,7 +4445,7 @@ function setupRemanejamentoEventListeners() {
     });
   }
   
-  console.log('✅ Event listeners da interface de remanejamento configurados');
+  
 }
 
 function atualizarQuantidadeRemanejamento() {
@@ -4469,13 +4457,13 @@ function atualizarQuantidadeRemanejamento() {
 
 function confirmarRemanejamento() {
   if (!dadosRemanejamento) {
-    console.error('❌ Dados de remanejamento não encontrados');
+    
     return;
   }
   
   const quantidade = Math.min(Math.max(tropasParaMover, 1), dadosRemanejamento.maxTropas);
   if (quantidade > 0) {
-    console.log('🔧 DEBUG: Confirmando movimento de', quantidade, 'tropas de', dadosRemanejamento.origem.nome, 'para', dadosRemanejamento.destino.nome);
+    
     emitWithRoom('moverTropas', { 
       origem: dadosRemanejamento.origem.nome, 
       destino: dadosRemanejamento.destino.nome, 
@@ -4483,7 +4471,7 @@ function confirmarRemanejamento() {
     });
     esconderInterfaceRemanejamento();
   } else {
-    console.error('❌ Quantidade inválida para movimento:', quantidade);
+    
   }
 }
 // Função para verificar se alguma interface HTML está aberta
@@ -4534,20 +4522,20 @@ let continentsOverlay = null;
 function initializeHTMLTroopSystem() {
   troopsOverlay = document.getElementById('troops-overlay');
   if (!troopsOverlay) {
-    console.error('❌ Troops overlay não encontrado');
+    
     return;
   }
-  console.log('✅ Sistema de tropas HTML inicializado');
+  
 }
 
 // === SISTEMA DE CONEXÕES HTML (LINHAS ENTRE TERRITÓRIOS) ===
 function initializeHTMLConnectionsSystem() {
   connectionsOverlay = document.getElementById('connections-overlay');
   if (!connectionsOverlay) {
-    console.error('❌ Connections overlay não encontrado');
+    
     return;
   }
-  console.log('✅ Sistema de conexões HTML inicializado');
+  
   renderAllConnections();
 }
 
@@ -4766,11 +4754,11 @@ function toggleHTMLTroops() {
   htmlTroopsEnabled = !htmlTroopsEnabled;
   
   if (htmlTroopsEnabled) {
-    console.log('🔄 Ativando tropas HTML');
+    
     hidePhaserrTroops();
     updateAllHTMLTroops();
   } else {
-    console.log('🔄 Ativando tropas Phaser');
+    
     clearAllHTMLTroops();
     showPhaserTroops();
   }
@@ -4784,7 +4772,7 @@ let globalTroopOffset = { desktop: 50, mobile: 20, smallMobile: 20 };
 // Função para ajustar o offset vertical das tropas (debug)
 function adjustTroopOffset(desktop = 15, mobile = 12, smallMobile = 8) {
   globalTroopOffset = { desktop, mobile, smallMobile };
-  console.log('🎯 Novo offset de tropas:', globalTroopOffset);
+  
   
   if (htmlTroopsEnabled) {
     updateAllHTMLTroops();
@@ -4828,10 +4816,10 @@ const continentData = {
 function initializeHTMLContinentSystem() {
   continentsOverlay = document.getElementById('continents-overlay');
   if (!continentsOverlay) {
-    console.error('❌ Continents overlay não encontrado');
+    
     return;
   }
-  console.log('✅ Sistema de continentes HTML inicializado');
+  
   
   // Criar labels dos continentes
   createAllContinentLabels();
@@ -4842,7 +4830,7 @@ function createContinentLabel(continentName, continentInfo) {
   
   const position = continentPositions[continentName];
   if (!position) {
-    console.warn(`❌ Posição não encontrada para continente: ${continentName}`);
+    
     return null;
   }
   
@@ -4907,7 +4895,7 @@ function createAllContinentLabels() {
     createContinentLabel(continentName, continentInfo);
   });
   
-  console.log('✅ Labels de continentes criados');
+  
 }
 
 function updateContinentLabel(continentName) {
@@ -5063,7 +5051,7 @@ function unhighlightContinentTerritories(continentName) {
 
     // Se o território é prioritário, não restaurar o estado anterior
     if (isPrioritario) {
-      console.log(`🎯 Território ${territoryName} é prioritário - mantendo efeitos visuais`);
+      
       return;
     }
 
@@ -5100,11 +5088,11 @@ function toggleHTMLContinents() {
   htmlContinentsEnabled = !htmlContinentsEnabled;
   
   if (htmlContinentsEnabled) {
-    console.log('🔄 Ativando continentes HTML');
+    
     createAllContinentLabels();
     updateAllContinentLabels();
   } else {
-    console.log('🔄 Desativando continentes HTML');
+    
     clearAllContinentLabels();
   }
   
@@ -5116,7 +5104,7 @@ function setupMobileTouchProtection() {
   function blockTouchEvent(event) {
     const interfaceAberta = isAnyHTMLInterfaceOpen();
     if (interfaceAberta) {
-      console.log('🛡️ Touch event bloqueado em mobile - Interface aberta:', interfaceAberta);
+      
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -5144,7 +5132,7 @@ function setupMobileTouchProtection() {
         });
       });
       
-      console.log('🛡️ Proteção touch mobile configurada no canvas');
+      
     } else {
       // Se canvas não estiver pronto, tentar novamente em 100ms
       setTimeout(addCanvasListeners, 100);
@@ -5273,18 +5261,18 @@ function setupDebugMode() {
     }
   });
   
-  console.log('🛠️ Modo Debug configurado - Pressione Ctrl+D para ativar/desativar');
-  console.log('🛠️ Comandos disponíveis:');
-  console.log('  • V - Mostrar tela de vitória (debug)');
-  console.log('  • T - Testar interfaces modais');
-  console.log('  • C - Simular combate (3 dados defesa)');
-  console.log('  • M - Testar proteção mobile touch');
-  console.log('  • H - Alternar tropas HTML/Phaser');
-  console.log('  • N - Alternar continentes HTML/Phaser');
-  console.log('  • ↑ - Subir posição das tropas');
-  console.log('  • ↓ - Baixar posição das tropas');
-  console.log('  • ESC - Fechar modais abertas');
-  console.log('  • Ctrl+D - Toggle modo debug');
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 function showDebugCommands() {
@@ -5301,7 +5289,7 @@ function showDebugCommands() {
     '  • ESC - Fechar modais',
     '  • Ctrl+D - Toggle debug mode',
     '',
-    '📝 FUNÇÕES DE CONSOLE:',
+    '📝 FUNÇÕES DE DEBUG:',
     '  • testVictoryScreen() - Teste da tela de vitória',
     '  • showDebugVictoryScreen() - Vitória com dados variados',
     '  • testModalInterfaces() - Testar proteção modal',
@@ -5314,9 +5302,6 @@ function showDebugCommands() {
     '  • simulateCombatTest() - Simular combates',
     '  • isAnyHTMLInterfaceOpen() - Verificar interfaces abertas'
   ];
-  
-  commands.forEach(cmd => console.log(cmd));
-  showDebugMessage('🛠️ Comandos listados no console');
 }
 
 function showDebugMessage(message) {
@@ -5410,7 +5395,7 @@ function toggleDebugIndicator(enabled) {
 }
 
 function showDebugVictoryScreen() {
-  console.log('🛠️ Exibindo tela de vitória (modo debug)');
+  
   
   // Gerar dados aleatórios para cada teste
   const jogadoresExemplo = [
@@ -5469,7 +5454,7 @@ function showDebugVictoryScreen() {
   }, 30000);
   
   showDebugMessage(`🏆 Vitória de ${vencedor} (${tipoVitoria})`);
-  console.log('🛠️ Dados gerados:', dadosSimulados);
+  
 }
 function generateRandomTerritories(jogadores, vencedor) {
   const territorios = [
@@ -5506,7 +5491,7 @@ function generateRandomTerritories(jogadores, vencedor) {
 }
 
 function testModalInterfaces() {
-  console.log('🧪 Testando proteção de interfaces modais...');
+  
   showDebugMessage('🧪 Testando interfaces modais');
   
   const interfaces = [
@@ -5557,13 +5542,13 @@ function testModalInterfaces() {
   
   function showNext() {
     if (currentIndex >= interfaces.length) {
-      console.log('🎉 Teste de interfaces concluído!');
+      
       showDebugMessage('✅ Teste concluído');
       return;
     }
     
     const current = interfaces[currentIndex];
-    console.log(`📋 Testando interface: ${current.name}`);
+    
     
     // Mostrar interface
     current.show();
@@ -5572,10 +5557,10 @@ function testModalInterfaces() {
     setTimeout(() => {
       const interfaceAberta = isAnyHTMLInterfaceOpen();
       if (interfaceAberta) {
-        console.log(`✅ ${current.name}: Proteção ativa - ${interfaceAberta}`);
+        
         showDebugMessage(`✅ ${current.name} protegida`);
       } else {
-        console.log(`❌ ${current.name}: Proteção falhou!`);
+        
         showDebugMessage(`❌ ${current.name} desprotegida`);
       }
       
@@ -5601,17 +5586,17 @@ function resetGameInitialization() {
   gameInitialized = false;
   gameStarted = false;
   currentScene = null;
-  console.log('🔄 Estado de inicialização do jogo resetado');
+  
 }
 
 function initializeGame() {
-  console.log('🔧 DEBUG: initializeGame() iniciada');
-  console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
-  console.log('🔧 DEBUG: playerUsername:', playerUsername);
+  
+  
+  
   
   // Prevent multiple initializations
   if (gameInitialized) {
-    console.log('⚠️ Jogo já foi inicializado, ignorando chamada duplicada');
+    
     return;
   }
   
@@ -5621,13 +5606,13 @@ function initializeGame() {
   const socket = getSocket();
   
   if (!socket) {
-    console.error('❌ Socket não encontrado!');
+    
     return;
   }
-  console.log('🔧 DEBUG: Socket encontrado:', socket.connected);
+  
   
   // Configure event listeners BEFORE creating Phaser
-  console.log('🔧 DEBUG: Configurando event listeners...');
+  
   
   // Chat message listener
   socket.on('chatMessage', (dados) => {
@@ -5642,31 +5627,16 @@ function initializeGame() {
   
   // Turn timer update listener
   socket.on('turnTimerUpdate', (data) => {
-    console.log('⏰ Recebida atualização do timer do servidor:', data);
+    
     updateClientTimer(data);
   });
   
   // Game state update listener
   socket.on('estadoAtualizado', (estado) => {
-    console.log('🔄 Estado atualizado recebido!');
-    console.log('🔧 DEBUG: Estado recebido:', {
-      turno: estado.turno,
-      meuNome: estado.meuNome,
-      paisesCount: estado.paises ? estado.paises.length : 'undefined',
-      jogadoresCount: estado.jogadores ? estado.jogadores.length : 'undefined',
-      tropasReforco: estado.tropasReforco,
-      vitoria: estado.vitoria,
-      derrota: estado.derrota
-    });
-    console.log('🎯 CurrentScene:', currentScene);
-    console.log('🗺️ Países recebidos:', estado.paises ? estado.paises.length : 'undefined');
-    console.log('🎮 Turno atual:', estado.turno);
-    console.log('👤 Meu nome:', estado.meuNome);
-    console.log('📊 Estado completo:', estado);
     
     const gameState = getGameState();
     if (!gameState) {
-      console.error('❌ Game state não disponível para atualizar estado');
+      
       return;
     }
     
@@ -5676,47 +5646,47 @@ function initializeGame() {
     
           // Reset timer expiration flag when turn changes
       if (previousTurn !== gameState.turno) {
-        console.log('🔄 TURN CHANGE DETECTED!');
-        console.log('🔄 Previous turn:', previousTurn);
-        console.log('🔄 New turn:', gameState.turno);
-        console.log('🔄 My name:', gameState.meuNome);
-        console.log('🔄 Is my turn?', gameState.meuNome === gameState.turno);
-        console.log('🔄 Current forcedTurnCount before logic:', forcedTurnCount);
+        
+        
+        
+        
+        
+        
         
         timerJustExpired = false;
-        console.log('🔄 Timer flag reset');
+        
         
         // Stop any existing timer when turn changes
         if (isPlayerTurn) {
-          console.log('🔄 Stopping existing timer');
+          
           stopTurnTimer();
         }
         
         // Hide turn confirmation popup when turn changes
-        console.log('🔄 Hiding turn confirmation popup');
+        
         hideTurnConfirmationPopup();
         
         // Show turn start indication if it's the player's turn
         if (gameState.meuNome === gameState.turno && currentScene) {
-          console.log('🎯 Showing turn start indication for player:', gameState.meuNome);
+          
           mostrarIndicacaoInicioTurno(gameState.meuNome, currentScene);
         }
         
         // Only reset forced turn count when turn changes to a different player
         if (gameState.meuNome !== gameState.turno) {
-          console.log('🔄 Turn changed to different player - resetting forced turn count from', forcedTurnCount, 'to 0');
+          
           forcedTurnCount = 0;
           lastTurnForPlayer = null; // Reset turn tracker when turn changes to different player
           lastProcessedTurn = null; // Reset processed turn tracker when turn changes to different player
           logForcedTurnCount();
         } else {
           // Keep the forced turn count when it's still the same player's turn
-          console.log('🔄 Same player turn - keeping forced turn count:', forcedTurnCount);
+          
           logForcedTurnCount();
         }
       } else {
-        console.log('🔄 No turn change - same turn:', gameState.turno);
-        console.log('🔄 Current forcedTurnCount:', forcedTurnCount);
+        
+        
       }
     
     gameState.tropasReforco = estado.tropasReforco;
@@ -5728,7 +5698,7 @@ function initializeGame() {
     // Mapear o nome da cor para o nome de usuário real
     if (gameState.meuNome && playerUsername) {
       playerColorToUsernameMap[gameState.meuNome] = playerUsername;
-      console.log(`🎨 Mapeamento criado: ${gameState.meuNome} -> ${playerUsername}`);
+      
     }
     
     gameState.continentes = estado.continentes || {};
@@ -5737,12 +5707,12 @@ function initializeGame() {
     gameState.cartasTerritorio = estado.cartasTerritorio || {};
 
     if (currentScene && estado.paises) {
-      console.log('✅ Chamando atualizarPaises...');
+      
       atualizarPaises(estado.paises, currentScene);
       
       // Verificar conquista de continente após atualizar os países
       if (gameState.ultimaConquista) {
-        console.log('🔍 Verificando conquista de continente após atualização do estado...');
+        
         verificarConquistaContinente(
           gameState.ultimaConquista.territorio, 
           gameState.ultimaConquista.jogador, 
@@ -5756,13 +5726,13 @@ function initializeGame() {
       atualizarHUD();
       atualizarTextoBotaoTurno();
     } else {
-      console.log('⏳ Aguardando Phaser scene estar pronta...');
-      console.log('currentScene:', currentScene);
-      console.log('estado.paises:', estado.paises);
+      
+      
+      
       
       // Armazenar o estado para processar quando a scene estiver pronta
       pendingGameState = estado;
-      console.log('💾 Estado armazenado para processamento posterior');
+      
     }
 
     const jogadorLocal = gameState.jogadores.find(j => j.nome === gameState.meuNome);
@@ -5818,12 +5788,12 @@ function initializeGame() {
   });
 
   socket.on('vitoria', (nomeJogador, resumoJogo) => {
-    console.log('🏆 Evento vitoria recebido para jogador:', nomeJogador);
-    console.log('📊 Resumo do jogo:', resumoJogo);
+    
+    
     try {
       showVictoryModal(nomeJogador, resumoJogo);
     } catch (e) {
-      console.error('Erro ao exibir modal de vitória (HTML).', e);
+      
               mostrarMensagem(`${getTranslatedPlayerColor(nomeJogador)} ${getText('victoryByElimination')}`);
     }
   });
@@ -5845,17 +5815,17 @@ function initializeGame() {
   });
 
   socket.on('territorioConquistado', (dados) => {
-    console.log('🎯 EVENTO territorioConquistado RECEBIDO!');
-    console.log('📋 Dados recebidos:', dados);
-    console.log('🎮 Current scene:', currentScene);
+    
+    
+    
     
     const gameState = getGameState();
     if (!gameState) {
-      console.log('❌ Game state não disponível');
+      
       return;
     }
     
-    console.log('✅ Game state obtido, armazenando dados para verificação posterior...');
+    
     
     // Armazenar dados da conquista para verificar depois que o estado for atualizado
     gameState.ultimaConquista = {
@@ -5868,12 +5838,12 @@ function initializeGame() {
     if (dados.jogadorAtacante === gameState.meuNome && dados.tropasAdicionais > 0) {
       // Verificar se já existe uma interface aberta
       if (modalTransferenciaAberta) {
-        console.log('🔧 DEBUG: Interface de transferência já está aberta, ignorando');
+        
         return;
       }
       
       dadosConquista = dados;
-      console.log('DEBUG: dadosConquista definido como', dadosConquista);
+      
       showTransferModal(dados);
     }
   });
@@ -5884,15 +5854,15 @@ function initializeGame() {
       if (window.showObjectiveModal) {
         window.showObjectiveModal(objetivo);
       } else {
-        console.warn('showObjectiveModal ainda não disponível');
+        
       }
     } catch (e) {
-      console.error('Erro ao exibir modal de objetivo (HTML).', e);
+      
     }
   });
 
   socket.on('objetivoAtualizado', (novoObjetivo) => {
-    console.log('🎯 Objetivo atualizado recebido:', novoObjetivo);
+    
     
     // Atualizar o estado do jogo com o novo objetivo
     const gameState = getGameState();
@@ -5900,7 +5870,7 @@ function initializeGame() {
       const jogador = gameState.jogadores.find(j => j.socketId === socket.id);
       if (jogador) {
         gameState.objetivos[jogador.nome] = novoObjetivo;
-        console.log(`🎯 Objetivo de ${jogador.nome} atualizado para: ${novoObjetivo.descricao}`);
+        
         
         // Mostrar notificação visual
         mostrarMensagem(`🎯 Seu objetivo foi alterado: ${novoObjetivo.descricao}`);
@@ -5925,7 +5895,7 @@ function initializeGame() {
     try {
       showCardsModal(cartas, false);
     } catch (e) {
-      console.error('Erro ao exibir modal de cartas (HTML).', e);
+      
     }
   });
 
@@ -5939,21 +5909,21 @@ function initializeGame() {
       try {
         showCardsModal(dados.cartas, true);
       } catch (e) {
-        console.error('Erro ao exibir modal de cartas obrigatórias (HTML).', e);
+        
       }
     }
   });
 
   socket.on('resultadoTrocaCartas', (resultado) => {
-    console.log('🔧 resultadoTrocaCartas recebido:', resultado);
+    
     
     if (resultado.sucesso) {
-      console.log('✅ Troca de cartas bem-sucedida');
+      
       mostrarMensagem(resultado.mensagem);
       // Fechar modal HTML e continuar o turno
       hideCardsModal();
     } else {
-      console.log('❌ Troca de cartas falhou:', resultado.mensagem);
+      
       mostrarMensagem(`❌ ${resultado.mensagem}`);
     }
   });
@@ -5963,38 +5933,38 @@ function initializeGame() {
   });
 
   socket.on('resultadoVerificacaoMovimento', (resultado) => {
-    console.log('🔧 DEBUG: resultadoVerificacaoMovimento recebido:', resultado);
+    
     
     const gameState = getGameState();
     if (!gameState) return;
     
     if (resultado.podeMover) {
-      console.log('🔧 DEBUG: Movimento aprovado, mostrando interface de remanejamento');
+      
       // Encontrar os territórios selecionados
       const territorioOrigem = gameState.paises.find(p => p.nome === gameState.selecionado.nome);
       const territorioDestino = gameState.paises.find(p => p.nome === resultado.territorioDestino);
       
-      console.log('🔧 DEBUG: Território origem encontrado:', territorioOrigem ? territorioOrigem.nome : 'não encontrado');
-      console.log('🔧 DEBUG: Território destino encontrado:', territorioDestino ? territorioDestino.nome : 'não encontrado');
+      
+      
       
       if (territorioOrigem && territorioDestino) {
         // Verificar se já existe uma interface aberta
         if (interfaceRemanejamentoAberta) {
-          console.log('🔧 DEBUG: Interface de remanejamento já está aberta, ignorando');
+          
           return;
         }
         
         mostrarInterfaceRemanejamento(territorioOrigem, territorioDestino, currentScene, resultado.quantidadeMaxima);
       } else {
-        console.log('🔧 DEBUG: Erro - territórios não encontrados no gameState');
+        
       }
     } else {
-      console.log('🔧 DEBUG: Movimento negado:', resultado.motivo);
+      
       mostrarMensagem(`❌ ${resultado.motivo}`);
       limparSelecao();
     }
   });
-  console.log('🔧 DEBUG: Event listeners configurados');
+  
   
   // Create Phaser game only after login
   const config = {
@@ -6016,11 +5986,11 @@ function initializeGame() {
   };
   
   // Initialize Phaser game
-  console.log('🎮 Criando instância do Phaser...');
+  
   
   // Destroy existing game instance if it exists
   if (window.game) {
-    console.log('🔄 Destruindo instância anterior do Phaser...');
+    
     window.game.destroy(true);
     window.game = null;
     // Reset scene reference
@@ -6029,7 +5999,7 @@ function initializeGame() {
   
   const game = new Phaser.Game(config);
   window.game = game; // Make game globally available
-  console.log('✅ Phaser criado com sucesso!');
+  
   
   // Add resize listener for responsive scaling
   window.addEventListener('resize', () => {
@@ -6052,7 +6022,7 @@ function initializeGame() {
         forceMobileCanvasPosition();
         updateAllResponsiveElements();
         updateAllConnectionsDebounced();
-        console.log('📱 Game elements adjusted for orientation change');
+        
       }
     }, 100);
   });
@@ -6071,7 +6041,7 @@ function initializeGame() {
           forceMobileCanvasPosition();
           updateAllResponsiveElements();
           updateAllConnectionsDebounced();
-          console.log('📱 Game elements adjusted for viewport height change');
+          
         }
       }, 100);
       lastViewportHeight = window.innerHeight;
@@ -6096,7 +6066,7 @@ function initializeGame() {
   // Configurar modo debug
   setupDebugMode();
   
-  console.log('🔧 DEBUG: initializeGame() concluída');
+  
   
   // Force mobile positioning after DOM is fully loaded
   if (document.readyState === 'loading') {
@@ -6112,7 +6082,7 @@ function initializeGame() {
   }
 }
 function initializeLobby() {
-  console.log('🎮 Inicializando lobby global...');
+  
   
   // Show lobby screen
   const lobbyScreen = document.getElementById('lobby-screen');
@@ -6129,7 +6099,7 @@ function initializeLobby() {
     
     // Check if socket is already connected
     if (socket.connected) {
-      console.log('Socket já conectado, iniciando lobby global...');
+      
       
       // Emit player joined global lobby event
       socket.emit('playerJoinedGlobalLobby', { 
@@ -6142,7 +6112,7 @@ function initializeLobby() {
     } else {
       // Wait for socket connection before starting lobby
       socket.on('connect', () => {
-        console.log('Socket conectado, iniciando lobby global...');
+        
         
         // Emit player joined global lobby event
         socket.emit('playerJoinedGlobalLobby', { 
@@ -6157,7 +6127,7 @@ function initializeLobby() {
     
     // Handle connection errors
     socket.on('connect_error', (error) => {
-      console.error('Erro ao conectar com o servidor:', error);
+      
       showServerErrorModal();
     });
     
@@ -6167,12 +6137,12 @@ function initializeLobby() {
     });
     
     socket.on('gameStarting', (data) => {
-      console.log('🎮 Recebido evento gameStarting do servidor!');
+      
       if (data && data.roomId) {
         currentRoomId = data.roomId; // Set the room ID assigned by server
         startGame();
       } else {
-        console.log('⚠️ Evento gameStarting recebido sem roomId, ignorando...');
+        
       }
     });
     
@@ -6194,7 +6164,7 @@ function initializeLobby() {
 }
 
 function startLobbyTimer() {
-  console.log('⏰ Timer do lobby será controlado pelo servidor');
+  
   // Timer is now controlled by server via lobbyUpdate events
   // We just need to wait for the first lobbyUpdate to sync the timer
 }
@@ -6204,7 +6174,7 @@ function updateLobbyTimerDisplay() {
   const timerElement = document.getElementById('lobby-timer');
   
   if (!timerDisplay) {
-    console.error('❌ Elemento lobby-timer-display não encontrado!');
+    
     return;
   }
   
@@ -6304,56 +6274,56 @@ function updateLobbyDisplay(data) {
 }
 
 function startGame() {
-  console.log('🔧 DEBUG: startGame() iniciada no cliente');
-  console.log('🎮 Iniciando jogo...');
-  console.log('🔧 DEBUG: currentRoomId:', currentRoomId);
-  console.log('🔧 DEBUG: gameStarted antes:', gameStarted);
+  
+  
+  
+  
   
   // Prevent multiple game initializations
   if (gameStarted && window.game && currentScene) {
-    console.log('⚠️ Jogo já foi iniciado e está funcionando, ignorando chamada duplicada');
+    
     return;
   }
   
   // If game was started but Phaser is not working, allow restart
   if (gameStarted && (!window.game || !currentScene)) {
-    console.log('🔄 Jogo foi iniciado mas Phaser não está funcionando, permitindo reinicialização...');
+    
     resetGameInitialization();
   }
   
   gameStarted = true;
-  console.log('🔧 DEBUG: gameStarted após:', gameStarted);
+  
   
   // Clear lobby timer
   if (lobbyTimerInterval) {
     clearInterval(lobbyTimerInterval);
     lobbyTimerInterval = null;
-    console.log('🔧 DEBUG: Timer do lobby limpo');
+    
   }
   
   // Hide lobby and show game
   const lobbyScreen = document.getElementById('lobby-screen');
   const gameContainer = document.getElementById('game-container');
   
-  console.log('🔧 DEBUG: lobbyScreen encontrado:', !!lobbyScreen);
-  console.log('🔧 DEBUG: gameContainer encontrado:', !!gameContainer);
+  
+  
   
   // Update game HUD texts for current language
   updateGameHUDTexts();
   
   if (lobbyScreen) {
     lobbyScreen.style.display = 'none';
-    console.log('🔧 DEBUG: Lobby ocultado');
+    
   }
   if (gameContainer) {
     gameContainer.style.display = 'block';
-    console.log('🔧 DEBUG: Game container exibido');
+    
   }
   
   // Initialize the game
-  console.log('🔧 DEBUG: Chamando initializeGame()');
+  
   initializeGame();
-  console.log('🔧 DEBUG: startGame() concluída');
+  
 }
 
 
@@ -6373,7 +6343,7 @@ let pendingGameState = null;
 // Helper function to get current room's game state
 function getGameState() {
   if (!currentRoomId) {
-    console.error('currentRoomId não disponível para obter game state');
+    
     return null;
   }
   
@@ -6413,7 +6383,7 @@ function getGameState() {
 function clearGameState(roomId) {
   if (gameStates.has(roomId)) {
     gameStates.delete(roomId);
-    console.log(`🧹 Game state cleared for room: ${roomId}`);
+    
   }
   
   // Reset player avatar color to default when clearing game state
@@ -6424,21 +6394,21 @@ function clearGameState(roomId) {
   
   // Limpar mapeamento de nomes de cores para nomes de usuário
   playerColorToUsernameMap = {};
-  console.log('🧹 Mapeamento de nomes de cores limpo');
+  
 }
 
 // Process pending game state when scene is ready
 function processarEstadoPendente() {
   if (!pendingGameState || !currentScene) {
-    console.log('❌ Nenhum estado pendente ou scene não pronta');
+    
     return;
   }
   
-  console.log('🔄 Processando estado pendente com scene pronta...');
+  
   
   const gameState = getGameState();
   if (!gameState) {
-    console.error('❌ Game state não disponível para processar estado pendente');
+    
     return;
   }
   
@@ -6454,7 +6424,7 @@ function processarEstadoPendente() {
   // Mapear o nome da cor para o nome de usuário real
   if (gameState.meuNome && playerUsername) {
     playerColorToUsernameMap[gameState.meuNome] = playerUsername;
-    console.log(`🎨 Mapeamento criado (pendente): ${gameState.meuNome} -> ${playerUsername}`);
+    
   }
   
   gameState.continentes = pendingGameState.continentes || {};
@@ -6464,7 +6434,7 @@ function processarEstadoPendente() {
   
   // Processar países
   if (pendingGameState.paises) {
-    console.log('✅ Processando países pendentes...');
+    
     atualizarPaises(pendingGameState.paises, currentScene);
   }
   
@@ -6486,7 +6456,7 @@ function processarEstadoPendente() {
   
   // Verificar se é o primeiro turno do jogador e mostrar indicação
   if (gameState.meuNome === gameState.turno && currentScene) {
-    console.log('🎯 Primeiro turno detectado - mostrando indicação de início de turno para:', gameState.meuNome);
+    
     // Usar setTimeout para garantir que a scene esteja totalmente pronta
     setTimeout(() => {
       mostrarIndicacaoInicioTurno(gameState.meuNome, currentScene);
@@ -6495,7 +6465,7 @@ function processarEstadoPendente() {
   
   // Limpar estado pendente
   pendingGameState = null;
-  console.log('✅ Estado pendente processado com sucesso!');
+  
 }
 
 // Get socket from global scope
@@ -6505,29 +6475,29 @@ function getSocket() {
 // Helper function to emit events with room ID
 function emitWithRoom(event, data = {}) {
   const socket = getSocket();
-  console.log(`📤 emitWithRoom called for event: ${event}`);
-  console.log(`📤 Socket available:`, !!socket);
-  console.log(`📤 currentRoomId:`, currentRoomId);
-  console.log(`📤 Data:`, data);
+  
+  
+  
+  
   
   if (socket && currentRoomId) {
     // Handle different data types
     if (typeof data === 'string') {
       // If data is a string (like country name), send it directly
-      console.log(`📤 Emitting string data: ${data}`);
+      
       socket.emit(event, data);
     } else if (Array.isArray(data)) {
       // If data is an array, send it directly (don't add roomId to arrays)
-      console.log(`📤 Emitting array data:`, data);
+      
       socket.emit(event, data);
     } else {
       // If data is an object, spread it and add roomId
       const eventData = { ...data, roomId: currentRoomId };
-      console.log(`📤 Emitting object data:`, eventData);
+      
       socket.emit(event, eventData);
     }
   } else {
-    console.error('❌ Socket ou roomId não disponível para emitir evento:', event);
+    
   }
 }
 
@@ -6575,15 +6545,15 @@ let cardsSelected = [];
 let cardsCurrentList = [];
 
 function preload() {
-  console.log('📦 Preload iniciado...');
+  
   
   // Load map image with error handling
   this.load.image('mapa', 'assets/mapa.png');
   this.load.on('loaderror', (file) => {
-    console.error('❌ Erro ao carregar arquivo:', file.src);
+    
   });
   this.load.on('complete', () => {
-    console.log('✅ Todos os arquivos carregados com sucesso!');
+    
   });
   
   this.load.audio('shotsfired', 'assets/shotsfired.mp3');
@@ -6592,53 +6562,53 @@ function preload() {
   this.load.audio('huh', 'assets/huh.mp3');
   this.load.audio('takecard', 'assets/takecard.mp3');
   this.load.audio('clockticking', 'assets/clockticking.mp3');
-  console.log('✅ Preload concluído!');
+  
 }
 function create() {
-  console.log('🎨 Create iniciado...');
+  
   
   // Check if scene is already initialized
   if (currentScene) {
-    console.log('⚠️ Scene já existe, verificando se precisa reinicializar...');
+    
   }
   
   currentScene = this; // Set global reference to current scene
-  console.log('🎯 CurrentScene definido:', currentScene);
+  
   
   const largura = this.sys.game.config.width;
   const altura = this.sys.game.config.height;
-  console.log('📐 Dimensões:', largura, 'x', altura);
+  
   
   // Debug canvas information
-  console.log('🎨 Game canvas:', this.sys.game.canvas);
-  console.log('🎨 Game canvas width:', this.sys.game.canvas.width);
-  console.log('🎨 Game canvas height:', this.sys.game.canvas.height);
-  console.log('🎨 Game canvas style:', this.sys.game.canvas.style);
+  
+  
+  
+  
   
   // Check if canvas is in DOM
   const canvasInDOM = document.querySelector('canvas');
-  console.log('🎨 Canvas in DOM:', canvasInDOM);
+  
   if (canvasInDOM) {
-    console.log('🎨 Canvas display style:', canvasInDOM.style.display);
-    console.log('🎨 Canvas visibility:', canvasInDOM.style.visibility);
-    console.log('🎨 Canvas opacity:', canvasInDOM.style.opacity);
-    console.log('🎨 Canvas z-index:', canvasInDOM.style.zIndex);
-    console.log('🎨 Canvas margin-top:', canvasInDOM.style.marginTop);
-    console.log('🎨 Canvas margin-left:', canvasInDOM.style.marginLeft);
-    console.log('🎨 Canvas position:', canvasInDOM.style.position);
-    console.log('🎨 Canvas top:', canvasInDOM.style.top);
-    console.log('🎨 Canvas left:', canvasInDOM.style.left);
+    
+    
+    
+    
+    
+    
+    
+    
+    
   }
 
   // Add map image with full stretch to fill screen
   const mapaImage = this.add.image(0, 0, 'mapa')
     .setOrigin(0, 0)
     .setDisplaySize(this.sys.game.canvas.width, this.sys.game.canvas.height);
-  console.log('🗺️ Imagem do mapa adicionada!');
-  console.log('🗺️ Mapa image object:', mapaImage);
-  console.log('🗺️ Mapa visible:', mapaImage.visible);
-  console.log('🗺️ Mapa alpha:', mapaImage.alpha);
-  console.log('🗺️ Mapa scale:', mapaImage.scale);
+  
+  
+  
+  
+  
   
   // Force canvas positioning after a short delay
   setTimeout(() => {
@@ -6661,10 +6631,10 @@ function create() {
         canvas.style.height = 'auto';
         canvas.style.maxWidth = '100%';
         canvas.style.maxHeight = '100%';
-        console.log('📱 Mobile canvas adjustments applied');
+        
       }
       
-      console.log('🎨 Canvas positioning forced and centered!');
+      
     }
   }, 100);
 
@@ -6781,7 +6751,7 @@ function create() {
     
     // Verificar se está na fase de remanejamento
     if (gameState && gameState.faseRemanejamento) {
-      console.log('❌ Tentativa de trocar cartas durante fase de remanejamento - bloqueado');
+      
       return;
     }
     
@@ -6810,7 +6780,7 @@ function create() {
       // Verificar se alguma interface HTML está aberta (modal)
       const interfaceHTMLAberta = isAnyHTMLInterfaceOpen();
       if (interfaceHTMLAberta) {
-        console.log('🛡️ Clique bloqueado - Interface HTML aberta:', interfaceHTMLAberta);
+        
         // Impedir propagação do evento para outros handlers
         if (pointer && pointer.event && typeof pointer.event.stopPropagation === 'function') {
           try { pointer.event.stopPropagation(); } catch (_) {}
@@ -6830,7 +6800,7 @@ function create() {
       });
       
       if (!territorioClicado) {
-        console.log(`DEBUG: Clique fora de territórios em (${pointer.x}, ${pointer.y})`);
+        
       }
       
       // Verificar se o clique foi em algum elemento interativo das interfaces
@@ -6857,10 +6827,10 @@ function create() {
             const bounds = modalContainer.getBounds();
             const isOutside = pointer.x < bounds.left || pointer.x > bounds.right || pointer.y < bounds.top || pointer.y > bounds.bottom;
             if (isOutside) {
-              console.log('DEBUG: Clique fora da modal - fechando modais abertas');
+              
               fecharTodasModais();
             } else {
-              console.log('DEBUG: Clique dentro da modal aberta');
+              
             }
           }
         }
@@ -6881,11 +6851,11 @@ function create() {
 
   // All event listeners are now configured in initializeGame() before Phaser creation
   
-  console.log('✅ Create concluído! Jogo pronto para receber dados do servidor.');
+  
   
   // Processar estado pendente se houver
   if (pendingGameState) {
-    console.log('🔄 Processando estado pendente...');
+    
     processarEstadoPendente();
   }
 
@@ -6900,26 +6870,16 @@ function create() {
   }, 100);
 }
 function atualizarPaises(novosPaises, scene) {
-  console.log('🔧 DEBUG: atualizarPaises() iniciada');
-  console.log('🗺️ atualizarPaises chamada com:', novosPaises.length, 'países');
-  console.log('🎮 Scene:', scene);
-  console.log('🔧 DEBUG: Primeiros 3 países:', novosPaises.slice(0, 3).map(p => ({
-    nome: p.nome,
-    dono: p.dono,
-    tropas: p.tropas,
-    x: p.x,
-    y: p.y
-  })));
   
   // Disponibilizar os polígonos globalmente para previews HTML
   try { window.territoryPolygons = window.territoryPolygons || {}; } catch(_) {}
   
   const gameState = getGameState();
   if (!gameState) {
-    console.error('❌ Game state não disponível para atualizar países');
+    
     return;
   }
-  console.log('🔧 DEBUG: Game state obtido com sucesso');
+  
   
   // Atualizar dados dos países
   const dadosGeograficos = {
@@ -7138,16 +7098,16 @@ function atualizarPaises(novosPaises, scene) {
   // Expor polígonos dos territórios para componentes HTML (ex.: preview nas cartas)
   try { window.territoryPolygons = dadosGeograficos; } catch (_) {}
 
-  console.log('📊 Verificando criação de territórios...');
-  console.log('📊 paises.length:', gameState.paises.length);
-  console.log('📊 novosPaises.length:', novosPaises.length);
+  
+  
+  
   
   if (gameState.paises.length === 0) {
-    console.log('✅ Criando territórios pela primeira vez...');
+    
     
     // Ensure scene is ready before creating territories
     if (!scene || !scene.add) {
-      console.error('❌ Scene não está pronta para criar territórios');
+      
       return;
     }
     
@@ -7156,7 +7116,7 @@ function atualizarPaises(novosPaises, scene) {
 
       const geo = dadosGeograficos[pais.nome];
       if (!geo) {
-        console.warn(`Dados geográficos ausentes para ${pais.nome}`);
+        
         return obj;
       }
 
@@ -7190,7 +7150,7 @@ function atualizarPaises(novosPaises, scene) {
      
      // Ensure polygon was created successfully
      if (!obj.polygon) {
-       console.error('❌ Falha ao criar polígono para território:', pais.nome);
+       
        return obj;
      }
      
@@ -7204,13 +7164,13 @@ function atualizarPaises(novosPaises, scene) {
      
      // Debug logs for first few territories
      if (gameState.paises.length < 5) {
-       console.log(`🗺️ Território criado: ${pais.nome}`);
-       console.log(`🗺️ Posição: (${minX}, ${minY})`);
-       console.log(`🗺️ Cor: ${coresDosDonos[pais.dono] || 0xffffff}`);
-       console.log(`🗺️ Pontos: ${pontosRelativos.length} pontos`);
-       console.log(`🗺️ Polygon object:`, obj.polygon);
-       console.log(`🗺️ Polygon visible:`, obj.polygon.visible);
-       console.log(`🗺️ Polygon alpha:`, obj.polygon.alpha);
+       
+       
+       
+       
+       
+       
+       
      }
 
 
@@ -7261,7 +7221,7 @@ function atualizarPaises(novosPaises, scene) {
          // Bloquear interação com o mapa caso qualquer interface HTML esteja aberta
          const interfaceAberta = isAnyHTMLInterfaceOpen();
          if (interfaceAberta) {
-           console.log('🛡️ Clique em território bloqueado - Interface HTML aberta:', interfaceAberta);
+           
            if (event && typeof event.stopPropagation === 'function') {
              try { event.stopPropagation(); } catch (_) {}
            } else if (pointer && pointer.event && typeof pointer.event.stopPropagation === 'function') {
@@ -7273,7 +7233,7 @@ function atualizarPaises(novosPaises, scene) {
          fecharIndicacaoInicioTurnoAutomatico();
          
          // DEBUG: Mostrar coordenadas exatas do clique
-         console.log(`DEBUG: Clicou em ${obj.nome} nas coordenadas (${pointer.x}, ${pointer.y})`);
+         
          
          const gameState = getGameState();
          if (!gameState || gameState.vitoria || gameState.derrota) return;
@@ -7312,7 +7272,7 @@ function atualizarPaises(novosPaises, scene) {
              
              // Verificar se já existe uma interface aberta
              if (interfaceReforco) {
-               console.log('🔧 DEBUG: Interface de reforço já está aberta, ignorando clique');
+               
                return;
              }
              
@@ -7322,7 +7282,7 @@ function atualizarPaises(novosPaises, scene) {
            } else {
              // Verificar se já existe uma interface aberta
              if (interfaceReforco) {
-               console.log('🔧 DEBUG: Interface de reforço já está aberta, ignorando clique');
+               
                return;
              }
              
@@ -7334,11 +7294,11 @@ function atualizarPaises(novosPaises, scene) {
 
          // Verificar se está na fase de remanejamento
          if (gameState.faseRemanejamento && obj.dono === gameState.turno && gameState.turno === gameState.meuNome) {
-           console.log('🔧 DEBUG: Clique em território durante fase de remanejamento');
-           console.log('🔧 DEBUG: Território clicado:', obj.nome);
-           console.log('🔧 DEBUG: Território selecionado:', gameState.selecionado ? gameState.selecionado.nome : 'nenhum');
-           console.log('🔧 DEBUG: Vizinhos do selecionado:', gameState.selecionado ? gameState.selecionado.vizinhos : 'nenhum');
-           console.log('🔧 DEBUG: Interface remanejamento ativa:', !!interfaceRemanejamentoAberta);
+           
+           
+           
+           
+           
            
            if (!gameState.selecionado) {
              // Selecionar território de origem
@@ -7348,26 +7308,26 @@ function atualizarPaises(novosPaises, scene) {
              criarElevacaoTerritorio(obj.nome, scene);
              mostrarMensagem(`Território de origem selecionado: ${obj.nome}. Clique em um território vizinho para mover tropas.`);
              tocarSomHuh();
-             console.log('🔧 DEBUG: Território de origem selecionado:', obj.nome);
+             
            } else if (gameState.selecionado === obj) {
              // Deselecionar
              obj.polygon.setStrokeStyle(4, 0x000000, 1);
              removerElevacaoTerritorio(obj.nome, scene);
              gameState.selecionado = null;
              mostrarMensagem('Seleção cancelada');
-             console.log('🔧 DEBUG: Seleção cancelada');
+             
            } else if (gameState.selecionado.vizinhos.includes(obj.nome) && obj.dono === gameState.turno) {
              // Destacar território de destino com borda branca grossa e elevação
              obj.polygon.setStrokeStyle(8, 0xffffff, 1);
              criarElevacaoTerritorio(obj.nome, scene);
-             console.log('🔧 DEBUG: Verificando movimento de', gameState.selecionado.nome, 'para', obj.nome);
+             
              // Verificar se é possível mover tropas antes de mostrar a interface
              emitWithRoom('verificarMovimentoRemanejamento', {
                origem: gameState.selecionado.nome,
                destino: obj.nome
              });
            } else {
-             console.log('🔧 DEBUG: Movimento inválido - não é vizinho ou não é seu território');
+             
              mostrarMensagem('❌ Só pode mover tropas para territórios vizinhos que você controla!');
            }
            return;
@@ -7431,7 +7391,7 @@ function atualizarPaises(novosPaises, scene) {
   for (let i = 0; i < gameState.paises.length; i++) {
     // Ensure we have both old and new country data
     if (!gameState.paises[i] || !novosPaises[i]) {
-      console.warn('⚠️ Dados de país faltando no índice:', i);
+      
       continue;
     }
 
@@ -7492,13 +7452,13 @@ function atualizarPaises(novosPaises, scene) {
       
       // Aplicar animação de salto se não estiver já animando
       if (!gameState.paises[i].polygon.timelineSalto) {
-        console.log(`🎯 Aplicando animação de salto em ${gameState.paises[i].nome} (continente prioritário)`);
+        
         gameState.paises[i].polygon.timelineSalto = criarAnimacaoSalto(gameState.paises[i].polygon, scene);
       }
       
       // Aplicar elevação se não estiver elevado
       if (!gameState.paises[i].elevado) {
-        console.log(`🎯 Aplicando elevação em ${gameState.paises[i].nome} (continente prioritário)`);
+        
         criarElevacaoTerritorio(gameState.paises[i].nome, scene);
       }
     } else {
@@ -7509,13 +7469,13 @@ function atualizarPaises(novosPaises, scene) {
       
       // Parar animação de salto se estiver animando
       if (gameState.paises[i].polygon.timelineSalto) {
-        console.log(`🛑 Parando animação de salto em ${gameState.paises[i].nome} (não é mais prioritário)`);
+        
         pararAnimacaoSalto(gameState.paises[i].polygon, scene);
       }
       
       // Remover elevação se estiver elevado
       if (gameState.paises[i].elevado) {
-        console.log(`🛑 Removendo elevação de ${gameState.paises[i].nome} (não é mais prioritário)`);
+        
         removerElevacaoTerritorio(gameState.paises[i].nome, scene);
       }
     }
@@ -7611,13 +7571,13 @@ function atualizarPaises(novosPaises, scene) {
         const origemCentro = calcularCentro(origemGeo.pontos);
         const destinoCentro = calcularCentro(destinoGeo.pontos);
         
-        console.log(`🎨 Desenhando linha tracejada entre os centros de ${conexao.origem} e ${conexao.destino}`);
-        console.log(`📍 ${conexao.origem} centro: (${origemCentro.centroX.toFixed(1)}, ${origemCentro.centroY.toFixed(1)})`);
-        console.log(`📍 ${conexao.destino} centro: (${destinoCentro.centroX.toFixed(1)}, ${destinoCentro.centroY.toFixed(1)})`);
+        
+        
+        
         
         desenharLinhaTracejada(scene, origemCentro.centroX, origemCentro.centroY, destinoCentro.centroX, destinoCentro.centroY);
       } else {
-        console.log(`❌ Não foi possível encontrar os dados geográficos de ${conexao.origem} ou ${conexao.destino}`);
+        
       }
     });
   } else {
@@ -7631,8 +7591,8 @@ function atualizarPaises(novosPaises, scene) {
     updatePlayerInfoPanel();
   }
   
-  console.log('🔧 DEBUG: atualizarPaises() concluída com sucesso');
-  console.log(`🔧 DEBUG: ${gameState.paises.length} países atualizados no game state`);
+  
+  
 }
 
 function getTextoPais(pais) {
@@ -7651,28 +7611,28 @@ function atualizarTextoBotaoTurno() {
   // Verificar se o botão existe antes de tentar acessá-lo
   const botaoTurno = document.getElementById('btn-turn');
   if (!botaoTurno) {
-    console.log('⏳ Botão turno ainda não criado, aguardando...');
+    
     return;
   }
   
-  console.log('🔧 DEBUG: Atualizando texto do botão turno');
-  console.log('🔧 DEBUG: faseRemanejamento:', gameState.faseRemanejamento);
-  console.log('🔧 DEBUG: meuNome:', gameState.meuNome);
-  console.log('🔧 DEBUG: turno:', gameState.turno);
+  
+  
+  
+  
   
   if (gameState.faseRemanejamento && gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = getText('endTurnButton');
-    console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (fase remanejamento)');
+    
   } else if (gameState.meuNome === gameState.turno) {
     botaoTurno.textContent = getText('endAttackButton');
-    console.log('🔧 DEBUG: Botão definido como "Encerrar Ataque" (fase ataque)');
+    
   } else {
     botaoTurno.textContent = getText('endTurnButton');
-    console.log('🔧 DEBUG: Botão definido como "Encerrar Turno" (não é meu turno)');
+    
   }
 }
 function limparSelecao() {
-  console.log('🔧 DEBUG: limparSelecao chamada');
+  
   const gameState = getGameState();
   if (!gameState) return;
   
@@ -7705,7 +7665,7 @@ function limparSelecao() {
       if (!p.elevado) {
         const scene = p.polygon.scene;
         if (scene) {
-          console.log(`🎯 Aplicando elevação em ${p.nome} (continente prioritário - limparSelecao)`);
+          
           criarElevacaoTerritorio(p.nome, scene);
         }
       }
@@ -7724,7 +7684,7 @@ function limparSelecao() {
       if (p.elevado) {
         const scene = p.polygon.scene;
         if (scene) {
-          console.log(`🛑 Removendo elevação de ${p.nome} (não é mais prioritário - limparSelecao)`);
+          
           removerElevacaoTerritorio(p.nome, scene);
         }
       }
@@ -7789,13 +7749,13 @@ function mostrarMensagem(texto) {
   
   // Verificar se é uma conquista de continente para disparar efeito de onda
   if (texto.includes('conquistou o continente')) {
-    console.log('🎉 Detectada conquista de continente!');
+    
     
     // Extrair nome do continente da mensagem
     const match = texto.match(/conquistou o continente ([^!]+)/);
     if (match && match[1]) {
       const nomeContinente = match[1].trim();
-      console.log('🌍 Nome do continente extraído:', nomeContinente);
+      
       
       // Disparar efeito de onda após um pequeno delay
       setTimeout(() => {
@@ -7803,7 +7763,7 @@ function mostrarMensagem(texto) {
         if (currentScene) {
           criarEfeitoOndaContinente(nomeContinente, currentScene);
         } else {
-          console.log('❌ Scene não disponível para efeito de onda');
+          
         }
       }, 500); // Delay para sincronizar com a mensagem
     }
@@ -7834,17 +7794,17 @@ function mostrarMensagem(texto) {
 
 // Função para mostrar tela de vitória moderna e visualmente atraente
 function mostrarTelaVitoria(nomeJogador, resumoJogo, scene) {
-  console.log('🏆 Mostrando tela de vitória para:', nomeJogador);
-  console.log('📊 Resumo do jogo:', resumoJogo);
+  
+  
   
   if (!scene || !scene.add) {
-    console.error('❌ Scene não disponível para mostrar tela de vitória');
+    
     return;
   }
   
   const gameState = getGameState();
   if (!gameState) {
-    console.error('❌ Game state não disponível');
+    
     return;
   }
   
@@ -8363,9 +8323,11 @@ function tocarSomTerritoryWin() {
   try {
     const audio = new Audio('assets/territorywin.mp3');
     audio.volume = 0.5;
-    audio.play().catch(e => console.log('Erro ao tocar som de vitória:', e));
+    audio.play().catch(e => {
+      console.error('Erro ao tocar som de vitória:', e);
+    });
   } catch (e) {
-    console.log('Erro ao criar áudio de vitória:', e);
+    console.error('Erro ao tocar som de vitória:', e);
   }
 }
 
@@ -8440,7 +8402,7 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
   
   // Verificar se a scene está pronta
   if (!scene || !scene.add || !scene.add.circle) {
-    console.log('⏳ Scene não pronta para mostrar efeito de ataque');
+    
     return;
   }
   
@@ -8449,13 +8411,13 @@ function mostrarEfeitoAtaque(origem, destino, scene, sucesso = true) {
   const territorioDestino = gameState.paises.find(p => p.nome === destino);
   
   if (!territorioOrigem || !territorioDestino) {
-    console.log('❌ Territórios não encontrados para efeito de ataque');
+    
     return;
   }
   
   // Verificar se os territórios têm as propriedades necessárias
   if (!territorioOrigem.text || !territorioDestino.text) {
-    console.log('❌ Territórios não têm propriedades text para efeito de ataque');
+    
     return;
   }
   
@@ -8621,20 +8583,20 @@ function mostrarEfeitoReforco(territorio, jogador, scene, quantidade = 1) {
   
   // Verificar se a scene está pronta
   if (!scene || !scene.add || !scene.add.circle) {
-    console.log('⏳ Scene não pronta para mostrar efeito de reforço');
+    
     return;
   }
   
   // Encontrar o território no array de países
   const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais) {
-    console.log('❌ Território não encontrado para efeito de reforço');
+    
     return;
   }
 
   // Verificar se o território tem a propriedade text
   if (!pais.text) {
-    console.log('❌ Território não tem propriedade text para efeito de reforço');
+    
     return;
   }
 
@@ -8793,7 +8755,7 @@ function esconderInterfaceReforco() {
         // Manter borda branca grossa para território prioritário
         territorio.polygon.setStrokeStyle(6, 0xffffff, 1);
         // Não remover elevação - ela será gerenciada pela função restaurarAnimacoesTerritoriosBonus
-        console.log(`🎯 Mantendo borda branca e elevação em ${territorio.nome} (território prioritário)`);
+        
       } else {
         // Remover efeito de elevação e borda branca apenas se não for território prioritário
         territorio.polygon.setStrokeStyle(4, 0x000000, 1);
@@ -8801,7 +8763,7 @@ function esconderInterfaceReforco() {
         const scene = territorio.polygon.scene;
         if (scene) {
           removerElevacaoTerritorio(territorio.nome, scene);
-          console.log(`🎯 Removendo borda e elevação de ${territorio.nome} (não prioritário)`);
+          
         }
       }
     }
@@ -8822,7 +8784,7 @@ function confirmarReforco() {
   if (!gameState) return;
   
   if (gameState.territorioSelecionadoParaReforco && gameState.tropasParaColocar > 0) {
-    console.log(`🔧 Enviando ${gameState.tropasParaColocar} reforços para ${gameState.territorioSelecionadoParaReforco.nome}`);
+    
     
     // Enviar múltiplas vezes para colocar as tropas
     for (let i = 0; i < gameState.tropasParaColocar; i++) {
@@ -8840,7 +8802,7 @@ function confirmarReforco() {
       restaurarAnimacoesTerritoriosBonus();
     }
   } else {
-    console.log('❌ Não foi possível confirmar reforço - dados inválidos');
+    
   }
 }
 
@@ -8852,7 +8814,7 @@ function mostrarInterfaceTransferenciaConquista(dados, scene) {
 }
 
 function esconderInterfaceTransferenciaConquista(manterDados = false) {
-  console.log('DEBUG: esconderInterfaceTransferenciaConquista chamada, manterDados =', manterDados);
+  
   
   // Limpar intervalos de incremento/decremento se existirem
   if (window.incrementoIntervalTransferencia) {
@@ -8870,14 +8832,14 @@ function esconderInterfaceTransferenciaConquista(manterDados = false) {
   tropasParaTransferir = 0;
   if (!manterDados) {
     dadosConquista = null;
-    console.log('DEBUG: tropasParaTransferir e dadosConquista resetados');
+    
   } else {
-    console.log('DEBUG: tropasParaTransferir resetado, dadosConquista mantido');
+    
   }
 }
 
 function esconderInterfaceRemanejamento() {
-  console.log('DEBUG: esconderInterfaceRemanejamento chamada');
+  
   
   const popup = document.getElementById('remanejamento-popup');
   const backdrop = document.getElementById('remanejamento-backdrop');
@@ -8893,16 +8855,16 @@ function esconderInterfaceRemanejamento() {
   dadosRemanejamento = null;
   tropasParaMover = 1;
   
-  console.log('DEBUG: Interface de remanejamento HTML escondida');
+  
 }
 
 function confirmarTransferenciaConquista() {
-  console.log('DEBUG: confirmarTransferenciaConquista chamada');
-  console.log('DEBUG: dadosConquista =', dadosConquista);
-  console.log('DEBUG: tropasParaTransferir =', tropasParaTransferir);
+  
+  
+  
   
   if (dadosConquista && tropasParaTransferir >= 0) {
-    console.log('DEBUG: Enviando transferirTropasConquista para o servidor');
+    
     const totalTropas = 1 + tropasParaTransferir; // 1 obrigatória + opcionais
     emitWithRoom('transferirTropasConquista', {
       territorioAtacante: dadosConquista.territorioAtacante,
@@ -8911,19 +8873,19 @@ function confirmarTransferenciaConquista() {
     });
     esconderInterfaceTransferenciaConquista(false);
   } else {
-    console.log('DEBUG: Condição não atendida - dadosConquista:', dadosConquista, 'tropasParaTransferir:', tropasParaTransferir);
+    
   }
 }
 
 function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima = null) {
-  console.log('🔧 DEBUG: mostrarInterfaceRemanejamento HTML chamada');
-  console.log('🔧 DEBUG: Origem:', origem ? origem.nome : 'não definido');
-  console.log('🔧 DEBUG: Destino:', destino ? destino.nome : 'não definido');
-  console.log('🔧 DEBUG: Quantidade máxima:', quantidadeMaxima);
+  
+  
+  
+  
   
   // Verificar se a interface já está aberta
   if (interfaceRemanejamentoAberta) {
-    console.log('🔧 DEBUG: Interface de remanejamento já está aberta, ignorando');
+    
     return;
   }
   
@@ -8962,12 +8924,12 @@ function mostrarInterfaceRemanejamento(origem, destino, scene, quantidadeMaxima 
   
   interfaceRemanejamentoAberta = true;
   
-  console.log('🔧 DEBUG: Interface de remanejamento HTML mostrada');
+  
 }
 function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
   // Verificar se a scene é válida
   if (!scene || !scene.add) {
-    console.error('❌ Scene inválida em mostrarCartasTerritorio:', scene);
+    
     return;
   }
   
@@ -9178,16 +9140,16 @@ function mostrarCartasTerritorio(cartas, scene, forcarTroca = false) {
     
     botaoTrocar.on('pointerdown', () => {
       tocarSomClick();
-      console.log('🔧 Botão trocar cartas clicado - cartas selecionadas:', cartasSelecionadas.length);
+      
       
       if (cartasSelecionadas.length === 3) {
         // Mapear os containers de carta de volta para os nomes dos territórios
         const territoriosSelecionados = cartasSelecionadas.map(cartaContainer => cartaContainer.getData('carta').territorio);
-        console.log('🔧 Enviando troca de cartas:', territoriosSelecionados);
-        console.log('🔧 Tipo dos dados:', Array.isArray(territoriosSelecionados) ? 'Array' : 'Outro tipo');
+        
+        
         emitWithRoom('trocarCartasTerritorio', territoriosSelecionados);
       } else {
-        console.log('❌ Não há 3 cartas selecionadas para trocar');
+        
       }
     });
   }
@@ -9591,7 +9553,7 @@ function getResponsiveSpacing(baseSpacing, mobileMultiplier = 0.8, smallMobileMu
 
 // Nova função para atualizar todos os elementos responsivos
 function updateAllResponsiveElements() {
-  console.log('🔄 Atualizando todos os elementos responsivos...');
+  
   
   // Atualizar HUD CSS
   updateCSSHUD();
@@ -9639,7 +9601,7 @@ function updateAllResponsiveElements() {
     }, 10);
   }
   
-  console.log('✅ Elementos responsivos atualizados');
+  
 }
 
 // Helper function to get player color class
@@ -9690,10 +9652,10 @@ function updateCSSHUD() {
       // Use gameState.meuNome (cor atribuída pelo servidor) instead of displayName
       if (gameState.meuNome) {
         const playerColor = getPlayerColor(gameState.meuNome);
-        console.log(`🎨 Avatar color: ${gameState.meuNome} -> ${playerColor}`);
+        
         playerAvatarEl.style.background = playerColor;
       } else {
-        console.log(`⚠️ gameState.meuNome não definido, usando cor padrão`);
+        
         playerAvatarEl.style.background = '#4444ff'; // Default blue
       }
     }
@@ -9745,13 +9707,13 @@ function updateCSSHUD() {
         if (territoryCount === 1) {
           // For single mark, use the mark's angle directly
           playerAngles[player] = currentAngle;
-          console.log(`🎯 ${player}: 1 tracinho, ângulo = ${currentAngle}°`);
+          
         } else {
           // For multiple marks, calculate the center between first and last mark
           const firstMarkAngle = currentAngle;
           const lastMarkAngle = currentAngle + (360 / totalMarks * (territoryCount - 1));
           playerAngles[player] = (firstMarkAngle + lastMarkAngle) / 2;
-          console.log(`🎯 ${player}: ${territoryCount} tracinhos, ângulo centro = ${playerAngles[player]}° (primeiro: ${firstMarkAngle}°, último: ${lastMarkAngle}°)`);
+          
         }
         
         for (let i = 0; i < territoryCount; i++) {
@@ -9768,10 +9730,10 @@ function updateCSSHUD() {
         turnPointerEl.style.display = 'block';
         turnPointerEl.className = `turn-pointer ${getPlayerColorClass(gameState.turno)}`;
         turnPointerEl.style.transform = `rotate(${playerAngles[gameState.turno]}deg)`;
-        console.log(`👆 Ponteiro apontando para ${gameState.turno} no ângulo ${playerAngles[gameState.turno]}°`);
+        
       } else {
         turnPointerEl.style.display = 'none';
-        console.log(`❌ Ponteiro oculto - turno: ${gameState.turno}, ângulos:`, playerAngles);
+        
       }
     } else {
       turnPointerEl.style.display = 'none';
@@ -9998,10 +9960,10 @@ function adicionarIndicadoresContinentes(scene) {
     
     // DEBUG: Log para Zarandis
     if (indicador.nome === 'Zarandis') {
-      console.log(`DEBUG: Zarandis - Procurando território: ${indicador.territorioRepresentativo}`);
-      console.log(`DEBUG: Zarandis - Território encontrado:`, territorio);
+      
+      
       if (territorio) {
-        console.log(`DEBUG: Zarandis - Coordenadas: X=${territorio.x}, Y=${territorio.y}`);
+        
       }
     }
     
@@ -10026,7 +9988,7 @@ function adicionarIndicadoresContinentes(scene) {
         tipo: 'linha'
       });
     } else {
-      console.warn(`Território representativo não encontrado para ${indicador.nome}: ${indicador.territorioRepresentativo}`);
+      
     }
   });
   
@@ -10061,7 +10023,7 @@ function forceMobileCanvasPosition() {
     canvasElement.style.objectFit = 'fill';
     canvasElement.style.zIndex = '1';
     
-    console.log('📱 Mobile canvas positioned at:', hudBottom, 'px from top');
+    
   }
 }
 
@@ -10121,7 +10083,7 @@ function showObjectiveModal(objetivo) {
   const iconEl = document.getElementById('objective-icon');
   const descEl = document.getElementById('objective-description');
   if (!popup || !iconEl || !descEl) {
-    console.warn('Objective modal elements not found');
+    
     return;
   }
   let icone = '🎯';
@@ -10401,7 +10363,7 @@ function hideVictoryModal() {
 }
 // Função de teste para demonstrar a nova tela de vitória
 function testVictoryScreen() {
-  console.log('🧪 Testando nova tela de vitória...');
+  
   
   // Dados simulados para teste
   const dadosSimulados = {
@@ -10475,15 +10437,15 @@ function testVictoryScreen() {
   // Restaurar função original após 10 segundos
   setTimeout(() => {
     window.getGameState = originalGetGameState;
-    console.log('🧪 Teste concluído - gameState restaurado');
+    
   }, 10000);
   
-  console.log('🎉 Tela de vitória exibida com dados simulados!');
-  console.log('📊 Dados utilizados:', dadosSimulados);
+  
+  
 }
 
 function showTransferModal(dados) {
-  console.log('DEBUG: showTransferModal chamada com dados:', dados);
+  
   esconderInterfaceTransferenciaConquista(true);
   dadosConquista = dados;
   tropasParaTransferir = 0; // Começa com 0 tropas opcionais (1 obrigatória sempre)
@@ -10491,7 +10453,7 @@ function showTransferModal(dados) {
   const popup = document.getElementById('transfer-popup');
   const backdrop = document.getElementById('transfer-backdrop');
   if (!popup) {
-    console.error('DEBUG: Elemento transfer-popup não encontrado');
+    
     return;
   }
   
@@ -10510,7 +10472,7 @@ function showTransferModal(dados) {
   // O servidor agora envia tropasAdicionais como apenas as tropas opcionais
   const maxDisponivel = dados.tropasAdicionais || 0;
   
-  console.log('DEBUG: maxDisponivel calculado:', maxDisponivel, 'dados:', dados);
+  
   
   if (origemEl) origemEl.textContent = dados.territorioAtacante;
   if (destinoEl) destinoEl.textContent = dados.territorioConquistado;
@@ -10582,7 +10544,7 @@ function initializeActionHistory() {
   // Check if button already exists to prevent duplication
   const existingButton = document.getElementById('btn-history');
   if (existingButton) {
-    console.log('🔄 Chat button already exists, skipping creation');
+    
     return;
   }
   
@@ -10614,7 +10576,7 @@ function createHistoryPopup() {
   // Check if popup already exists to prevent duplication
   const existingPopup = document.getElementById('history-popup');
   if (existingPopup) {
-    console.log('🔄 History popup already exists, skipping creation');
+    
     return;
   }
   
@@ -10680,11 +10642,11 @@ function createHistoryPopup() {
   });
   
   // Debug: Check if chat elements are created
-  console.log('🔍 Chat elements created:');
-  console.log('🔍 Chat content:', document.getElementById('chat-content'));
-  console.log('🔍 Chat input container:', document.getElementById('chat-input-container'));
-  console.log('🔍 Chat form:', document.getElementById('chat-form'));
-  console.log('🔍 Chat input:', document.getElementById('chat-input'));
+  
+  
+  
+  
+  
 }
 
 function toggleHistoryPopup() {
@@ -10693,11 +10655,11 @@ function toggleHistoryPopup() {
   
   const popup = document.getElementById('history-popup');
   if (!popup) {
-    console.log('❌ History popup not found!');
+    
     return;
   }
   
-  console.log('🔄 Toggling history popup, current state:', gameState.historyPopupVisible);
+  
   
   if (!gameState.historyPopupVisible) {
     // Fechar outras modais primeiro
@@ -10707,7 +10669,7 @@ function toggleHistoryPopup() {
     gameState.historyPopupVisible = true;
     popup.style.display = 'block';
     
-    console.log('✅ Popup opened, current tab:', gameState.currentTab);
+    
     
     // Show current tab content
     if (gameState.currentTab === 'chat') {
@@ -10719,7 +10681,7 @@ function toggleHistoryPopup() {
     // Fechar popup
     gameState.historyPopupVisible = false;
     popup.style.display = 'none';
-    console.log('✅ Popup closed');
+    
   }
 }
 
@@ -10729,7 +10691,7 @@ function switchToChat() {
   
   gameState.currentTab = 'chat';
   
-  console.log('🔄 Switching to chat...');
+  
   
   // Update tab buttons
   document.getElementById('chat-tab').classList.add('active');
@@ -10739,8 +10701,8 @@ function switchToChat() {
   const chatContent = document.getElementById('chat-content');
   const historyContent = document.getElementById('history-content');
   
-  console.log('🔍 Chat content element:', chatContent);
-  console.log('🔍 History content element:', historyContent);
+  
+  
   
   chatContent.style.display = 'flex';
   historyContent.style.display = 'none';
@@ -10750,41 +10712,41 @@ function switchToChat() {
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
   
-  console.log('🔍 Input container:', inputContainer);
-  console.log('🔍 Chat form:', chatForm);
-  console.log('🔍 Chat input:', chatInput);
+  
+  
+  
   
   if (inputContainer) {
     inputContainer.style.display = 'block';
-    console.log('✅ Input container display set to block');
+    
   }
   
   if (chatForm) {
     chatForm.style.display = 'flex';
-    console.log('✅ Chat form display set to flex');
+    
   }
   
   if (chatInput) {
     chatInput.style.display = 'block';
-    console.log('✅ Chat input display set to block');
-    console.log('🔍 Chat input computed style:', window.getComputedStyle(chatInput));
-    console.log('🔍 Chat input offsetTop:', chatInput.offsetTop);
-    console.log('🔍 Chat input offsetLeft:', chatInput.offsetLeft);
-    console.log('🔍 Chat input offsetWidth:', chatInput.offsetWidth);
-    console.log('🔍 Chat input offsetHeight:', chatInput.offsetHeight);
+    
+    
+    
+    
+    
+    
     
     // Debug parent elements
     const inputContainer = chatInput.parentElement;
     const chatForm = inputContainer?.parentElement;
     const chatContent = chatForm?.parentElement;
     
-    console.log('🔍 Input container computed style:', inputContainer ? window.getComputedStyle(inputContainer) : 'null');
-    console.log('🔍 Chat form computed style:', chatForm ? window.getComputedStyle(chatForm) : 'null');
-    console.log('🔍 Chat content computed style:', chatContent ? window.getComputedStyle(chatContent) : 'null');
     
-    console.log('🔍 Input container offsetTop:', inputContainer?.offsetTop);
-    console.log('🔍 Chat form offsetTop:', chatForm?.offsetTop);
-    console.log('🔍 Chat content offsetTop:', chatContent?.offsetTop);
+    
+    
+    
+    
+    
+    
   }
   
   // Reset unread messages when opening chat
@@ -11230,17 +11192,17 @@ function tornarInterfaceArrastavel(container, scene) {
 
 // Função para criar animação de salto nos países
 function criarAnimacaoSalto(polygon, scene) {
-  console.log('🎯 Criando animação de salto para país:', polygon.name || 'desconhecido');
+  
   
   // Verificar se já existe uma animação ativa
   if (polygon.timelineSalto) {
-    console.log('⚠️ Animação já existe, parando antes de criar nova');
+    
     pararAnimacaoSalto(polygon, scene);
   }
   
   // Salvar a posição original no próprio objeto polygon
   polygon.posicaoOriginal = { x: polygon.x, y: polygon.y };
-  console.log('💾 Posição original salva:', polygon.posicaoOriginal);
+  
   
   // Encontrar o círculo e texto das tropas associados a este polígono
   const gameState = getGameState();
@@ -11289,14 +11251,14 @@ function criarAnimacaoSalto(polygon, scene) {
     }
   });
   
-  console.log('✅ Animação de salto criada com sucesso (incluindo tropas)');
+  
   return tween;
 }
 
 // Função para parar animação de salto
 function pararAnimacaoSalto(polygon, scene) {
   if (polygon.timelineSalto) {
-    console.log('🛑 Parando animação de salto para país:', polygon.name || 'desconhecido');
+    
     
     polygon.timelineSalto.stop();
     polygon.timelineSalto.remove();
@@ -11304,12 +11266,12 @@ function pararAnimacaoSalto(polygon, scene) {
     
     // Restaurar posição original do polígono usando os valores salvos
     if (polygon.posicaoOriginal) {
-      console.log('🔄 Restaurando posição original do polígono:', polygon.posicaoOriginal);
+      
       polygon.setPosition(polygon.posicaoOriginal.x, polygon.posicaoOriginal.y);
       // Limpar a referência da posição original
       delete polygon.posicaoOriginal;
     } else {
-      console.log('⚠️ Posição original do polígono não encontrada, usando coordenadas do servidor');
+      
       // Fallback: usar as coordenadas do servidor
       const gameState = getGameState();
       if (gameState) {
@@ -11327,27 +11289,27 @@ function pararAnimacaoSalto(polygon, scene) {
       if (pais) {
         // Restaurar círculo das tropas
         if (pais.troopCircle && pais.troopCircle.posicaoOriginal) {
-          console.log('🔄 Restaurando posição do círculo das tropas');
+          
           pais.troopCircle.setPosition(pais.troopCircle.posicaoOriginal.x, pais.troopCircle.posicaoOriginal.y);
           delete pais.troopCircle.posicaoOriginal;
         }
         
         // Restaurar texto das tropas
         if (pais.troopText && pais.troopText.posicaoOriginal) {
-          console.log('🔄 Restaurando posição do texto das tropas');
+          
           pais.troopText.setPosition(pais.troopText.posicaoOriginal.x, pais.troopText.posicaoOriginal.y);
           delete pais.troopText.posicaoOriginal;
         }
       }
     }
     
-    console.log('✅ Animação de salto parada com sucesso (incluindo tropas)');
+    
   }
 }
 
 // Função para limpar todas as animações de salto
 function limparTodasAnimacoesSalto() {
-  console.log('🧹 Limpando todas as animações de salto');
+  
   
   const gameState = getGameState();
   if (!gameState) return;
@@ -11363,7 +11325,7 @@ function limparTodasAnimacoesSalto() {
     }
   });
   
-  console.log(`✅ ${animacoesParadas} animações de salto paradas`);
+  
   
   // Também limpar todas as elevações
   limparTodasElevacoes();
@@ -11373,14 +11335,14 @@ function limparTodasAnimacoesSalto() {
   const totalReforco = gameState.tropasReforco || 0;
   const tropasRestantes = totalReforco + totalBonus;
   
-  console.log(`🎯 Tropas restantes após limpeza: ${tropasRestantes} (${totalReforco} reforço + ${totalBonus} bônus)`);
+  
   
   // Só restaurar animações se ainda há tropas para colocar
   if (tropasRestantes > 0) {
-    console.log('🎯 Restaurando animações pois ainda há tropas para colocar');
+    
     restaurarAnimacoesTerritoriosBonus();
   } else {
-    console.log('🎯 Não restaurando animações - não há mais tropas para colocar');
+    
   }
 }
 // Função para restaurar animações de salto nos territórios bônus
@@ -11392,11 +11354,11 @@ function restaurarAnimacoesTerritoriosBonus() {
   const totalReforco = gameState.tropasReforco || 0;
   const tropasRestantes = totalReforco + totalBonus;
   
-  console.log(`🎯 restaurarAnimacoesTerritoriosBonus - tropas restantes: ${tropasRestantes} (${totalReforco} reforço + ${totalBonus} bônus)`);
+  
   
   // Só restaurar se há tropas para colocar e é o turno do jogador
   if (tropasRestantes > 0 && gameState.meuNome === gameState.turno && gameState.continentePrioritario) {
-    console.log('🎯 Restaurando animações de salto para territórios bônus');
+    
     
     gameState.paises.forEach(pais => {
       if (pais.dono === gameState.turno && pais.polygon && pais.polygon.scene) {
@@ -11407,7 +11369,7 @@ function restaurarAnimacoesTerritoriosBonus() {
           
           // Aplicar animação de salto se não estiver já animando
           if (!pais.polygon.timelineSalto) {
-            console.log(`🎯 Restaurando animação de salto em ${pais.nome}`);
+            
             pais.polygon.timelineSalto = criarAnimacaoSalto(pais.polygon, pais.polygon.scene);
           }
           
@@ -11417,7 +11379,7 @@ function restaurarAnimacoesTerritoriosBonus() {
           if (strokeStyle && strokeStyle.color === 0xffffff && strokeStyle.width === 6) {
             // Verificar se não tem elevação aplicada usando a propriedade elevado
             if (!pais.elevado) {
-              console.log(`🎯 Aplicando elevação em ${pais.nome} (território bônus)`);
+              
               criarElevacaoTerritorio(pais.nome, pais.polygon.scene);
             }
           }
@@ -11425,18 +11387,18 @@ function restaurarAnimacoesTerritoriosBonus() {
       }
     });
   } else {
-    console.log('🎯 Não restaurando animações - condições não atendidas');
-    console.log(`🎯 tropasRestantes: ${tropasRestantes}, meuNome: ${gameState.meuNome}, turno: ${gameState.turno}, continentePrioritario: ${gameState.continentePrioritario ? 'sim' : 'não'}`);
+    
+    
   }
 }
 
 // Função para criar efeito de onda quando conquista um continente
 function criarEfeitoOndaContinente(nomeContinente, scene) {
-  console.log('🌊 Criando efeito de ola (football wave) para conquista do continente:', nomeContinente);
+  
   
   const gameState = getGameState();
   if (!gameState || !gameState.continentes[nomeContinente]) {
-    console.log('❌ Continente não encontrado para efeito de ola');
+    
     return;
   }
   
@@ -11449,18 +11411,18 @@ function criarEfeitoOndaContinente(nomeContinente, scene) {
   );
   
   if (paisesDoContinente.length === 0) {
-    console.log('❌ Nenhum país encontrado para o continente');
+    
     return;
   }
   
-  console.log('📍 Territórios do continente para ola:', paisesDoContinente.map(p => p.nome));
+  
   
   // Criar efeito de "ola" sequencial (football wave)
   paisesDoContinente.forEach((pais, index) => {
     if (pais.polygon) {
       // Delay para criar o efeito sequencial
       setTimeout(() => {
-        console.log(`🏈 Fazendo território ${pais.nome} pular (${index + 1}/${paisesDoContinente.length})`);
+        
         
         // Salvar posição original se ainda não foi salva
         if (!pais.polygon.posicaoOriginal) {
@@ -11547,12 +11509,12 @@ function criarEfeitoOndaContinente(nomeContinente, scene) {
     criarPartículasDouradas(centroX, centroY, scene);
   }, paisesDoContinente.length * 200 + 500);
   
-  console.log('✅ Efeito de ola (football wave) criado com sucesso');
+  
 }
 
 // Função para criar partículas douradas
 function criarPartículasDouradas(x, y, scene) {
-  console.log('✨ Criando partículas douradas em:', { x, y });
+  
   
   // Criar múltiplas partículas douradas
   for (let i = 0; i < 12; i++) {
@@ -11581,12 +11543,12 @@ function criarPartículasDouradas(x, y, scene) {
     });
   }
   
-  console.log('✨ Partículas douradas criadas');
+  
 }
 
 // Função para verificar se uma conquista completa um continente
 function verificarConquistaContinente(territorioConquistado, jogadorAtacante, scene) {
-  console.log('🔍 Verificando se a conquista de', territorioConquistado, 'completa algum continente para', jogadorAtacante);
+  
   
   const gameState = getGameState();
   if (!gameState) return;
@@ -11598,7 +11560,7 @@ function verificarConquistaContinente(territorioConquistado, jogadorAtacante, sc
     
     // Verificar se o território conquistado pertence a este continente
     if (territoriosDoContinente.includes(territorioConquistado)) {
-      console.log('📍 Território', territorioConquistado, 'pertence ao continente', nomeContinente);
+      
       
       // Verificar se o jogador agora controla todos os territórios do continente
       const territoriosConquistados = territoriosDoContinente.filter(territorio => {
@@ -11606,19 +11568,19 @@ function verificarConquistaContinente(territorioConquistado, jogadorAtacante, sc
         return pais && pais.dono === jogadorAtacante;
       });
       
-      console.log('🎯 Territórios do continente', nomeContinente, ':', territoriosDoContinente);
-      console.log('🎯 Territórios conquistados por', jogadorAtacante, ':', territoriosConquistados);
+      
+      
       
       // Se todos os territórios do continente estão conquistados
       if (territoriosConquistados.length === territoriosDoContinente.length) {
-        console.log('🎉 CONTINENTE CONQUISTADO!', nomeContinente, 'por', jogadorAtacante);
+        
         
         // Disparar efeito de onda imediatamente
         setTimeout(() => {
           criarEfeitoOndaContinente(nomeContinente, scene);
         }, 100); // Pequeno delay para garantir que o estado foi atualizado
       } else {
-        console.log('⚠️ Continente', nomeContinente, 'ainda não foi completamente conquistado');
+        
       }
     }
   });
@@ -11626,21 +11588,21 @@ function verificarConquistaContinente(territorioConquistado, jogadorAtacante, sc
 
 // Função para mostrar efeito de explosão quando tropas são perdidas
 function mostrarEfeitoExplosaoTropas(territorio, scene) {
-  console.log('💥 Criando efeito de explosão para tropas perdidas em:', territorio);
+  
   
   const gameState = getGameState();
   if (!gameState) return;
   
   // Verificar se a scene está pronta
   if (!scene || !scene.add || !scene.add.circle) {
-    console.log('⏳ Scene não pronta para mostrar efeito de explosão');
+    
     return;
   }
   
   // Encontrar o território no mapa
   const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais || !pais.troopCircle) {
-    console.log('❌ Território ou círculo de tropas não encontrado para efeito de explosão');
+    
     return;
   }
   
@@ -11648,7 +11610,7 @@ function mostrarEfeitoExplosaoTropas(territorio, scene) {
   const x = pais.troopCircle.x;
   const y = pais.troopCircle.y;
   
-  console.log('📍 Posição da explosão:', { x, y });
+  
   
   // Criar partículas de explosão
   const numPartículas = 12;
@@ -11741,25 +11703,25 @@ function mostrarEfeitoExplosaoTropas(territorio, scene) {
   
 
   
-  console.log('✅ Efeito de explosão criado com sucesso');
+  
 }
 // Função para mostrar efeito de explosão quando um território é conquistado
 function mostrarEfeitoExplosaoConquista(territorio, jogador, scene) {
-  console.log('👑 Criando efeito de explosão de conquista para:', territorio, 'por', jogador);
+  
   
   const gameState = getGameState();
   if (!gameState) return;
   
   // Verificar se a scene está pronta
   if (!scene || !scene.add || !scene.add.circle) {
-    console.log('⏳ Scene não pronta para mostrar efeito de explosão de conquista');
+    
     return;
   }
   
   // Encontrar o território no mapa
   const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais || !pais.troopCircle) {
-    console.log('❌ Território ou círculo de tropas não encontrado para efeito de explosão de conquista');
+    
     return;
   }
   
@@ -11767,7 +11729,7 @@ function mostrarEfeitoExplosaoConquista(territorio, jogador, scene) {
   const x = pais.troopCircle.x;
   const y = pais.troopCircle.y;
   
-  console.log('📍 Posição da explosão de conquista:', { x, y });
+  
   
   // Criar partículas douradas de conquista
   const numPartículas = 16;
@@ -11882,25 +11844,25 @@ function mostrarEfeitoExplosaoConquista(territorio, jogador, scene) {
     });
   }, 200);
   
-  console.log('✅ Efeito de explosão de conquista criado com sucesso');
+  
 }
 // Função para elevar território selecionado (similar ao salto mas permanente)
 function criarElevacaoTerritorio(territorio, scene) {
-  console.log('⬆️ Criando elevação para território selecionado:', territorio);
+  
   
   const gameState = getGameState();
   if (!gameState) return;
   
   // Verificar se a scene está pronta
   if (!scene || !scene.add || !scene.add.circle) {
-    console.log('⏳ Scene não pronta para mostrar elevação');
+    
     return;
   }
   
   // Encontrar o território no mapa
   const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais) {
-    console.log('❌ Território não encontrado para elevação');
+    
     return;
   }
   
@@ -11925,7 +11887,7 @@ function criarElevacaoTerritorio(territorio, scene) {
   }
   
   if (elementos.length === 0 && elementosReduzidos.length === 0) {
-    console.log('❌ Nenhum elemento encontrado para elevação');
+    
     return;
   }
   
@@ -11946,7 +11908,7 @@ function criarElevacaoTerritorio(territorio, scene) {
     }
   });
   
-  console.log('📍 Aplicando elevação em', elementos.length, 'elementos principais e', elementosReduzidos.length, 'elementos reduzidos');
+  
   
   // Criar elevação suave e permanente para elementos principais (polygon)
   if (elementos.length > 0) {
@@ -11956,7 +11918,7 @@ function criarElevacaoTerritorio(territorio, scene) {
       duration: 300,
       ease: 'Power2',
       onComplete: () => {
-        console.log('✅ Elevação principal concluída para território:', territorio);
+        
       }
     });
   }
@@ -11969,7 +11931,7 @@ function criarElevacaoTerritorio(territorio, scene) {
       duration: 300,
       ease: 'Power2',
       onComplete: () => {
-        console.log('✅ Elevação reduzida concluída para território:', territorio);
+        
       }
     });
   }
@@ -11980,7 +11942,7 @@ function criarElevacaoTerritorio(territorio, scene) {
 
 // Função para baixar território (remover elevação)
 function removerElevacaoTerritorio(territorio, scene) {
-  console.log('⬇️ Removendo elevação do território:', territorio);
+  
   
   const gameState = getGameState();
   if (!gameState) return;
@@ -11988,7 +11950,7 @@ function removerElevacaoTerritorio(territorio, scene) {
   // Encontrar o território no mapa
   const pais = gameState.paises.find(p => p.nome === territorio);
   if (!pais) {
-    console.log('❌ Território não encontrado para remover elevação');
+    
     return;
   }
   
@@ -12013,11 +11975,11 @@ function removerElevacaoTerritorio(territorio, scene) {
   }
   
   if (elementos.length === 0 && elementosReduzidos.length === 0) {
-    console.log('❌ Nenhum elemento encontrado para remover elevação');
+    
     return;
   }
   
-  console.log('📍 Removendo elevação de', elementos.length, 'elementos principais e', elementosReduzidos.length, 'elementos reduzidos');
+  
   
   // Baixar elementos principais de volta à posição original
   if (elementos.length > 0) {
@@ -12033,7 +11995,7 @@ function removerElevacaoTerritorio(territorio, scene) {
             elemento.y = elemento.posicaoOriginalElevacao.y;
           }
         });
-        console.log('✅ Elevação principal removida do território:', territorio);
+        
       }
     });
   }
@@ -12052,7 +12014,7 @@ function removerElevacaoTerritorio(territorio, scene) {
             elemento.y = elemento.posicaoOriginalElevacao.y;
           }
         });
-        console.log('✅ Elevação reduzida removida do território:', territorio);
+        
       }
     });
   }
@@ -12063,7 +12025,7 @@ function removerElevacaoTerritorio(territorio, scene) {
 
 // Função para limpar todas as elevações
 function limparTodasElevacoes() {
-  console.log('🧹 Limpando todas as elevações');
+  
   
   const gameState = getGameState();
   if (!gameState) return;
@@ -12076,7 +12038,7 @@ function limparTodasElevacoes() {
 }
 
 function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
-  console.log('🎯 Mostrando indicação de início de turno (HTML) para:', nomeJogador);
+  
   const overlay = document.getElementById('turn-start-overlay');
   if (!overlay) return;
   overlay.style.display = 'flex';
@@ -12136,7 +12098,7 @@ function fecharIndicacaoInicioTurno() {
             
             // Aplicar animação de salto se não estiver já animando
             if (!pais.polygon.timelineSalto) {
-              console.log(`🎯 Restaurando animação de salto em ${pais.nome} após fechar indicação de turno`);
+              
               pais.polygon.timelineSalto = criarAnimacaoSalto(pais.polygon, pais.polygon.scene);
             }
           } else {
@@ -12160,18 +12122,18 @@ function fecharIndicacaoInicioTurno() {
 // Função para fechar indicação de início de turno automaticamente em qualquer interação
 function fecharIndicacaoInicioTurnoAutomatico() {
   if (window.indicacaoInicioTurno && window.indicacaoInicioTurno.container) {
-    console.log('🚫 Fechando indicação de início de turno automaticamente devido a interação');
+    
     fecharIndicacaoInicioTurno();
   }
 }
 
 // Função para desenhar linha tracejada entre dois pontos
 function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
-  console.log('🎨 Desenhando linha tracejada de', x1, y1, 'para', x2, y2);
+  
   
   // Verificar se a cena é válida
   if (!scene || !scene.add) {
-    console.error('❌ Cena inválida para desenhar linha tracejada');
+    
     return;
   }
   
@@ -12189,7 +12151,7 @@ function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
   
   // Verificar se a distância é válida
   if (distance <= 0) {
-    console.error('❌ Distância inválida entre os pontos');
+    
     return;
   }
   
@@ -12201,7 +12163,7 @@ function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
   const unitX = dx / distance;
   const unitY = dy / distance;
   
-  console.log(`📏 Distância total: ${distance.toFixed(1)}px, ${numSegments} segmentos`);
+  
   
   // Criar os segmentos tracejados
   for (let i = 0; i < numSegments; i++) {
@@ -12228,8 +12190,8 @@ function desenharLinhaTracejada(scene, x1, y1, x2, y2) {
     // Definir a profundidade para ficar acima do mapa mas abaixo dos territórios
     line.setDepth(5);
     
-    console.log(`🎨 Segmento ${i + 1}: (${segmentStartX.toFixed(1)}, ${segmentStartY.toFixed(1)}) para (${segmentEndX.toFixed(1)}, ${segmentEndY.toFixed(1)})`);
+    
   }
   
-  console.log('✅ Linha tracejada desenhada com sucesso!');
+  
 }
