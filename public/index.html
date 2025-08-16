@@ -1535,6 +1535,20 @@
     gap: 4px;
     color: white;
     font-family: 'Courier New', monospace;
+    margin: 0 15px; /* Espaçamento base para desktop */
+  }
+
+  /* Responsivo para diferentes tamanhos de tela */
+  @media (max-width: 768px) {
+    .global-turn-timer {
+      margin: 0 12px; /* Menor espaçamento para tablets */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .global-turn-timer {
+      margin: 0 8px; /* Espaçamento mínimo para mobile */
+    }
   }
 
   .timer-label {
