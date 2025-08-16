@@ -190,6 +190,14 @@ const gameTranslations = {
     cardsYourCards: '🎴 Your Territory Cards',
     cardsInstructions: 'Click on cards to select (maximum 3)',
     cardsExchange: '🔄 Exchange Cards',
+    cardsMandatoryTitle: '⚠️ MANDATORY EXCHANGE - ',
+    cardsMandatoryInstructions: '⚠️ MANDATORY EXCHANGE: You have 5+ cards in hand. Select 3 cards to exchange before continuing to play.',
+    cardsMandatoryButton: '🔄 EXCHANGE CARDS (MANDATORY)',
+    cardsMandatorySelected: '⚠️ MANDATORY EXCHANGE: Selected: {count}/3 - Select {remaining} more card(s)',
+    cardsMandatoryComplete: '✅ MANDATORY EXCHANGE: 3/3 selected - Click Exchange Cards to continue',
+    cardsOptionalSelected: 'Selected: {count}/3',
+    cardsOptionalComplete: 'Selected: 3/3 - Click Exchange Cards',
+    cardsEmpty: 'You do not have territory cards yet.',
     
     // Remanejamento Popup
     remanejamentoTitle: 'Move Troops',
@@ -544,6 +552,14 @@ const gameTranslations = {
     cardsYourCards: '🎴 Suas Cartas Território',
     cardsInstructions: 'Clique nas cartas para selecionar (máximo 3)',
     cardsExchange: '🔄 Trocar Cartas',
+    cardsMandatoryTitle: '⚠️ TROCA OBRIGATÓRIA - ',
+    cardsMandatoryInstructions: '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.',
+    cardsMandatoryButton: '🔄 TROCAR CARTAS (OBRIGATÓRIO)',
+    cardsMandatorySelected: '⚠️ TROCA OBRIGATÓRIA: Selecionadas: {count}/3 - Selecione mais {remaining} carta(s)',
+    cardsMandatoryComplete: '✅ TROCA OBRIGATÓRIA: 3/3 selecionadas - Clique em Trocar Cartas para continuar',
+    cardsOptionalSelected: 'Selecionadas: {count}/3',
+    cardsOptionalComplete: 'Selecionadas: 3/3 - Clique em Trocar Cartas',
+    cardsEmpty: 'Você ainda não possui cartas território.',
     
     // Remanejamento Popup
     remanejamentoTitle: 'Mover Tropas',
@@ -944,6 +960,14 @@ const gameTranslations = {
     cardsYourCards: '🎴 Ваши карты территорий',
     cardsInstructions: 'Нажмите на карты для выбора (максимум 3)',
     cardsExchange: '🔄 Обменять карты',
+    cardsMandatoryTitle: '⚠️ ОБЯЗАТЕЛЬНЫЙ ОБМЕН - ',
+    cardsMandatoryInstructions: '⚠️ ОБЯЗАТЕЛЬНЫЙ ОБМЕН: У вас 5+ карт в руке. Выберите 3 карты для обмена перед продолжением игры.',
+    cardsMandatoryButton: '🔄 ОБМЕНЯТЬ КАРТЫ (ОБЯЗАТЕЛЬНО)',
+    cardsMandatorySelected: '⚠️ ОБЯЗАТЕЛЬНЫЙ ОБМЕН: Выбрано: {count}/3 - Выберите еще {remaining} карт(у)',
+    cardsMandatoryComplete: '✅ ОБЯЗАТЕЛЬНЫЙ ОБМЕН: 3/3 выбрано - Нажмите Обменять карты для продолжения',
+    cardsOptionalSelected: 'Выбрано: {count}/3',
+    cardsOptionalComplete: 'Выбрано: 3/3 - Нажмите Обменять карты',
+    cardsEmpty: 'У вас пока нет карт территорий.',
     
     // Game Interface
     troops: 'Войска',
@@ -1250,6 +1274,14 @@ const gameTranslations = {
     cardsYourCards: '🎴 你的领土卡牌',
     cardsInstructions: '点击卡牌进行选择（最多3张）',
     cardsExchange: '🔄 交换卡牌',
+    cardsMandatoryTitle: '⚠️ 强制交换 - ',
+    cardsMandatoryInstructions: '⚠️ 强制交换：您手中有5张以上卡牌。请选择3张卡牌进行交换才能继续游戏。',
+    cardsMandatoryButton: '🔄 交换卡牌（强制）',
+    cardsMandatorySelected: '⚠️ 强制交换：已选择：{count}/3 - 请再选择{remaining}张卡牌',
+    cardsMandatoryComplete: '✅ 强制交换：3/3已选择 - 点击交换卡牌继续',
+    cardsOptionalSelected: '已选择：{count}/3',
+    cardsOptionalComplete: '已选择：3/3 - 点击交换卡牌',
+    cardsEmpty: '您还没有领土卡牌。',
     
     // Game Interface
     troops: '部队',
@@ -4450,6 +4482,26 @@ function resizeGameElements(scene) {
 
   // Update HTML connections (lines between territories)
   updateAllConnectionsDebounced();
+  
+  // Update original elevation positions for all territories
+  gameState.paises.forEach(pais => {
+    if (pais.elevado) {
+      // For elevated territories, calculate what the original position should be
+      // by subtracting the elevation offset from current position
+      if (pais.polygon && pais.polygon.posicaoOriginalElevacao) {
+        pais.polygon.posicaoOriginalElevacao.y = pais.polygon.y + 8; // +8 because elevation subtracts 8
+      }
+      if (pais.troopCircle && pais.troopCircle.posicaoOriginalElevacao) {
+        pais.troopCircle.posicaoOriginalElevacao.y = pais.troopCircle.y + 5; // +5 because elevation subtracts 5
+      }
+      if (pais.troopText && pais.troopText.posicaoOriginalElevacao) {
+        pais.troopText.posicaoOriginalElevacao.y = pais.troopText.y + 5; // +5 because elevation subtracts 5
+      }
+      if (pais.nomeText && pais.nomeText.posicaoOriginalElevacao) {
+        pais.nomeText.posicaoOriginalElevacao.y = pais.nomeText.y + 5; // +5 because elevation subtracts 5
+      }
+    }
+  });
 }
 
 function setupRemanejamentoEventListeners() {
@@ -9356,7 +9408,7 @@ function showCardsModal(cartas, forcarTroca = false) {
   
   // Update title based on whether exchange is forced
   if (forcarTroca) {
-    titleEl.textContent = '⚠️ TROCA OBRIGATÓRIA - ' + getText('cardsYourCards');
+    titleEl.textContent = getText('cardsMandatoryTitle') + getText('cardsYourCards');
   } else {
     titleEl.textContent = getText('cardsYourCards');
   }
@@ -9364,10 +9416,10 @@ function showCardsModal(cartas, forcarTroca = false) {
   // Render grid
   grid.innerHTML = '';
   if (cardsCurrentList.length === 0) {
-    instructions.textContent = 'Você ainda não possui cartas território.';
+    instructions.textContent = getText('cardsEmpty');
   } else if (forcarTroca) {
-    instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.';
-    exchangeBtn.textContent = '🔄 TROCAR CARTAS (OBRIGATÓRIO)';
+    instructions.textContent = getText('cardsMandatoryInstructions');
+    exchangeBtn.textContent = getText('cardsMandatoryButton');
   } else {
     instructions.textContent = getText('cardsInstructions');
     exchangeBtn.textContent = getText('cardsExchange');
@@ -9530,23 +9582,23 @@ function updateCardsInstructionsAndButton() {
   if (cardsModalForced) {
     // Troca obrigatória - mostrar instruções específicas
     if (count === 0) {
-      instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.';
+      instructions.textContent = getText('cardsMandatoryInstructions');
     } else if (count < 3) {
-      instructions.textContent = `⚠️ TROCA OBRIGATÓRIA: Selecionadas: ${count}/3 - Selecione mais ${3-count} carta(s)`;
+      instructions.textContent = getText('cardsMandatorySelected', { count: count, remaining: 3-count });
     } else {
-      instructions.textContent = '✅ TROCA OBRIGATÓRIA: 3/3 selecionadas - Clique em Trocar Cartas para continuar';
+      instructions.textContent = getText('cardsMandatoryComplete');
     }
-    exchangeBtn.textContent = '🔄 TROCAR CARTAS (OBRIGATÓRIO)';
+    exchangeBtn.textContent = getText('cardsMandatoryButton');
   } else {
     // Troca opcional - instruções normais
     if (count === 0) {
-      instructions.textContent = 'Clique nas cartas para selecionar (máximo 3)';
+      instructions.textContent = getText('cardsInstructions');
     } else if (count < 3) {
-      instructions.textContent = `Selecionadas: ${count}/3`;
+      instructions.textContent = getText('cardsOptionalSelected', { count: count });
     } else {
-      instructions.textContent = 'Selecionadas: 3/3 - Clique em Trocar Cartas';
+      instructions.textContent = getText('cardsOptionalComplete');
     }
-    exchangeBtn.textContent = '🔄 Trocar Cartas';
+    exchangeBtn.textContent = getText('cardsExchange');
   }
   
   exchangeBtn.disabled = count !== 3;

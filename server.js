@@ -166,7 +166,7 @@ class GameRoom {
   { nome: 'Ravenspire', x: 463, y: 450, dono: 'Vermelho', tropas: 5, vizinhos: ['Emberlyn','Duskwatch', 'Stormhall','Zul\'Marak'] },
   { nome: 'Stonevale', x: 356, y: 404, dono: 'Amarelo', tropas: 5, vizinhos: ['Emberlyn', 'Duskwatch',`Barrowfell`] },
   { nome: 'Duskwatch', x: 293, y: 454, dono: 'Verde', tropas: 5, vizinhos: ['Stonevale', 'Ravenspire', 'Emberlyn', 'Stormhall'] },
-  { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch'] },
+  { nome: 'Stormhall', x: 325, y: 581, dono: 'Azul', tropas: 5, vizinhos: ['Cindervale', 'Ashbourne','Duskwatch', 'Ravenspire'] },
   { nome: 'Redwyn', x: 111, y: 194, dono: 'Preto', tropas: 5, vizinhos: ['Stormfen', 'Cragstone', 'Omradan'] },
   { nome: 'Stormfen', x: 111, y: 194, dono: 'Roxo', tropas: 5, vizinhos: ['Redwyn', 'Cragstone',`Frosthollow`] },
   { nome: 'Highmoor', x: 305, y: 165, dono: 'Amarelo', tropas: 5, vizinhos: [`Frosthollow`, 'Cragstone','Westreach'] },
@@ -1868,8 +1868,8 @@ io.on('connection', (socket) => {
       { nome: 'Mei\'Zhara', x: 866, y: 220, dono: 'Amarelo', tropas: 5, vizinhos: ['Sa\'Torran', 'Qumaran', 'Xin\'Qari'] },
       { nome: 'Darakai', x: 961, y: 352, dono: 'Preto', tropas: 5, vizinhos: ['Qumaran', 'Kaer\'Tai', 'Ish\'Tanor','Winterholde'] },
       { nome: 'Ish\'Tanor', x: 963, y: 349, dono: 'Roxo', tropas: 5, vizinhos: ['Tzun\'Rakai', 'Darakai', 'Winterholde','Qumaran'] },
-      { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai'] },
-      { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil'] },
+      { nome: 'Winterholde', x: 1020, y: 491, dono: 'Azul', tropas: 5, vizinhos: ['Ish\'Tanor', 'Mistveil','Darakai','Aetheris'] },
+      { nome: 'Aetheris', x: 1094, y: 458, dono: 'Vermelho', tropas: 5, vizinhos: ['Ish\'Tanor', 'Dawnwatch', 'Mistveil', 'Winterholde'] },
       { nome: 'Dawnwatch', x: 1113, y: 475, dono: 'Verde', tropas: 5, vizinhos: ['Aetheris', 'Mistveil'] },
       { nome: 'Mistveil', x: 1078, y: 511, dono: 'Amarelo', tropas: 5, vizinhos: ['Winterholde', 'Aetheris', 'Dawnwatch'] }
     ];
