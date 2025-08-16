@@ -2804,7 +2804,7 @@ function updateGamePopupsTexts() {
   const cardsInstructions = document.getElementById('cards-instructions');
   const cardsExchange = document.getElementById('cards-exchange');
   
-  if (cardsTitle) {
+  if (cardsTitle && !cardsModalForced) {
     cardsTitle.textContent = getText('cardsYourCards');
   }
   
@@ -2812,11 +2812,11 @@ function updateGamePopupsTexts() {
     cardsClose.textContent = getText('cardsClose');
   }
   
-  if (cardsInstructions) {
+  if (cardsInstructions && !cardsModalForced) {
     cardsInstructions.textContent = getText('cardsInstructions');
   }
   
-  if (cardsExchange) {
+  if (cardsExchange && !cardsModalForced) {
     cardsExchange.textContent = getText('cardsExchange');
   }
   
@@ -9530,7 +9530,7 @@ function updateCardsInstructionsAndButton() {
   if (cardsModalForced) {
     // Troca obrigatória - mostrar instruções específicas
     if (count === 0) {
-      instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Selecione 3 cartas para trocar antes de continuar jogando.';
+      instructions.textContent = '⚠️ TROCA OBRIGATÓRIA: Você tem 5+ cartas na mão. Selecione 3 cartas para trocar antes de continuar jogando.';
     } else if (count < 3) {
       instructions.textContent = `⚠️ TROCA OBRIGATÓRIA: Selecionadas: ${count}/3 - Selecione mais ${3-count} carta(s)`;
     } else {
