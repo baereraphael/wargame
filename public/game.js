@@ -360,7 +360,7 @@ const gameTranslations = {
     available: 'Available',
     unavailable: 'Unavailable',
     comingSoon: 'Coming Soon',
-    workInProgress: 'Work in Progress'
+    workInProgress: 'Em Desenvolvimento'
   },
   pt: { // Portuguese (Brazil)
     // Login Screen
@@ -712,7 +712,7 @@ const gameTranslations = {
     available: 'Disponível',
     unavailable: 'Indisponível',
     comingSoon: 'Em Breve',
-    workInProgress: 'Work in Progress'
+    workInProgress: 'Em Desenvolvimento'
   },
   ru: { // Russian
     // Login Screen
@@ -2221,6 +2221,17 @@ function updateModeSelectionTexts() {
   if (backButton) {
     backButton.textContent = getText('backToLogin');
   }
+  
+  // Update status texts
+  const skirmishStatus = document.querySelector('#mode-skirmish .mode-status');
+  if (skirmishStatus) {
+    skirmishStatus.textContent = getText('available');
+  }
+  
+  const dominiumStatus = document.querySelector('#mode-dominium .mode-status');
+  if (dominiumStatus) {
+    dominiumStatus.textContent = getText('workInProgress');
+  }
 }
 
 function updateSkirmishModeTexts() {
@@ -2283,6 +2294,27 @@ function updateSkirmishModeTexts() {
   const backToModes = document.getElementById('back-to-mode-selection');
   if (backToModes) {
     backToModes.textContent = getText('backToModes');
+  }
+  
+  // Update status texts
+  const startMatchStatus = document.querySelector('#skirmish-start-match .skirmish-option-status');
+  if (startMatchStatus) {
+    startMatchStatus.textContent = getText('available');
+  }
+  
+  const rankingStatus = document.querySelector('#skirmish-ranking .skirmish-option-status');
+  if (rankingStatus) {
+    rankingStatus.textContent = getText('comingSoon');
+  }
+  
+  const statsStatus = document.querySelector('#skirmish-stats .skirmish-option-status');
+  if (statsStatus) {
+    statsStatus.textContent = getText('comingSoon');
+  }
+  
+  const tutorialStatus = document.querySelector('#skirmish-tutorial .skirmish-option-status');
+  if (tutorialStatus) {
+    tutorialStatus.textContent = getText('available');
   }
 }
 function updateTutorialTexts() {
