@@ -4802,8 +4802,8 @@ function updateHTMLTroopPosition(indicator, territorio) {
   const canvasOffsetTop = parseFloat(canvas.style.top) || 0;
   
   // Adicionar offset vertical para baixar os indicadores (ajustável por tamanho de tela)
-  const isMobile = window.innerHeight <= 500;
-  const isSmallMobile = window.innerWidth <= 480;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
   const verticalOffset = isSmallMobile ? globalTroopOffset.smallMobile : 
                         (isMobile ? globalTroopOffset.mobile : globalTroopOffset.desktop);
   // Centralizar o indicador no ponto alvo
@@ -6780,7 +6780,7 @@ function create() {
       canvas.style.zIndex = '1';
       
       // Mobile-specific adjustments
-      const isMobile = window.innerWidth <= 768;
+      const isMobile = isMobileDevice();
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       if (isMobile || isIOS) {
@@ -9630,9 +9630,9 @@ let linhasContinentes = []; // Array para armazenar as linhas dos continentes
 
 // Função utilitária para calcular tamanhos de fonte responsivos
 function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   if (isLandscape) {
     return Math.floor(baseSize * 0.7) + 'px';
@@ -9647,9 +9647,9 @@ function getResponsiveFontSize(baseSize, mobileMultiplier = 0.8, smallMobileMult
 
 // Função utilitária para calcular tamanhos de elementos gráficos responsivos
 function getResponsiveSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   if (isLandscape) {
     return Math.floor(baseSize * 0.7);
@@ -9664,9 +9664,9 @@ function getResponsiveSize(baseSize, mobileMultiplier = 0.8, smallMobileMultipli
 
 // Nova função para calcular posições responsivas
 function getResponsivePosition(baseX, baseY, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   let multiplier = 1;
   if (isLandscape) {
@@ -9685,9 +9685,9 @@ function getResponsivePosition(baseX, baseY, mobileMultiplier = 0.8, smallMobile
 
 // Nova função para calcular padding responsivo
 function getResponsivePadding(basePadding, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   let multiplier = 1;
   if (isLandscape) {
@@ -9703,7 +9703,7 @@ function getResponsivePadding(basePadding, mobileMultiplier = 0.8, smallMobileMu
 
 // Nova função para detectar dispositivo móvel
 function isMobileDevice() {
-  return window.innerWidth <= 768;
+  return window.innerWidth <= 768 || window.innerHeight < 400;
 }
 
 // Nova função para detectar dispositivo muito pequeno
@@ -9713,14 +9713,14 @@ function isSmallMobileDevice() {
 
 // Nova função para detectar orientação landscape em mobile
 function isMobileLandscape() {
-  return window.innerHeight <= 500 && window.innerWidth > window.innerHeight && isMobileDevice();
+  return window.innerHeight < 400 && window.innerWidth > window.innerHeight && isMobileDevice();
 }
 
 // Nova função para calcular tamanho de botões responsivos
 function getResponsiveButtonSize(baseSize, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   let multiplier = 1;
   if (isLandscape) {
@@ -9736,9 +9736,9 @@ function getResponsiveButtonSize(baseSize, mobileMultiplier = 0.8, smallMobileMu
 
 // Nova função para calcular espaçamento responsivo
 function getResponsiveSpacing(baseSpacing, mobileMultiplier = 0.8, smallMobileMultiplier = 0.6) {
-  const isMobile = window.innerWidth <= 768;
-  const isSmallMobile = window.innerWidth <= 480;
-  const isLandscape = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+  const isMobile = isMobileDevice();
+  const isSmallMobile = isSmallMobileDevice();
+  const isLandscape = isMobileLandscape();
   
   let multiplier = 1;
   if (isLandscape) {
@@ -10242,8 +10242,8 @@ function atualizarLinhasContinentes(scene, scaleX, scaleY) {
         item.texto.setPosition(novoIndicadorX, novoIndicadorY);
         
         // Ajustar escala baseado no tamanho da tela
-        const isMobile = window.innerWidth <= 768;
-        const isSmallMobile = window.innerWidth <= 480;
+        const isMobile = isMobileDevice();
+        const isSmallMobile = isSmallMobileDevice();
         
         let escalaTexto;
         if (isSmallMobile) {
