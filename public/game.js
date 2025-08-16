@@ -3972,8 +3972,11 @@ function startSkirmishMatch() {
     
   }
   
-  // Initialize lobby system
+  // Initialize lobby system (without auto-connecting)
   initializeLobby();
+  
+  // Now connect to global lobby since user clicked Start Game
+  joinGlobalLobby();
 }
 
 function showSkirmishRanking() {
@@ -6248,41 +6251,13 @@ function initializeLobby() {
   // Update texts for current language
   updateLobbyTexts();
   
-  // Wait for socket.io to be ready before connecting
+  // Wait for socket.io to be ready before setting up (but don't auto-join)
   function initializeSocket() {
     // Connect to socket if not already connected
     const socket = getSocket() || io(SERVER_URL);
     window.socket = socket;
     
-    // Check if socket is already connected
-    if (socket.connected) {
-      
-      
-      // Emit player joined global lobby event
-      socket.emit('playerJoinedGlobalLobby', { 
-        username: playerUsername,
-        language: currentLanguage
-      });
-      
-      // Start lobby timer
-      startLobbyTimer();
-    } else {
-      // Wait for socket connection before starting lobby
-      socket.on('connect', () => {
-        
-        
-        // Emit player joined global lobby event
-        socket.emit('playerJoinedGlobalLobby', { 
-          username: playerUsername,
-          language: currentLanguage
-        });
-        
-        // Start lobby timer
-        startLobbyTimer();
-      });
-    }
-    
-    // Handle connection errors
+    // Setup socket event listeners but don't auto-join lobby
     socket.on('connect_error', (error) => {
       
       showServerErrorModal();
@@ -6317,8 +6292,36 @@ function initializeLobby() {
     window.addEventListener('socketioReady', initializeSocket);
   }
   
+  // Don't auto-connect to lobby - wait for user to click Start Game
 
 }
+
+// New function to join global lobby when player actively wants to play
+window.joinGlobalLobby = function joinGlobalLobby() {
+  const socket = getSocket();
+  if (!socket) {
+    
+    return;
+  }
+  
+  // Join the global lobby
+  if (socket.connected) {
+    socket.emit('playerJoinedGlobalLobby', { 
+      username: playerUsername,
+      language: currentLanguage
+    });
+    startLobbyTimer();
+  } else {
+    socket.on('connect', () => {
+      socket.emit('playerJoinedGlobalLobby', { 
+        username: playerUsername,
+        language: currentLanguage
+      });
+      startLobbyTimer();
+    });
+  }
+}
+
 
 function startLobbyTimer() {
   
