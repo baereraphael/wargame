@@ -4446,6 +4446,20 @@ function resizeGameElements(scene) {
       pais.troopText.setPosition(originalX * scaleX, originalY * scaleY);
       pais.troopText.setScale(Math.min(scaleX, scaleY) * 0.9);
     }
+
+    // Update nome text position
+    if (pais.nomeText) {
+      const originalX = pais.nomeText.getData('originalX') || pais.nomeText.x;
+      const originalY = pais.nomeText.getData('originalY') || pais.nomeText.y;
+      
+      if (!pais.nomeText.getData('originalX')) {
+        pais.nomeText.setData('originalX', pais.nomeText.x);
+        pais.nomeText.setData('originalY', pais.nomeText.y);
+      }
+
+      pais.nomeText.setPosition(originalX * scaleX, originalY * scaleY);
+      pais.nomeText.setScale(Math.min(scaleX, scaleY) * 0.8);
+    }
   });
 
   // Update modals if they are open
@@ -4483,23 +4497,30 @@ function resizeGameElements(scene) {
   // Update HTML connections (lines between territories)
   updateAllConnectionsDebounced();
   
-  // Update original elevation positions for all territories
+  // Update original elevation positions for all territories based on new scaled positions
   gameState.paises.forEach(pais => {
-    if (pais.elevado) {
-      // For elevated territories, calculate what the original position should be
-      // by subtracting the elevation offset from current position
-      if (pais.polygon && pais.polygon.posicaoOriginalElevacao) {
-        pais.polygon.posicaoOriginalElevacao.y = pais.polygon.y + 8; // +8 because elevation subtracts 8
-      }
-      if (pais.troopCircle && pais.troopCircle.posicaoOriginalElevacao) {
-        pais.troopCircle.posicaoOriginalElevacao.y = pais.troopCircle.y + 5; // +5 because elevation subtracts 5
-      }
-      if (pais.troopText && pais.troopText.posicaoOriginalElevacao) {
-        pais.troopText.posicaoOriginalElevacao.y = pais.troopText.y + 5; // +5 because elevation subtracts 5
-      }
-      if (pais.nomeText && pais.nomeText.posicaoOriginalElevacao) {
-        pais.nomeText.posicaoOriginalElevacao.y = pais.nomeText.y + 5; // +5 because elevation subtracts 5
-      }
+    // Update original elevation positions based on the new scaled positions
+    // This needs to be done for all territories, not just elevated ones
+    if (pais.polygon && pais.polygon.posicaoOriginalElevacao) {
+      // Calculate the new original position based on the scaled position
+      const originalX = pais.polygon.getData('originalX') || pais.polygon.x;
+      const originalY = pais.polygon.getData('originalY') || pais.polygon.y;
+      pais.polygon.posicaoOriginalElevacao.y = originalY * scaleY;
+    }
+    if (pais.troopCircle && pais.troopCircle.posicaoOriginalElevacao) {
+      const originalX = pais.troopCircle.getData('originalX') || pais.troopCircle.x;
+      const originalY = pais.troopCircle.getData('originalY') || pais.troopCircle.y;
+      pais.troopCircle.posicaoOriginalElevacao.y = originalY * scaleY;
+    }
+    if (pais.troopText && pais.troopText.posicaoOriginalElevacao) {
+      const originalX = pais.troopText.getData('originalX') || pais.troopText.x;
+      const originalY = pais.troopText.getData('originalY') || pais.troopText.y;
+      pais.troopText.posicaoOriginalElevacao.y = originalY * scaleY;
+    }
+    if (pais.nomeText && pais.nomeText.posicaoOriginalElevacao) {
+      const originalX = pais.nomeText.getData('originalX') || pais.nomeText.x;
+      const originalY = pais.nomeText.getData('originalY') || pais.nomeText.y;
+      pais.nomeText.posicaoOriginalElevacao.y = originalY * scaleY;
     }
   });
 }
