@@ -18,6 +18,8 @@ const gameTranslations = {
     countryLabel: 'Select your country:',
     continueButton: 'CONTINUE',
     loginFooter: 'Connect and dominate the world!',
+    discordJoin: 'Join our Discord server!',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'Select Mode',
@@ -370,6 +372,8 @@ const gameTranslations = {
     countryLabel: 'Selecione seu país:',
     continueButton: 'CONTINUAR',
     loginFooter: 'Conecte-se e domine o mundo!',
+    discordJoin: 'Entre no nosso servidor Discord!',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'Selecionar Modo',
@@ -722,6 +726,8 @@ const gameTranslations = {
     countryLabel: 'Выберите вашу страну:',
     continueButton: 'ПРОДОЛЖИТЬ',
     loginFooter: 'Подключитесь и доминируйте в мире!',
+    discordJoin: 'Присоединяйтесь к нашему серверу Discord!',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'Выбрать режим',
@@ -1026,6 +1032,8 @@ const gameTranslations = {
     countryLabel: '选择您的国家:',
     continueButton: '继续',
     loginFooter: '连接并统治世界！',
+    discordJoin: '加入我们的Discord服务器！',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: '选择模式',
@@ -1330,6 +1338,8 @@ const gameTranslations = {
     countryLabel: 'अपना देश चुनें:',
     continueButton: 'जारी रखें',
     loginFooter: 'कनेक्ट करें और दुनिया पर राज करें!',
+    discordJoin: 'हमारे Discord सर्वर में शामिल हों!',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'मोड चुनें',
@@ -1581,6 +1591,8 @@ const gameTranslations = {
     countryLabel: 'Wählen Sie Ihr Land:',
     continueButton: 'WEITER',
     loginFooter: 'Verbinden Sie sich und dominieren Sie die Welt!',
+    discordJoin: 'Treten Sie unserem Discord-Server bei!',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'Modus auswählen',
@@ -1823,6 +1835,8 @@ const gameTranslations = {
     countryLabel: '国を選択してください:',
     continueButton: '続行',
     loginFooter: '接続して世界を支配しましょう！',
+    discordJoin: '私たちのDiscordサーバーに参加しましょう！',
+    discordButton: 'Discord',
     
     // Mode Selection
     modeSelectionTitle: 'モード選択',
@@ -2179,6 +2193,18 @@ function updateLoginScreenTexts() {
   const loginFooter = document.querySelector('.login-footer p');
   if (loginFooter) {
     loginFooter.textContent = getText('loginFooter');
+  }
+  
+  // Update Discord link title
+  const discordLink = document.getElementById('discord-link');
+  if (discordLink) {
+    discordLink.setAttribute('title', getText('discordJoin'));
+  }
+  
+  // Update Discord button text
+  const discordButtonText = document.getElementById('discord-button-text');
+  if (discordButtonText) {
+    discordButtonText.textContent = getText('discordButton');
   }
 }
 
