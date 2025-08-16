@@ -4483,7 +4483,8 @@ function isAnyHTMLInterfaceOpen() {
     { name: 'Transferência', element: document.getElementById('transfer-popup') },
     { name: 'Vitória', element: document.getElementById('victory-popup') },
     { name: 'Cartas', element: document.querySelector('.cards-popup[style*="flex"]') },
-    { name: 'Objetivo', element: document.querySelector('.objective-popup[style*="flex"]') }
+    { name: 'Objetivo', element: document.querySelector('.objective-popup[style*="flex"]') },
+    { name: 'Início de Turno', element: document.getElementById('turn-start-overlay') }
   ];
   
   for (const interface of interfaces) {
@@ -4504,6 +4505,7 @@ function isAnyHTMLInterfaceOpen() {
   if (modalTransferenciaAberta) return 'Transferência (estado)';
   if (modalObjetivoAberto) return 'Objetivo (estado)';
   if (modalCartasTerritorioAberto) return 'Cartas (estado)';
+  if (window.indicacaoInicioTurno) return 'Início de Turno (estado)';
   
   return null; // Nenhuma interface aberta
 }
@@ -5672,8 +5674,16 @@ function initializeGame() {
           mostrarIndicacaoInicioTurno(gameState.meuNome, currentScene);
         }
         
+        // Limpar seleção quando o turno muda
+        limparSelecao();
+        
         // Only reset forced turn count when turn changes to a different player
         if (gameState.meuNome !== gameState.turno) {
+          
+          // Fechar indicação de início de turno se estiver aberta
+          if (window.indicacaoInicioTurno) {
+            fecharIndicacaoInicioTurno();
+          }
           
           forcedTurnCount = 0;
           lastTurnForPlayer = null; // Reset turn tracker when turn changes to different player
@@ -8855,7 +8865,51 @@ function esconderInterfaceRemanejamento() {
   dadosRemanejamento = null;
   tropasParaMover = 1;
   
+  // Limpar seleção de territórios e remover destaque
+  const gameState = getGameState();
+  if (gameState && gameState.selecionado) {
+    // Remover borda branca e restaurar borda normal
+    if (gameState.selecionado.polygon) {
+      gameState.selecionado.polygon.setStrokeStyle(4, 0x000000, 1);
+    }
+    // Remover elevação do território de origem
+    if (gameState.selecionado.polygon && gameState.selecionado.polygon.scene) {
+      removerElevacaoTerritorio(gameState.selecionado.nome, gameState.selecionado.polygon.scene);
+    }
+    // Limpar seleção
+    gameState.selecionado = null;
+  }
   
+  // Limpar qualquer outro território que possa estar destacado
+  if (gameState && gameState.paises) {
+    gameState.paises.forEach(pais => {
+      if (pais.elevado && pais.polygon && pais.polygon.scene) {
+        // Verificar se tem borda branca (indicando que foi selecionado durante remanejamento)
+        if (pais.polygon.strokeStyle && pais.polygon.strokeStyle.color === 0xffffff && pais.polygon.strokeStyle.width === 8) {
+          // Restaurar borda normal
+          pais.polygon.setStrokeStyle(4, 0x000000, 1);
+          // Remover elevação
+          removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
+        }
+      }
+    });
+  }
+  
+  // Garantir que todos os territórios voltem ao estado normal
+  if (gameState && gameState.paises) {
+    gameState.paises.forEach(pais => {
+      if (pais.polygon && pais.polygon.scene) {
+        // Se ainda tem borda branca grossa, restaurar para borda normal
+        if (pais.polygon.strokeStyle && pais.polygon.strokeStyle.color === 0xffffff && pais.polygon.strokeStyle.width === 8) {
+          pais.polygon.setStrokeStyle(4, 0x000000, 1);
+        }
+        // Se ainda está elevado, remover elevação
+        if (pais.elevado) {
+          removerElevacaoTerritorio(pais.nome, pais.polygon.scene);
+        }
+      }
+    });
+  }
 }
 
 function confirmarTransferenciaConquista() {
@@ -12041,6 +12095,7 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
   
   const overlay = document.getElementById('turn-start-overlay');
   if (!overlay) return;
+  
   overlay.style.display = 'flex';
   overlay.style.position = 'fixed';
   overlay.style.inset = '0';
@@ -12050,6 +12105,14 @@ function mostrarIndicacaoInicioTurno(nomeJogador, scene) {
 
   const btn = document.getElementById('turn-start-close');
   if (btn) btn.onclick = () => { tocarSomClick(); fecharIndicacaoInicioTurno(); };
+
+  // Adicionar evento de clique no overlay para fechar ao clicar fora
+  overlay.addEventListener('click', (e) => {
+    // Só fechar se clicar no overlay (não no modal)
+    if (e.target === overlay) {
+      fecharIndicacaoInicioTurno();
+    }
+  });
 
   // Destacar territórios do jogador (mesmo comportamento anterior)
   const gameState = getGameState();

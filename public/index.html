@@ -451,47 +451,114 @@
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid #444;
     border-radius: 20px;
-    padding: 40px;
+    padding: 30px;
     width: 700px;
-    max-width: 90vw;
+    max-width: 95vw;
+    max-height: 95vh;
     backdrop-filter: blur(10px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     text-align: center;
+    overflow-y: hidden;
+    /* Ajuste para evitar scroll desnecessário */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-mode-container {
+      width: 650px;
+      padding: 25px;
+      max-height: 95vh;
+      overflow-y: hidden;
+    }
+  }
+
+  /* Ajustes específicos para notebooks com resolução 1366px */
+  @media (max-width: 1366px) and (min-width: 1025px) {
+    .skirmish-mode-container {
+      width: 680px;
+      padding: 28px;
+      max-height: 95vh;
+      overflow-y: hidden;
+    }
+    
+    .skirmish-options {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
   }
 
   .skirmish-mode-header h1 {
     color: #fff;
-    font-size: 32px;
-    margin: 0 0 10px 0;
+    font-size: 28px;
+    margin: 0 0 8px 0;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   .skirmish-mode-header p {
     color: #ccc;
-    font-size: 16px;
-    margin: 0 0 30px 0;
+    font-size: 15px;
+    margin: 0 0 20px 0;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-mode-header h1 {
+      font-size: 26px;
+      margin: 0 0 6px 0;
+    }
+    
+    .skirmish-mode-header p {
+      font-size: 14px;
+      margin: 0 0 18px 0;
+    }
   }
 
   .skirmish-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+    /* Ajuste para melhor distribuição do espaço */
+    flex: 1;
+    align-content: center;
+    justify-content: center;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-options {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 15px;
+    }
   }
 
   .skirmish-option {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    padding: 25px 20px;
+    gap: 12px;
+    padding: 20px 16px;
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid #444;
     border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
-    min-height: 180px;
+    min-height: 160px;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-option {
+      padding: 18px 14px;
+      min-height: 145px;
+      gap: 10px;
+    }
   }
 
   .skirmish-option:hover {
@@ -519,6 +586,24 @@
     line-height: 1.4;
   }
 
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-option-icon {
+      font-size: 42px;
+      margin-bottom: 8px;
+    }
+    
+    .skirmish-option-content h3 {
+      font-size: 18px;
+      margin: 0 0 6px 0;
+    }
+    
+    .skirmish-option-content p {
+      font-size: 13px;
+      margin: 0 0 12px 0;
+    }
+  }
+
   .skirmish-option-status {
     display: inline-block;
     padding: 6px 16px;
@@ -528,6 +613,14 @@
     text-transform: uppercase;
     background: #0077cc;
     color: white;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-option-status {
+      padding: 5px 12px;
+      font-size: 11px;
+    }
   }
 
   /* Estilo para opções indisponíveis */
@@ -563,68 +656,83 @@
   }
 
   .skirmish-mode-footer {
-    border-top: 1px solid #444;
-    padding-top: 20px;
+    padding-top: 10px;
+  }
+
+  /* Ajustes para notebooks e telas menores */
+  @media (max-width: 1024px) {
+    .skirmish-mode-footer {
+      padding-top: 8px;
+    }
   }
 
   /* Responsive adjustments for skirmish mode */
   @media (max-width: 768px) {
     .skirmish-mode-container {
       width: 90vw;
-      padding: 30px 20px;
+      padding: 25px 18px;
+      max-height: 98vh;
+      overflow-y: auto;
     }
     
     .skirmish-options {
       grid-template-columns: 1fr;
       gap: 15px;
+      margin-bottom: 20px;
     }
     
     .skirmish-option {
-      min-height: 150px;
-      padding: 20px 15px;
+      min-height: 140px;
+      padding: 18px 14px;
     }
     
     .skirmish-mode-header h1 {
-      font-size: 28px;
+      font-size: 26px;
     }
   }
 
   @media (max-width: 480px) {
     .skirmish-mode-container {
-      padding: 25px 15px;
+      padding: 22px 12px;
+      width: 95vw;
+      max-height: 98vh;
+      overflow-y: auto;
     }
     
     .skirmish-option {
-      min-height: 130px;
-      padding: 15px 10px;
+      min-height: 125px;
+      padding: 14px 10px;
     }
     
     .skirmish-option-icon {
-      font-size: 36px;
+      font-size: 34px;
     }
     
     .skirmish-option-content h3 {
-      font-size: 18px;
+      font-size: 17px;
     }
     
     .skirmish-option-content p {
-      font-size: 13px;
+      font-size: 12px;
     }
     
     /* Ajustes para botões indisponíveis em mobile */
     .skirmish-option-disabled .skirmish-option-status {
       font-size: 10px;
-      padding: 4px 12px;
+      padding: 4px 10px;
     }
   }
 
   @media (max-width: 360px) {
     .skirmish-mode-container {
-      padding: 20px 10px;
+      padding: 18px 8px;
+      width: 98vw;
+      max-height: 98vh;
+      overflow-y: auto;
     }
     
     .skirmish-option {
-      min-height: 120px;
+      min-height: 115px;
       padding: 12px 8px;
     }
     
