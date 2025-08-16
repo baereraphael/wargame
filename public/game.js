@@ -4293,20 +4293,28 @@ function resizeGameElements(scene) {
   const gameState = getGameState();
   if (!gameState || !gameState.paises) return;
 
-  // Calculate scale factor based on canvas size vs original size
+  // Get current canvas dimensions
   const canvas = scene.sys.game.canvas;
+  if (!canvas) return;
+  
+  // Calculate scale factor based on canvas size vs original size
   const originalWidth = 1280;
   const originalHeight = 720;
   const scaleX = canvas.width / originalWidth;
   const scaleY = canvas.height / originalHeight;
+  
+  // Use consistent scaling to maintain aspect ratio
+  const uniformScale = Math.min(scaleX, scaleY);
 
   
 
-  // Update map image
+  // Update map image to fill entire canvas
   const mapaImage = scene.children.list.find(child => child.texture && child.texture.key === 'mapa');
   if (mapaImage) {
+    // Scale to fill entire canvas area
     mapaImage.setDisplaySize(canvas.width, canvas.height);
     mapaImage.setPosition(0, 0);
+    mapaImage.setOrigin(0, 0);
   }
 
   // Mobile-specific adjustments for viewport height
@@ -4348,10 +4356,10 @@ function resizeGameElements(scene) {
     }
   }
 
-  // Update territories
+  // Update territories to fill entire screen
   gameState.paises.forEach(pais => {
     if (pais.polygon) {
-      // Scale polygon position
+      // Scale polygon position to fill screen
       const originalX = pais.polygon.getData('originalX') || pais.polygon.x;
       const originalY = pais.polygon.getData('originalY') || pais.polygon.y;
       
@@ -4376,7 +4384,7 @@ function resizeGameElements(scene) {
       }
 
       pais.text.setPosition(originalX * scaleX, originalY * scaleY);
-      pais.text.setScale(Math.min(scaleX, scaleY)); // Keep text readable
+      pais.text.setScale(Math.min(scaleX, scaleY) * 0.8); // Keep text readable
     }
 
     // Update troop circle position
@@ -4404,7 +4412,7 @@ function resizeGameElements(scene) {
       }
 
       pais.troopText.setPosition(originalX * scaleX, originalY * scaleY);
-      pais.troopText.setScale(Math.min(scaleX, scaleY));
+      pais.troopText.setScale(Math.min(scaleX, scaleY) * 0.9);
     }
   });
 
@@ -6046,6 +6054,8 @@ function initializeGame() {
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: window.innerWidth,
       height: window.innerHeight,
+      expandParent: false,
+      fullscreenTarget: 'game-container'
     },
     scene: {
       preload,
@@ -6069,51 +6079,57 @@ function initializeGame() {
   window.game = game; // Make game globally available
   
   
-  // Add resize listener for responsive scaling
-  window.addEventListener('resize', () => {
-    const canvas = document.querySelector('canvas');
-    if (canvas && window.game && window.game.scene.scenes[0]) {
-      const scene = window.game.scene.scenes[0];
-      resizeGameElements(scene);
-      updateAllResponsiveElements();
-      updateAllConnectionsDebounced();
-    }
-  });
-
-  // Add orientation change listener for mobile devices
-  window.addEventListener('orientationchange', () => {
-    setTimeout(() => {
-      const canvas = document.querySelector('canvas');
-      if (canvas && window.game && window.game.scene.scenes[0]) {
+  // Improved resize system with debouncing and proper scaling
+  let resizeTimeout;
+  let lastViewportHeight = window.innerHeight;
+  let lastViewportWidth = window.innerWidth;
+  
+  function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (window.game && window.game.scene.scenes[0]) {
         const scene = window.game.scene.scenes[0];
-        resizeGameElements(scene);
-        forceMobileCanvasPosition();
-        updateAllResponsiveElements();
-        updateAllConnectionsDebounced();
         
+        // Update Phaser game scale
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+        
+        // Resize the game canvas properly
+        window.game.scale.setGameSize(newWidth, newHeight);
+        
+        // Update all game elements
+        resizeGameElements(scene);
+        
+        // Update responsive elements
+        if (typeof updateAllResponsiveElements === 'function') {
+          updateAllResponsiveElements();
+        }
+        
+        // Update connections
+        if (typeof updateAllConnectionsDebounced === 'function') {
+          updateAllConnectionsDebounced();
+        }
+        
+        // Force mobile positioning if needed
+        if (window.innerWidth <= 768 && typeof forceMobileCanvasPosition === 'function') {
+          forceMobileCanvasPosition();
+        }
+        
+        // Update viewport tracking
+        lastViewportHeight = newHeight;
+        lastViewportWidth = newWidth;
       }
     }, 100);
-  });
+  }
 
-  // Add viewport height change listener for mobile (address bar show/hide)
-  let lastViewportHeight = window.innerHeight;
-  window.addEventListener('resize', () => {
-    const isMobile = isMobileDevice();
-    if (isMobile && Math.abs(window.innerHeight - lastViewportHeight) > 50) {
-      // Significant height change detected (likely address bar show/hide)
-      setTimeout(() => {
-        const canvas = document.querySelector('canvas');
-        if (canvas && window.game && window.game.scene.scenes[0]) {
-          const scene = window.game.scene.scenes[0];
-          resizeGameElements(scene);
-          forceMobileCanvasPosition();
-          updateAllResponsiveElements();
-          updateAllConnectionsDebounced();
-          
-        }
-      }, 100);
-      lastViewportHeight = window.innerHeight;
-    }
+  // Single unified resize listener
+  window.addEventListener('resize', handleResize);
+
+  // Orientation change listener for mobile devices
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      handleResize();
+    }, 200); // Longer delay for orientation changes
   });
   
   // Configurar event listeners da interface de remanejamento HTML

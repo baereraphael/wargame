@@ -1361,7 +1361,10 @@
     visibility: visible !important;
     width: 100% !important;
     height: calc(100vh - 45px) !important; /* Use viewport height minus HUD */
-    object-fit: fill !important; /* Stretch to fill entire area */
+    object-fit: cover !important; /* Fill entire area while maintaining aspect ratio */
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: optimize-contrast !important;
+    image-rendering: pixelated !important;
   }
 
   /* Mobile-specific canvas adjustments */
